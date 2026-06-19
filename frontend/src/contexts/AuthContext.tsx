@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const res = await api.get('/auth/me')
-        // Учитываем единый формат ответа API: { success, data, message }
         const userData = res.data.data ?? res.data
         setUser(userData)
       } catch {

@@ -5,9 +5,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import verify_password, create_access_token
 from app.core.events import EventBus, SystemEventType
 from app.core.responses import success_response, error_response
-from app.core.dependencies import require_permission
+from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
 from app.schemas.auth import RegisterRequest
+from app.models.user import User
 from app.schemas.user import UserResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
@@ -96,7 +97,7 @@ async def register(
 
 @router.get("/me")
 async def me(
-    current_user=Depends(require_permission(Permission.USER_READ)),
+    current_user: User = Depends(require_active_user),
 ):
     return success_response(
         data=UserResponse.model_validate(current_user).model_dump(),

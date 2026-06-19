@@ -6,8 +6,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-fox-purple font-semibold">Загрузка...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+        <div className="text-[#E85D4C] font-semibold">Загрузка...</div>
       </div>
     )
   }

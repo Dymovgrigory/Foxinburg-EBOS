@@ -1,0 +1,46 @@
+{
+  "brand": {
+    "name": "FOXINBURG",
+    "name_ru": "Фоксинбург",
+    "tagline": "Образование, которое вдохновляет"
+  },
+  "primary": {
+    "name": "Deep Purple",
+    "hex": "#3A2953",
+    "rgb": [58, 41, 83],
+    "cmyk": [30, 51, 0, 67],
+    "usage": "Основной фон, header, sidebar, primary buttons, навигация"
+  },
+  "accent": {
+    "name": "Fox Yellow",
+    "hex": "#F5ED75",
+    "rgb": [245, 237, 117],
+    "cmyk": [0, 3, 52, 4],
+    "usage": "Акцентные кнопки, badges, иконки, CTA, highlights, gamification rewards"
+  },
+  "neutral": {
+    "white": {
+      "hex": "#FFFFFF",
+      "rgb": [255, 255, 255],
+      "cmyk": [0, 0, 0, 0],
+      "usage": "Фон карточек, текст на тёмном фоне, контрастные элементы"
+    },
+    "dark": {
+      "hex": "#2A2A2A",
+      "rgb": [42, 42, 42],
+      "cmyk": [0, 0, 0, 84],
+      "usage": "Основной текст, иконки, второстепенные элементы"
+    }
+  },
+  "semantic": {
+    "success": "#22C55E",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
+    "info": "#3B82F6"
+  },
+  "gradients": {
+    "hero": "linear-gradient(135deg, #3A2953 0%, #4A3568 50%, #3A2953 100%)",
+    "accentGlow": "linear-gradient(135deg, #F5ED75 0%, #FFF5A0 100%)",
+    "card": "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
+  }
+}

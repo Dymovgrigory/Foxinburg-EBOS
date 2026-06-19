@@ -1,0 +1,32 @@
+:root {
+  /* Brand colors */
+  --fox-purple: #3A2953;
+  --fox-purple-light: #4A3568;
+  --fox-purple-dark: #2A1E3D;
+  --fox-gold: #F5ED75;
+  --fox-gold-light: #FFF5A0;
+  --fox-gold-dark: #E5DD65;
+  --fox-white: #FFFFFF;
+  --fox-dark: #2A2A2A;
+  --fox-light: #FAF8FD;
+  --fox-border: #E8E0F0;
+
+  /* Semantic colors */
+  --fox-success: #22C55E;
+  --fox-warning: #F59E0B;
+  --fox-error: #EF4444;
+  --fox-info: #3B82F6;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-fox: 0 4px 20px rgba(58, 41, 83, 0.15);
+  --shadow-fox-lg: 0 8px 30px rgba(58, 41, 83, 0.2);
+}

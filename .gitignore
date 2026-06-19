@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Environment files
+.env
+.env.*
+.env.production.txt
+!.env.example
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+
+# Docker volumes
+postgres_data/
+redis_data/

@@ -1,0 +1,43 @@
+@import './styles/variables.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-fox-light text-fox-dark antialiased;
+  }
+}
+
+@layer components {
+  .fox-card {
+    @apply bg-white rounded-card shadow-fox p-6;
+  }
+
+  .fox-card-dark {
+    @apply bg-fox-purple rounded-card p-6 text-white;
+  }
+
+  .fox-btn-primary {
+    @apply px-6 py-3 bg-fox-gold text-fox-purple font-bold rounded-lg
+           hover:bg-fox-gold-light transition shadow-fox
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .fox-btn-secondary {
+    @apply px-6 py-3 border-2 border-fox-gold text-fox-gold font-semibold rounded-lg
+           hover:bg-fox-gold hover:text-fox-purple transition
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .fox-input {
+    @apply w-full px-4 py-3 border border-fox-border rounded-lg
+           focus:border-fox-purple focus:ring-2 focus:ring-fox-purple/20
+           focus:outline-none transition;
+  }
+}

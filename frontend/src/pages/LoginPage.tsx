@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { useAuth, User } from '../contexts/AuthContext'
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -9,25 +10,45 @@ export default function LoginPage() {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register'
-      const payload = isLogin ? { email, password } : { email, password, name }
-      const response = await api.post(endpoint, payload)
-      localStorage.setItem('token', response.data.access_token)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
+      let response
+      if (isLogin) {
+        // Backend login использует OAuth2PasswordRequestForm
+        const params = new URLSearchParams()
+        params.append('username', email)
+        params.append('password', password)
+        response = await api.post('/auth/login', params, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        })
+      } else {
+        response = await api.post('/auth/register', { email, password, name })
+      }
+
+      // Единый формат ответа API: { success: true, data: {...}, message: '...' }
+      const payload = response.data.data ?? response.data
+      const token = payload.access_token
+      const user: User = payload.user
+
+      if (!token || !user) {
+        throw new Error('Некорректный ответ сервера')
+      }
+
+      login(user, token)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Ошибка авторизации')
+      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || 'Ошибка авторизации'
+      setError(msg)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-fox-light">
+      <div className="fox-card w-full max-w-md">
         <h2 className="text-2xl font-bold text-fox-purple mb-6 text-center">
           {isLogin ? 'Вход в аккаунт' : 'Создать аккаунт'}
         </h2>
@@ -39,7 +60,7 @@ export default function LoginPage() {
               placeholder="Ваше имя"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-fox-border rounded-lg focus:border-fox-purple focus:outline-none"
+              className="fox-input"
               required
             />
           )}
@@ -48,7 +69,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 border border-fox-border rounded-lg focus:border-fox-purple focus:outline-none"
+            className="fox-input"
             required
           />
           <input
@@ -56,13 +77,10 @@ export default function LoginPage() {
             placeholder="Пароль"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-fox-border rounded-lg focus:border-fox-purple focus:outline-none"
+            className="fox-input"
             required
           />
-          <button
-            type="submit"
-            className="w-full py-3 bg-fox-purple text-fox-gold font-bold rounded-lg hover:bg-opacity-90 transition"
-          >
+          <button type="submit" className="fox-btn-primary w-full">
             {isLogin ? 'Войти' : 'Зарегистрироваться'}
           </button>
         </form>

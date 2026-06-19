@@ -11,6 +11,9 @@ venv/
 .env.*
 .env.production.txt
 !.env.example
+!.env.production.example
+
+docker-compose.init.yml
 
 # Build outputs
 dist/

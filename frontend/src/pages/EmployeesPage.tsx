@@ -29,17 +29,25 @@ export default function EmployeesPage() {
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student', plan: 'FREE', target_language: 'ru' })
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.get('/users')
+      const data = res.data.data ?? []
+      setUsers(data)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка загрузки')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    api
-      .get('/users')
-      .then((res) => {
-        const data = res.data.data ?? []
-        setUsers(data)
-        setFiltered(data)
-      })
-      .catch((err) => setError(err.response?.data?.message || 'Ошибка загрузки'))
-      .finally(() => setLoading(false))
+    fetchUsers()
   }, [])
 
   useEffect(() => {
@@ -50,35 +58,76 @@ export default function EmployeesPage() {
     }
   }, [filter, users])
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await api.post('/users', form)
+      setShowForm(false)
+      setForm({ name: '', email: '', password: '', role: 'student', plan: 'FREE', target_language: 'ru' })
+      await fetchUsers()
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка создания пользователя')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       <Header title="Сотрудники" subtitle={`Всего: ${filtered.length}`} icon="👥" />
 
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={[
-                'px-4 py-2 rounded-xl text-sm font-medium transition',
-                filter === f.key
-                  ? 'bg-[#E85D4C] text-white shadow-md shadow-[#E85D4C]/25'
-                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50',
-              ].join(' ')}
-            >
-              {f.label}
-            </button>
-          ))}
+        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={[
+                  'px-4 py-2 rounded-xl text-sm font-medium transition',
+                  filter === f.key
+                    ? 'bg-[#E85D4C] text-white shadow-md shadow-[#E85D4C]/25'
+                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50',
+                ].join(' ')}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-[#E85D4C] hover:bg-[#D14F40] text-white text-sm font-medium rounded-xl transition"
+          >
+            {showForm ? 'Отмена' : '+ Добавить пользователя'}
+          </button>
         </div>
 
-        {/* Table */}
+        {showForm && (
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 grid md:grid-cols-3 gap-4">
+            <input required placeholder="Имя" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
+            <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
+            <input required type="password" placeholder="Пароль" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
+              {filters.filter((f) => f.key !== 'all').map((f) => (
+                <option key={f.key} value={f.key}>{f.label}</option>
+              ))}
+            </select>
+            <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
+              <option value="FREE">FREE</option>
+              <option value="PREMIUM">PREMIUM</option>
+            </select>
+            <select value={form.target_language} onChange={(e) => setForm({ ...form, target_language: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+            </select>
+            <button type="submit" className="md:col-span-3 px-4 py-2 bg-[#7C5CFC] hover:bg-[#6B4FD6] text-white rounded-xl font-medium">Создать пользователя</button>
+          </form>
+        )}
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-gray-500">Загрузка...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-500">{error}</div>
           ) : (
             <table className="w-full text-left">
               <thead className="bg-gray-50">

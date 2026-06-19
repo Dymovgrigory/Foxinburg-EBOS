@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -13,7 +15,11 @@ from app.models import (
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
 )
 
-from app.routers import auth, users, seed, courses, modules, lessons, groups, enrollments
+from app.routers import (
+    auth, users, seed, courses, modules, lessons, groups, enrollments,
+    leads, deals, finance, homeworks, tests, notifications, achievements,
+    files, organizations, progress, analytics,
+)
 
 
 @asynccontextmanager
@@ -40,6 +46,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.include_router(auth.router, prefix="/api/v3")
 app.include_router(users.router, prefix="/api/v3")
 app.include_router(seed.router, prefix="/api/v3")
@@ -48,6 +57,17 @@ app.include_router(modules.router, prefix="/api/v3")
 app.include_router(lessons.router, prefix="/api/v3")
 app.include_router(groups.router, prefix="/api/v3")
 app.include_router(enrollments.router, prefix="/api/v3")
+app.include_router(leads.router, prefix="/api/v3")
+app.include_router(deals.router, prefix="/api/v3")
+app.include_router(finance.router, prefix="/api/v3")
+app.include_router(homeworks.router, prefix="/api/v3")
+app.include_router(tests.router, prefix="/api/v3")
+app.include_router(notifications.router, prefix="/api/v3")
+app.include_router(achievements.router, prefix="/api/v3")
+app.include_router(files.router, prefix="/api/v3")
+app.include_router(organizations.router, prefix="/api/v3")
+app.include_router(progress.router, prefix="/api/v3")
+app.include_router(analytics.router, prefix="/api/v3")
 
 
 @app.get("/health")

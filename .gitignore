@@ -30,4 +30,5 @@ build/
 # Docker volumes
 postgres_data/
 redis_data/
+uploads/
 *.tsbuildinfo

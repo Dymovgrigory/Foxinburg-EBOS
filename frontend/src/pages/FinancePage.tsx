@@ -1,148 +1,230 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
+import api from '../services/api'
 
-const transactions = [
-  { date: '17 июн.', type: 'income', category: 'Оплата курсов', description: 'Групповой курс (12 чел.)', amount: 144000, status: 'Выполнено' },
-  { date: '17 июн.', type: 'expense', category: 'Зарплата', description: 'Зарплата преподавателям', amount: -85000, status: 'Выполнено' },
-  { date: '16 июн.', type: 'income', category: 'Абонементы', description: 'Абонемент "Премиум" x5', amount: 74500, status: 'Выполнено' },
-  { date: '16 июн.', type: 'expense', category: 'Аренда', description: 'Аренда помещения (июнь)', amount: -120000, status: 'Выполнено' },
-  { date: '15 июн.', type: 'income', category: 'Оплата курсов', description: 'Индивидуальные занятия', amount: 58000, status: 'Выполнено' },
-]
+interface Payment {
+  id: number
+  student_id: number
+  amount: number
+  type: 'income' | 'refund'
+  method: string
+  status: string
+  description?: string
+  created_at: string
+}
 
-const categories = [
-  { name: 'Оплата курсов', amount: 224000, percent: 51, color: 'bg-green-500' },
-  { name: 'Аренда', amount: 120000, percent: 27, color: 'bg-red-500' },
-  { name: 'Абонементы', amount: 119200, percent: 27, color: 'bg-blue-500' },
-  { name: 'Зарплата', amount: 85000, percent: 19, color: 'bg-red-400' },
-  { name: 'Оборудование', amount: 65000, percent: 15, color: 'bg-gray-500' },
-  { name: 'Групповые', amount: 64000, percent: 14, color: 'bg-amber-500' },
-]
-
-const periods = ['Неделя', 'Месяц', 'Квартал', 'Год']
+interface Transaction {
+  id: number
+  user_id: number
+  amount: number
+  type: string
+  balance_after: number
+  description?: string
+  created_at: string
+}
 
 export default function FinancePage() {
-  const [period, setPeriod] = useState('Месяц')
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [analytics, setAnalytics] = useState({ income_kopecks: 0, refund_kopecks: 0, net_kopecks: 0 })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ student_id: '', amount: '', type: 'income', method: 'cash', status: 'completed', description: '' })
 
-  const formatMoney = (n: number) =>
-    new Intl.NumberFormat('ru-RU').format(n) + ' ₽'
+  const fetchData = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [paymentsRes, transactionsRes, analyticsRes] = await Promise.all([
+        api.get('/finance/payments'),
+        api.get('/finance/transactions'),
+        api.get('/analytics/finance'),
+      ])
+      setPayments(paymentsRes.data.data || [])
+      setTransactions(transactionsRes.data.data || [])
+      setAnalytics(analyticsRes.data.data || { income_kopecks: 0, refund_kopecks: 0, net_kopecks: 0 })
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка загрузки финансов')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await api.post('/finance/payments', {
+        student_id: Number(form.student_id),
+        amount: Math.round(Number(form.amount) * 100),
+        type: form.type,
+        method: form.method,
+        status: form.status,
+        description: form.description,
+      })
+      setShowForm(false)
+      setForm({ student_id: '', amount: '', type: 'income', method: 'cash', status: 'completed', description: '' })
+      await fetchData()
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка создания платежа')
+    }
+  }
+
+  const formatMoney = (kopecks: number) =>
+    new Intl.NumberFormat('ru-RU').format(kopecks / 100) + ' ₽'
+
+  const formatDate = (s: string) =>
+    new Date(s).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       <Header title="Финансы" subtitle="Финансовая аналитика и управление" icon="💹" />
 
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Period + Export */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex bg-white rounded-xl p-1 border border-gray-100">
-            {periods.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={[
-                  'px-4 py-2 rounded-lg text-sm font-medium transition',
-                  period === p ? 'bg-[#7C5CFC] text-white' : 'text-gray-600 hover:bg-gray-50',
-                ].join(' ')}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <button className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-            <span>↓</span> Экспорт
+        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">Платежи и транзакции</h2>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-[#E85D4C] hover:bg-[#D14F40] text-white text-sm font-medium rounded-xl transition"
+          >
+            {showForm ? 'Отмена' : '+ Новый платёж'}
           </button>
         </div>
 
+        {showForm && (
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 grid md:grid-cols-4 gap-4">
+            <input
+              required
+              type="number"
+              placeholder="ID ученика"
+              value={form.student_id}
+              onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+              className="px-4 py-2 border border-gray-200 rounded-xl focus:border-[#E85D4C] outline-none"
+            />
+            <input
+              required
+              type="number"
+              step="0.01"
+              placeholder="Сумма (₽)"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              className="px-4 py-2 border border-gray-200 rounded-xl focus:border-[#E85D4C] outline-none"
+            />
+            <select
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              className="px-4 py-2 border border-gray-200 rounded-xl focus:border-[#E85D4C] outline-none"
+            >
+              <option value="income">Доход</option>
+              <option value="refund">Возврат</option>
+            </select>
+            <select
+              value={form.method}
+              onChange={(e) => setForm({ ...form, method: e.target.value })}
+              className="px-4 py-2 border border-gray-200 rounded-xl focus:border-[#E85D4C] outline-none"
+            >
+              <option value="cash">Наличные</option>
+              <option value="card">Карта</option>
+              <option value="transfer">Перевод</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Описание"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="md:col-span-3 px-4 py-2 border border-gray-200 rounded-xl focus:border-[#E85D4C] outline-none"
+            />
+            <button type="submit" className="px-4 py-2 bg-[#7C5CFC] hover:bg-[#6B4FD6] text-white rounded-xl font-medium">
+              Сохранить
+            </button>
+          </form>
+        )}
+
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <FinanceCard icon="↗" iconColor="bg-green-500" trend="+12.5%" trendUp value={342000} label="Доходы" />
-          <FinanceCard icon="↘" iconColor="bg-red-500" trend="-8.2%" trendUp={false} value={212040} label="Расходы" />
-          <FinanceCard icon="💰" iconColor="bg-[#7C5CFC]" trend="+15.3%" trendUp value={129960} label="Чистая прибыль" />
-          <FinanceCard icon="🧾" iconColor="bg-amber-500" trend="+5.1%" trendUp value={2327} label="Средний чек" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FinanceCard icon="↗" iconColor="bg-green-500" value={analytics.income_kopecks} label="Доходы" />
+          <FinanceCard icon="↘" iconColor="bg-red-500" value={analytics.refund_kopecks} label="Возвраты" />
+          <FinanceCard icon="💰" iconColor="bg-[#7C5CFC]" value={analytics.net_kopecks} label="Чистый доход" />
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span>📊</span> Доходы vs Расходы
-            </h3>
-            <div className="space-y-5">
-              <FinanceBar label="Доходы" value={342000} max={400000} color="bg-green-500" />
-              <FinanceBar label="Расходы" value={212040} max={400000} color="bg-red-500" />
-              <FinanceBar label="Прибыль" value={129960} max={200000} color="bg-[#7C5CFC]" />
-              <div className="flex justify-between text-sm pt-2">
-                <span className="text-gray-500">Маржинальность</span>
-                <span className="font-bold text-[#7C5CFC]">38%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🥧</span> По категориям
-            </h3>
-            <div className="space-y-4">
-              {categories.map((c) => (
-                <div key={c.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className={['w-3 h-3 rounded-full', c.color].join(' ')} />
-                    <span className="text-sm text-gray-700">{c.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-900">{formatMoney(c.amount)}</div>
-                    <div className="text-xs text-gray-400">{c.percent}%</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Transactions */}
+        {/* Payments */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <span>📅</span> Транзакции
-            </h3>
-            <div className="flex gap-2">
-              <button className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-900">Все</button>
-              <button className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Доходы</button>
-              <button className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Расходы</button>
-            </div>
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900">Платежи</h3>
           </div>
           <table className="w-full text-left">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Дата</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Ученик</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Тип</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Категория</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Способ</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Описание</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Сумма</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Статус</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {transactions.map((t, idx) => (
-                <tr key={idx} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-700">{t.date}</td>
+              {loading ? (
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-400">Загрузка...</td></tr>
+              ) : payments.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-400">Нет платежей</td></tr>
+              ) : payments.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm text-gray-700">{formatDate(p.created_at)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{p.student_id}</td>
                   <td className="px-6 py-4">
-                    <span className={['text-sm font-medium', t.type === 'income' ? 'text-green-600' : 'text-red-600'].join(' ')}>
-                      {t.type === 'income' ? '↗ Доход' : '↘ Расход'}
+                    <span className={['text-sm font-medium', p.type === 'income' ? 'text-green-600' : 'text-red-600'].join(' ')}>
+                      {p.type === 'income' ? 'Доход' : 'Возврат'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700 flex items-center gap-2">
-                    <span className={['w-2 h-2 rounded-full', t.type === 'income' ? 'bg-green-500' : 'bg-red-500'].join(' ')} />
-                    {t.category}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{t.description}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    {t.amount > 0 ? '+' : ''}{formatMoney(t.amount)}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{p.method}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{p.description || '—'}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatMoney(p.amount)}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                      {t.status}
+                    <span className={['px-2 py-1 rounded-full text-xs font-medium', p.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'].join(' ')}>
+                      {p.status}
                     </span>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Transactions */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900">Транзакции</h3>
+          </div>
+          <table className="w-full text-left">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Дата</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Пользователь</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Тип</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Сумма</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Баланс после</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Описание</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {transactions.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm text-gray-700">{formatDate(t.created_at)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{t.user_id}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{t.type}</td>
+                  <td className={['px-6 py-4 text-sm font-semibold', t.amount >= 0 ? 'text-green-600' : 'text-red-600'].join(' ')}>
+                    {formatMoney(t.amount)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{formatMoney(t.balance_after)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{t.description || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -156,15 +238,11 @@ export default function FinancePage() {
 function FinanceCard({
   icon,
   iconColor,
-  trend,
-  trendUp,
   value,
   label,
 }: {
   icon: string
   iconColor: string
-  trend: string
-  trendUp: boolean
   value: number
   label: string
 }) {
@@ -174,24 +252,9 @@ function FinanceCard({
         <div className={['w-10 h-10 rounded-xl text-white flex items-center justify-center text-lg', iconColor].join(' ')}>
           {icon}
         </div>
-        <span className={['text-xs font-semibold', trendUp ? 'text-green-600' : 'text-red-600'].join(' ')}>{trend}</span>
       </div>
-      <div className="text-2xl font-bold text-gray-900">{new Intl.NumberFormat('ru-RU').format(value)} ₽</div>
+      <div className="text-2xl font-bold text-gray-900">{new Intl.NumberFormat('ru-RU').format(value / 100)} ₽</div>
       <div className="text-sm text-gray-500">{label}</div>
-    </div>
-  )
-}
-
-function FinanceBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-2">
-        <span className="text-gray-700">{label}</span>
-        <span className="font-semibold text-gray-900">{new Intl.NumberFormat('ru-RU').format(value)} ₽</span>
-      </div>
-      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-        <div className={['h-full rounded-full', color].join(' ')} style={{ width: `${Math.min((value / max) * 100, 100)}%` }} />
-      </div>
     </div>
   )
 }

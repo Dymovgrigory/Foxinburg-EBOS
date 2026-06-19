@@ -9,9 +9,11 @@ from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
 from app.schemas.auth import RegisterRequest
 from app.models.user import User
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserUpdate
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
+from app.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -102,4 +104,20 @@ async def me(
     return success_response(
         data=UserResponse.model_validate(current_user).model_dump(),
         message="Текущий пользователь",
+    )
+
+
+@router.patch("/me")
+async def update_me(
+    data: UserUpdate,
+    current_user: User = Depends(require_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    await db.commit()
+    await db.refresh(current_user)
+    return success_response(
+        data=UserResponse.model_validate(current_user).model_dump(),
+        message="Профиль обновлён",
     )

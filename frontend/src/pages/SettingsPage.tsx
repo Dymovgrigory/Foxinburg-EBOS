@@ -1,25 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
+import api from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState({
-    lastName: 'Петрова',
-    firstName: 'Анна',
-    middleName: 'Сергеевна',
-    phone: '+7 (916) 123-45-67',
-    bio: 'Опытный преподаватель английского языка',
-    education: 'МГЛУ, факультет английской филологии',
-    specialization: 'Английский язык, подготовка к IELTS',
-  })
+  const { user, login } = useAuth()
+  const [profile, setProfile] = useState({ name: '', phone: '', bio: '' })
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
-  const [notifications, setNotifications] = useState({
-    homeworkEmail: true,
-    courseEmail: true,
-    messagePush: true,
-  })
+  useEffect(() => {
+    if (user) {
+      setProfile({ name: user.name || '', phone: '', bio: '' })
+      fetchProfile()
+    }
+  }, [user])
 
-  const toggle = (key: keyof typeof notifications) => {
-    setNotifications((n) => ({ ...n, [key]: !n[key] }))
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get('/auth/me')
+      const data = res.data.data
+      setProfile({ name: data.name || '', phone: data.phone || '', bio: data.bio || '' })
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Не удалось загрузить профиль')
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+    setError('')
+    try {
+      const res = await api.patch('/auth/me', profile)
+      const updated = res.data.data
+      login(updated, localStorage.getItem('token') || '')
+      setMessage('Профиль сохранён')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка сохранения')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -27,43 +49,25 @@ export default function SettingsPage() {
       <Header title="Настройки" icon="🔧" />
 
       <div className="p-6 max-w-5xl mx-auto space-y-6">
-        {/* Profile */}
+        {message && <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">{message}</div>}
+        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
             <span className="text-amber-500">👤</span> Профиль
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
-              <input
-                value={profile.lastName}
-                onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Имя</label>
               <input
-                value={profile.firstName}
-                onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Отчество</label>
-              <input
-                value={profile.middleName}
-                onChange={(e) => setProfile({ ...profile, middleName: e.target.value })}
+                value={profile.name}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                value="teacher@foxinburg.ru"
-                disabled
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500"
-              />
+              <input value={user?.email || ''} disabled className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
@@ -72,6 +76,10 @@ export default function SettingsPage() {
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
+              <input value={user?.role || ''} disabled className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">О себе</label>
@@ -82,92 +90,18 @@ export default function SettingsPage() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Образование</label>
-              <input
-                value={profile.education}
-                onChange={(e) => setProfile({ ...profile, education: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-[#F5C542] hover:bg-[#E5B532] text-gray-900 font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-60"
+              >
+                <span>💾</span> {loading ? 'Сохранение...' : 'Сохранить профиль'}
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Специализация</label>
-              <input
-                value={profile.specialization}
-                onChange={(e) => setProfile({ ...profile, specialization: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
-          </div>
-          <div className="mt-6">
-            <button className="px-6 py-3 bg-[#F5C542] hover:bg-[#E5B532] text-gray-900 font-semibold rounded-xl transition flex items-center gap-2">
-              <span>💾</span> Сохранить профиль
-            </button>
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <span className="text-amber-500">🔔</span> Уведомления
-          </h3>
-          <div className="space-y-5">
-            <Toggle
-              title="Email-уведомления о домашних заданиях"
-              description="Получать письма при назначении нового ДЗ"
-              checked={notifications.homeworkEmail}
-              onChange={() => toggle('homeworkEmail')}
-            />
-            <Toggle
-              title="Email-уведомления о курсах"
-              description="Получать письма об обновлениях курсов"
-              checked={notifications.courseEmail}
-              onChange={() => toggle('courseEmail')}
-            />
-            <Toggle
-              title="Push-уведомления о сообщениях"
-              description="Получать push при новых сообщениях"
-              checked={notifications.messagePush}
-              onChange={() => toggle('messagePush')}
-            />
-          </div>
+          </form>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Toggle({
-  title,
-  description,
-  checked,
-  onChange,
-}: {
-  title: string
-  description: string
-  checked: boolean
-  onChange: () => void
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="font-medium text-gray-900">{title}</div>
-        <div className="text-sm text-gray-500">{description}</div>
-      </div>
-      <button
-        onClick={onChange}
-        className={[
-          'w-12 h-7 rounded-full p-1 transition',
-          checked ? 'bg-[#4CAF7E]' : 'bg-gray-200',
-        ].join(' ')}
-      >
-        <div
-          className={[
-            'w-5 h-5 bg-white rounded-full shadow transition-transform',
-            checked ? 'translate-x-5' : 'translate-x-0',
-          ].join(' ')}
-        />
-      </button>
     </div>
   )
 }

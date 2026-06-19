@@ -48,6 +48,22 @@ npm run dev
 
 Фронтенд будет доступен на http://localhost:5173
 
+## Миграции базы данных
+
+Проект использует Alembic. После запуска PostgreSQL примени миграции:
+
+```bash
+cd backend
+source ../.venv/bin/activate
+alembic upgrade head
+```
+
+Создать новую автомиграцию:
+
+```bash
+alembic revision --autogenerate -m "описание изменений"
+```
+
 ## API документация
 
 После запуска бэкенда:

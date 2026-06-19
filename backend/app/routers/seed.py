@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.core.permissions import Role, require_role
+from app.core.permissions import Role
+from app.core.dependencies import require_role
 from app.core.responses import success_response, error_response
 from app.seeders import seed_all, clear_all
 

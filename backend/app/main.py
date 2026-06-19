@@ -13,7 +13,7 @@ from app.models import (
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
 )
 
-from app.routers import auth, users, seed
+from app.routers import auth, users, seed, courses, modules, lessons, groups, enrollments
 
 
 @asynccontextmanager
@@ -43,6 +43,11 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v3")
 app.include_router(users.router, prefix="/api/v3")
 app.include_router(seed.router, prefix="/api/v3")
+app.include_router(courses.router, prefix="/api/v3")
+app.include_router(modules.router, prefix="/api/v3")
+app.include_router(lessons.router, prefix="/api/v3")
+app.include_router(groups.router, prefix="/api/v3")
+app.include_router(enrollments.router, prefix="/api/v3")
 
 
 @app.get("/health")

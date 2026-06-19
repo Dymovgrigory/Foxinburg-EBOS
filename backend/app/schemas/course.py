@@ -30,12 +30,20 @@ class ModuleBase(BaseModel):
     order_index: int = 0
 
 
+class ModuleCreate(ModuleBase):
+    course_id: int
+
+
 class LessonBase(BaseModel):
     title: str
     description: Optional[str] = None
     lesson_type: str = "text"
     order_index: int = 0
     duration_minutes: int = 15
+
+
+class LessonCreate(LessonBase):
+    module_id: int
 
 
 class LessonResponse(LessonBase):

@@ -1,13 +1,5 @@
 from enum import Enum
-from functools import wraps
 from typing import List, Optional
-
-from fastapi import Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database import get_db
-from app.models.user import User
-from .security import get_current_active_user
 
 
 class Role(str, Enum):
@@ -20,6 +12,54 @@ class Role(str, Enum):
     STUDENT = "student"
     PARENT = "parent"
     GUEST = "guest"
+
+
+class Permission(str, Enum):
+    # Users
+    USER_CREATE = "user:create"
+    USER_READ = "user:read"
+    USER_UPDATE = "user:update"
+    USER_DELETE = "user:delete"
+
+    # Organizations & branches
+    ORGANIZATION_MANAGE = "organization:manage"
+    BRANCH_MANAGE = "branch:manage"
+
+    # Courses / modules / lessons
+    COURSE_CREATE = "course:create"
+    COURSE_READ = "course:read"
+    COURSE_UPDATE = "course:update"
+    COURSE_DELETE = "course:delete"
+    COURSE_PUBLISH = "course:publish"
+
+    MODULE_CREATE = "module:create"
+    MODULE_READ = "module:read"
+    MODULE_UPDATE = "module:update"
+    MODULE_DELETE = "module:delete"
+
+    LESSON_CREATE = "lesson:create"
+    LESSON_READ = "lesson:read"
+    LESSON_UPDATE = "lesson:update"
+    LESSON_DELETE = "lesson:delete"
+    LESSON_COMPLETE = "lesson:complete"
+
+    # Groups & enrollments
+    GROUP_READ = "group:read"
+    GROUP_MANAGE = "group:manage"
+    ENROLLMENT_MANAGE = "enrollment:manage"
+    PROGRESS_READ = "progress:read"
+
+    # Homework
+    HOMEWORK_REVIEW = "homework:review"
+
+    # CRM / finance / analytics
+    CRM_MANAGE = "crm:manage"
+    FINANCE_MANAGE = "finance:manage"
+    ANALYTICS_READ = "analytics:read"
+
+    # System
+    SETTINGS_MANAGE = "settings:manage"
+    NOTIFICATION_READ = "notification:read"
 
 
 # Иерархия ролей: кто кого может управлять
@@ -36,7 +76,7 @@ ROLE_HIERARCHY = {
 }
 
 
-# Права доступа к модулям
+# Права доступа к модулям (legacy, оставлено для совместимости)
 MODULE_PERMISSIONS = {
     "users": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN],
     "organizations": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN],
@@ -52,30 +92,67 @@ MODULE_PERMISSIONS = {
 }
 
 
-def has_permission(user: User, module: str) -> bool:
-    if not user or not user.is_active:
-        return False
-    allowed_roles = MODULE_PERMISSIONS.get(module, [])
-    return Role(user.role) in allowed_roles
+# Разрешения по ролям
+ROLE_PERMISSIONS = {
+    Role.OWNER: [p for p in Permission],
+    Role.SUPER_ADMIN: [p for p in Permission],
+    Role.ADMIN: [
+        Permission.USER_CREATE, Permission.USER_READ, Permission.USER_UPDATE,
+        Permission.ORGANIZATION_MANAGE, Permission.BRANCH_MANAGE,
+        Permission.COURSE_CREATE, Permission.COURSE_READ, Permission.COURSE_UPDATE, Permission.COURSE_DELETE, Permission.COURSE_PUBLISH,
+        Permission.MODULE_CREATE, Permission.MODULE_READ, Permission.MODULE_UPDATE, Permission.MODULE_DELETE,
+        Permission.LESSON_CREATE, Permission.LESSON_READ, Permission.LESSON_UPDATE, Permission.LESSON_DELETE,
+        Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
+        Permission.HOMEWORK_REVIEW,
+        Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
+        Permission.NOTIFICATION_READ,
+    ],
+    Role.METHODIST: [
+        Permission.COURSE_CREATE, Permission.COURSE_READ, Permission.COURSE_UPDATE, Permission.COURSE_DELETE, Permission.COURSE_PUBLISH,
+        Permission.MODULE_CREATE, Permission.MODULE_READ, Permission.MODULE_UPDATE, Permission.MODULE_DELETE,
+        Permission.LESSON_CREATE, Permission.LESSON_READ, Permission.LESSON_UPDATE, Permission.LESSON_DELETE,
+        Permission.HOMEWORK_REVIEW,
+        Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
+        Permission.NOTIFICATION_READ,
+    ],
+    Role.TEACHER: [
+        Permission.COURSE_READ,
+        Permission.MODULE_READ, Permission.LESSON_READ,
+        Permission.HOMEWORK_REVIEW,
+        Permission.GROUP_READ, Permission.PROGRESS_READ,
+        Permission.NOTIFICATION_READ,
+    ],
+    Role.MANAGER: [
+        Permission.USER_READ,
+        Permission.COURSE_READ,
+        Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
+        Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
+        Permission.NOTIFICATION_READ,
+    ],
+    Role.STUDENT: [
+        Permission.COURSE_READ,
+        Permission.MODULE_READ, Permission.LESSON_READ, Permission.LESSON_COMPLETE,
+        Permission.PROGRESS_READ, Permission.NOTIFICATION_READ,
+    ],
+    Role.PARENT: [
+        Permission.PROGRESS_READ, Permission.NOTIFICATION_READ,
+    ],
+    Role.GUEST: [
+        Permission.COURSE_READ,
+    ],
+}
 
 
-def can_manage_role(manager: User, target_role: str) -> bool:
-    if not manager or not manager.is_active:
-        return False
-    manageable = ROLE_HIERARCHY.get(Role(manager.role), [])
+def has_permission(user_role: str, permission: Permission) -> bool:
+    allowed = ROLE_PERMISSIONS.get(user_role, [])
+    return permission in allowed
+
+
+def can_manage_role(manager_role: str, target_role: str) -> bool:
+    manageable = ROLE_HIERARCHY.get(Role(manager_role), [])
     return Role(target_role) in manageable
 
 
-def require_role(allowed_roles: List[Role]):
-    def role_checker(current_user: User = Depends(get_current_active_user)):
-        if Role(current_user.role) not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Недостаточно прав доступа",
-            )
-        return current_user
-    return role_checker
-
-
-def require_active_user(current_user: User = Depends(get_current_active_user)) -> User:
-    return current_user
+def has_module_permission(user_role: str, module: str) -> bool:
+    allowed_roles = MODULE_PERMISSIONS.get(module, [])
+    return Role(user_role) in allowed_roles

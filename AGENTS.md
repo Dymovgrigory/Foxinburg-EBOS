@@ -63,6 +63,24 @@ npm run dev
 6. **Российская инфраструктура.** Не использовать Cloudflare, Google CDN и другие зарубежные сервисы.
 7. **Коммиты.** После завершения модуля делать `git commit` с понятным сообщением.
 
+## Миграции базы данных (Alembic)
+
+```bash
+cd /Users/veronika/foxinburg/backend
+source ../.venv/bin/activate
+
+# Применить миграции
+alembic upgrade head
+
+# Создать новую автомиграцию
+alembic revision --autogenerate -m "описание изменений"
+
+# Откатить на одну миграцию назад
+alembic downgrade -1
+```
+
+URL БД берётся из `.env.development` (`DATABASE_URL`) через `app.config.settings`.
+
 ## Полезные ссылки
 
 - Локальный backend: http://localhost:8000

@@ -1,10 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, text
+from sqlalchemy.orm import selectinload
 
 from app.models import (
-    User, Organization, Branch, Course, Module, Lesson,
-    Group, Enrollment, Achievement, SystemEvent, AuditLog,
-    Notification, Lead, Deal, Payment, Homework, HomeworkReview,
+    User, Organization, Branch, Course, Module, Lesson, LessonContent,
+    Group, Enrollment, LessonProgress, Achievement, UserAchievement,
+    SystemEvent, AuditLog, Notification, Lead, Deal, Payment,
+    Homework, HomeworkReview, Test, TestQuestion, TestAttempt,
 )
 from app.core.security import get_password_hash
 
@@ -12,12 +14,26 @@ from app.core.security import get_password_hash
 async def clear_all(db: AsyncSession):
     """Очистка всех таблиц (осторожно!)."""
     for model in [
-        HomeworkReview, Homework, Payment, Deal, Lead,
-        Enrollment, Group, Lesson, Module, Course,
-        Notification, AuditLog, SystemEvent, Achievement,
-        User, Branch, Organization,
+        # Прогресс и зависимые от уроков/зачислений
+        LessonProgress,
+        HomeworkReview, Homework,
+        TestAttempt, TestQuestion, Test,
+        LessonContent,
+        # CRM и финансы
+        Payment, Deal, Lead,
+        # Зачисления и группы
+        Enrollment,
+        UserAchievement,
+        Notification, AuditLog, SystemEvent,
     ]:
         await db.execute(delete(model))
+
+    # Обнуляем group_id перед удалением групп, чтобы не ловить FK-циклы users <-> groups
+    await db.execute(text("UPDATE users SET group_id = NULL"))
+
+    for model in [Group, Lesson, Module, Course, User, Branch, Organization]:
+        await db.execute(delete(model))
+
     await db.commit()
 
 
@@ -173,6 +189,18 @@ async def seed_enrollments(db: AsyncSession):
     group_result = await db.execute(select(Group))
     group = group_result.scalars().first()
 
+    # Загружаем курс с модулями и уроками один раз
+    course_result = await db.execute(
+        select(Course)
+        .where(Course.id == course.id)
+        .options(selectinload(Course.modules).selectinload(Module.lessons))
+    )
+    course_obj = course_result.scalar_one()
+    all_lessons = []
+    for module in sorted(course_obj.modules, key=lambda m: m.order_index):
+        for lesson in sorted(module.lessons, key=lambda l: l.order_index):
+            all_lessons.append(lesson)
+
     for student in students:
         enrollment = Enrollment(
             student_id=student.id,
@@ -181,9 +209,22 @@ async def seed_enrollments(db: AsyncSession):
             status="active",
         )
         db.add(enrollment)
+        await db.flush()
 
         # Привязываем студента к группе
         student.group_id = group.id
+
+        # Создаём прогресс по урокам
+        for idx, lesson in enumerate(all_lessons):
+            status = "available" if idx == 0 or not course_obj.is_sequential else "locked"
+            db.add(
+                LessonProgress(
+                    student_id=student.id,
+                    lesson_id=lesson.id,
+                    enrollment_id=enrollment.id,
+                    status=status,
+                )
+            )
 
     await db.flush()
 

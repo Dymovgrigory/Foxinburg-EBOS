@@ -1,21 +1,16 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.database import get_db
-from app.models.user import User
-from app.schemas.auth import RegisterRequest, TokenWithUserResponse
-from app.schemas.user import UserResponse
-from app.core.security import (
-    verify_password,
-    get_password_hash,
-    create_access_token,
-    get_current_active_user,
-)
+from app.core.security import verify_password, create_access_token
 from app.core.events import EventBus, SystemEventType
 from app.core.responses import success_response, error_response
+from app.core.dependencies import require_permission
+from app.core.permissions import Permission
+from app.schemas.auth import RegisterRequest
+from app.schemas.user import UserResponse
+from app.services.unit_of_work import UnitOfWork, get_uow
+from app.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -23,10 +18,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ):
-    result = await db.execute(select(User).where(User.email == form_data.username))
-    user = result.scalar_one_or_none()
+    service = UserService(uow)
+    user = await service.get_by_email(form_data.username)
 
     if not user or not verify_password(form_data.password, user.password_hash):
         return error_response("Неверный email или пароль", status_code=status.HTTP_400_BAD_REQUEST)
@@ -34,21 +29,20 @@ async def login(
     if not user.is_active:
         return error_response("Пользователь заблокирован", status_code=status.HTTP_403_FORBIDDEN)
 
-    user.last_login_at = datetime.utcnow()
-    await db.commit()
+    await service.update_last_login(user)
+
+    await EventBus.publish(
+        uow,
+        SystemEventType.USER_LOGGED_IN,
+        {"user_id": user.id, "email": user.email},
+        user_id=user.id,
+    )
 
     token = create_access_token({
         "user_id": user.id,
         "email": user.email,
         "role": user.role,
     })
-
-    await EventBus.publish(
-        db,
-        SystemEventType.USER_LOGGED_IN,
-        {"user_id": user.id, "email": user.email},
-        user_id=user.id,
-    )
 
     return success_response(
         data={
@@ -61,33 +55,33 @@ async def login(
 
 
 @router.post("/register")
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email))
-    if result.scalar_one_or_none():
-        return error_response("Email уже зарегистрирован", status_code=status.HTTP_400_BAD_REQUEST)
+async def register(
+    data: RegisterRequest,
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = UserService(uow)
+    try:
+        user = await service.create_user(
+            email=data.email,
+            name=data.name,
+            password=data.password,
+            role=data.role or "student",
+        )
+    except ValueError as e:
+        return error_response(str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
-    user = User(
-        email=data.email.lower().strip(),
-        name=data.name,
-        password_hash=get_password_hash(data.password),
-        role=data.role,
+    await EventBus.publish(
+        uow,
+        SystemEventType.USER_CREATED,
+        {"user_id": user.id, "email": user.email, "role": user.role},
+        user_id=user.id,
     )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
 
     token = create_access_token({
         "user_id": user.id,
         "email": user.email,
         "role": user.role,
     })
-
-    await EventBus.publish(
-        db,
-        SystemEventType.USER_CREATED,
-        {"user_id": user.id, "email": user.email, "role": user.role},
-        user_id=user.id,
-    )
 
     return success_response(
         data={
@@ -100,6 +94,11 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/me", response_model=UserResponse)
-async def me(current_user: User = Depends(get_current_active_user)):
-    return current_user
+@router.get("/me")
+async def me(
+    current_user=Depends(require_permission(Permission.USER_READ)),
+):
+    return success_response(
+        data=UserResponse.model_validate(current_user).model_dump(),
+        message="Текущий пользователь",
+    )

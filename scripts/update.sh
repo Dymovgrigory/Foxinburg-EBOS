@@ -7,7 +7,7 @@ COMPOSE_FILE="docker-compose.prod.yml"
 cd "$APP_DIR"
 
 echo "[deploy] pulling latest code..."
-git pull
+git pull origin main
 
 echo "[deploy] rebuilding and restarting containers..."
 docker compose -f "$COMPOSE_FILE" down

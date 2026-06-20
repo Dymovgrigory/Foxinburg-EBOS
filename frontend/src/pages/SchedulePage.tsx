@@ -64,20 +64,26 @@ export default function SchedulePage() {
     setLoading(true)
     setError('')
     try {
-      const [schedulesRes, groupsRes, usersRes] = await Promise.all([
+      const [schedulesRes, groupsRes] = await Promise.all([
         api.get('/schedules'),
         api.get('/groups'),
-        api.get('/users'),
       ])
       setSchedules(schedulesRes.data.data || [])
       setGroups(groupsRes.data.data || [])
-      const allUsers: Teacher[] = usersRes.data.data || []
-      setTeachers(allUsers.filter((u) => u.role === 'teacher'))
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка загрузки')
     } finally {
       setLoading(false)
     }
+
+    api.get('/users')
+      .then((res) => {
+        const allUsers: Teacher[] = res.data.data || []
+        setTeachers(allUsers.filter((u) => u.role === 'teacher'))
+      })
+      .catch(() => {
+        setTeachers([])
+      })
   }
 
   useEffect(() => {

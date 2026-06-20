@@ -3,6 +3,8 @@ import os
 
 # Переключаем все сессии БД приложения на тестовую базу до импорта модулей
 os.environ["DATABASE_URL"] = "postgresql+asyncpg://foxinburg:foxinburg_dev_pass@localhost:5432/foxinburg_test"
+# Тестовый ключ для шифрования паролей в админке
+os.environ["PASSWORD_ENCRYPTION_KEY"] = "xKGm1ySf1VtWfrOwu6uv1p6E0F-wpCObX7fxo_AhmvU="
 
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport

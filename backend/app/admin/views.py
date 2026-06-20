@@ -51,6 +51,7 @@ class UserAdmin(BaseAdmin, model=User):
         "id": "ID",
         "email": "Email / Логин",
         "plain_password": "Пароль",
+        "encrypted_password": "Пароль",
         "name": "Имя",
         "role": "Роль",
         "plan": "Тариф",
@@ -62,26 +63,27 @@ class UserAdmin(BaseAdmin, model=User):
     column_searchable_list = ["email", "name"]
     column_sortable_list = ["id", "email", "name", "role", "is_active", "last_login_at", "created_at"]
     column_default_sort = ("id", True)
-    form_columns = ["email", "name", "role", "plan", "password", "is_active", "is_verified"]
-    form_extra_fields = {
-        "password": PasswordField(
-            "Пароль",
-            validators=[validators.Optional()],
-            description="Заполните, чтобы задать или сменить пароль. Хранится в виде хеша.",
-        ),
+    form_columns = ["email", "name", "role", "plan", "encrypted_password", "is_active", "is_verified"]
+    form_overrides = {
+        "encrypted_password": PasswordField,
+    }
+    form_args = {
+        "encrypted_password": {
+            "description": "Заполните, чтобы задать или сменить пароль. Хранится в зашифрованном виде.",
+        },
     }
     name = "Пользователь"
     name_plural = "Пользователи"
     icon = "fa-solid fa-user"
 
-    async def on_model_change(self, data, model, is_created):
-        password = data.pop("password", None)
+    async def on_model_change(self, data, model, is_created, request):
+        password = data.pop("encrypted_password", None)
         if password:
             model.password_hash = get_password_hash(password)
             model.encrypted_password = encrypt_text(password)
         elif is_created and not getattr(model, "password_hash", None):
             raise ValueError("При создании пользователя необходимо задать пароль")
-        await super().on_model_change(data, model, is_created)
+        await super().on_model_change(data, model, is_created, request)
 
 
 class OrganizationAdmin(BaseAdmin, model=Organization):

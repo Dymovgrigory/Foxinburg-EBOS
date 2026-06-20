@@ -8,13 +8,13 @@ interface LandingPageProps {
 }
 
 const CheckIcon = () => (
-  <svg className="w-5 h-5 text-[#F5ED75] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-5 h-5 text-[#3A2953] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 )
 
 const SystemIcon = ({ children }: { children: React.ReactNode }) => (
-  <div className="w-12 h-12 rounded-xl bg-[#F5ED75]/10 flex items-center justify-center text-[#F5ED75] mb-6">
+  <div className="w-12 h-12 rounded-xl bg-[#F5ED75] flex items-center justify-center text-[#3A2953] mb-6">
     {children}
   </div>
 )
@@ -115,7 +115,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0612] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden">
       <style>{`
         .reveal { opacity: 0; transform: translateY(24px); transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
         .revealed { opacity: 1; transform: translateY(0); }
@@ -125,28 +125,28 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
       `}</style>
 
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0612]/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-3 hover:opacity-90 transition"
           >
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#F5ED75] to-[#3A2953] flex items-center justify-center text-lg font-bold text-[#1a1229]">
+            <div className="w-9 h-9 rounded-lg bg-[#3A2953] flex items-center justify-center text-lg font-bold text-[#F5ED75]">
               F
             </div>
-            <span className="font-bold text-xl tracking-tight">
-              FOXINBURG <span className="text-[#F5ED75]">EBOS</span>
+            <span className="font-bold text-xl tracking-tight text-slate-900">
+              FOXINBURG <span className="text-[#3A2953]">EBOS</span>
             </span>
           </button>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-gray-300">
-            <a href="#systems" className="hover:text-white transition">Системы</a>
-            <a href="#features" className="hover:text-white transition">Возможности</a>
-            <a href="#demo" className="hover:text-white transition">Демо</a>
-            <a href="#contacts" className="hover:text-white transition">Контакты</a>
+          <nav className="hidden md:flex items-center gap-8 text-sm text-slate-600">
+            <a href="#systems" className="hover:text-[#3A2953] transition">Системы</a>
+            <a href="#features" className="hover:text-[#3A2953] transition">Возможности</a>
+            <a href="#demo" className="hover:text-[#3A2953] transition">Демо</a>
+            <a href="#contacts" className="hover:text-[#3A2953] transition">Контакты</a>
           </nav>
           <button
             onClick={() => setAuthOpen(true)}
-            className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"
+            className="px-5 py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition text-sm font-medium"
           >
             Войти
           </button>
@@ -154,33 +154,34 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       </header>
 
       <main>
-        <section className="relative min-h-screen flex items-center justify-center px-6 pt-20">
+        <section className="relative min-h-screen flex items-center justify-center px-6 pt-28 pb-20">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#3A2953]/30 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#F5ED75]/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#F5ED75]/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#3A2953]/5 rounded-full blur-3xl" />
           </div>
           <div className="relative z-10 max-w-5xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F5ED75]/10 border border-[#F5ED75]/20 text-[#F5ED75] text-sm mb-8">
-              <span className="w-2 h-2 rounded-full bg-[#F5ED75] animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-sm mb-10">
+              <span className="w-2 h-2 rounded-full bg-[#3A2953] animate-pulse" />
               EBOS — единая операционная система для школ
             </div>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight tracking-tight">
-              Три системы в одной <span className="text-[#F5ED75]">платформе</span>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-slate-900 mb-8 leading-[1.1] tracking-tight">
+              Три системы <br className="hidden md:block" />
+              <span className="text-[#3A2953]">в одной платформе</span>
             </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-              FOXINBURG EBOS объединяет обучение, управление бизнесом и персоналом. Забудьте о
-              совместимости LMS, CRM, ERP и HRM — всё работает здесь.
+            <p className="text-lg md:text-2xl text-slate-500 mb-12 max-w-3xl mx-auto leading-relaxed">
+              FOXINBURG EBOS объединяет обучение, управление бизнесом и персоналом.
+              Забудьте о совместимости LMS, CRM, ERP и HRM — всё работает здесь.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={scrollToDemo}
-                className="px-8 py-4 rounded-xl bg-[#F5ED75] text-[#1a1229] font-bold text-lg hover:bg-[#e8df60] transition shadow-lg shadow-[#F5ED75]/10"
+                className="px-8 py-4 rounded-xl bg-[#F5ED75] text-slate-900 font-bold text-lg hover:bg-[#e8df60] transition shadow-lg shadow-[#F5ED75]/20"
               >
                 Записаться на демо
               </button>
               <button
                 onClick={() => setAuthOpen(true)}
-                className="px-8 py-4 rounded-xl border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
+                className="px-8 py-4 rounded-xl border border-slate-200 text-slate-700 font-semibold text-lg hover:bg-slate-50 transition"
               >
                 Войти в систему
               </button>
@@ -188,28 +189,28 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </div>
         </section>
 
-        <section className="py-16 px-6 border-y border-white/5 bg-[#0f0a18]">
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <section className="py-20 px-6 border-y border-slate-100 bg-slate-50/50">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#F5ED75] mb-2">3</div>
-              <p className="text-gray-400 text-sm">системы в одной платформе</p>
+              <div className="text-4xl md:text-5xl font-bold text-[#3A2953] mb-2">3</div>
+              <p className="text-slate-500">системы в одной платформе</p>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#F5ED75] mb-2">9</div>
-              <p className="text-gray-400 text-sm">ролей доступа</p>
+              <div className="text-4xl md:text-5xl font-bold text-[#3A2953] mb-2">9</div>
+              <p className="text-slate-500">ролей доступа</p>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#F5ED75] mb-2">1 API</div>
-              <p className="text-gray-400 text-sm">для всех интеграций</p>
+              <div className="text-4xl md:text-5xl font-bold text-[#3A2953] mb-2">1 API</div>
+              <p className="text-slate-500">для всех интеграций</p>
             </div>
           </div>
         </section>
 
-        <section id="systems" className="py-24 px-6">
+        <section id="systems" className="py-32 px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16 reveal" ref={useReveal()}>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">3 системы — 1 платформа</h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
+            <div className="text-center mb-20 reveal" ref={useReveal()}>
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-5">3 системы — 1 платформа</h2>
+              <p className="text-slate-500 max-w-2xl mx-auto text-lg">
                 Модули тесно связаны между собой: заявка из CRM превращается в ученика, оплата формирует
                 группу, а прогресс попадает в аналитику.
               </p>
@@ -218,14 +219,14 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               {systems.map((system) => (
                 <div
                   key={system.title}
-                  className="group rounded-2xl p-8 bg-white/[0.03] border border-white/10 hover:border-[#F5ED75]/30 hover:bg-white/[0.05] transition duration-300"
+                  className="group rounded-2xl p-10 bg-white border border-slate-100 hover:border-[#F5ED75] hover:shadow-xl hover:shadow-[#F5ED75]/10 transition duration-300"
                 >
                   <SystemIcon>{system.icon}</SystemIcon>
-                  <h3 className="text-2xl font-bold text-white mb-3">{system.title}</h3>
-                  <p className="text-gray-400 mb-6 leading-relaxed">{system.description}</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">{system.title}</h3>
+                  <p className="text-slate-500 mb-8 leading-relaxed">{system.description}</p>
                   <ul className="space-y-3">
                     {system.features.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm text-gray-300">
+                      <li key={f} className="flex items-center gap-3 text-sm text-slate-700">
                         <CheckIcon /> {f}
                       </li>
                     ))}
@@ -236,11 +237,11 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </div>
         </section>
 
-        <section id="features" className="py-24 px-6 bg-[#0f0a18]">
+        <section id="features" className="py-32 px-6 bg-slate-50/50">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 reveal" ref={useReveal()}>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Возможности платформы</h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
+            <div className="text-center mb-20 reveal" ref={useReveal()}>
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-5">Возможности платформы</h2>
+              <p className="text-slate-500 max-w-2xl mx-auto text-lg">
                 Всё необходимое для управления современной образовательной организацией.
               </p>
             </div>
@@ -248,24 +249,24 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               {features.map((item) => (
                 <div
                   key={item.title}
-                  className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#F5ED75]/30 hover:bg-white/[0.05] transition"
+                  className="p-8 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg transition"
                 >
-                  <h4 className="text-xl font-bold text-[#F5ED75] mb-2">{item.title}</h4>
-                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                  <h4 className="text-xl font-bold text-[#3A2953] mb-3">{item.title}</h4>
+                  <p className="text-slate-500 leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-24 px-6">
+        <section className="py-32 px-6">
           <div className="max-w-5xl mx-auto text-center reveal" ref={useReveal()}>
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-12">9 ролей для любой задачи</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-14">9 ролей для любой задачи</h2>
             <div className="flex flex-wrap justify-center gap-3">
               {roles.map((role) => (
                 <div
                   key={role}
-                  className="px-5 py-2.5 rounded-full border border-white/10 bg-white/[0.03] text-gray-300 text-sm hover:border-[#F5ED75]/40 hover:text-[#F5ED75] transition"
+                  className="px-6 py-2.5 rounded-full border border-slate-200 bg-white text-slate-600 text-sm hover:border-[#3A2953] hover:text-[#3A2953] transition"
                 >
                   {role}
                 </div>
@@ -274,39 +275,43 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </div>
         </section>
 
-        <section id="demo" className="py-24 px-6 bg-[#0f0a18]">
-          <div className="max-w-4xl mx-auto rounded-3xl bg-[#161026] p-8 md:p-12 border border-white/10 shadow-2xl">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Записаться на демонстрацию</h2>
-              <p className="text-gray-400">Расскажем, как FOXINBURG EBOS подойдёт именно вашей школе.</p>
+        <section id="demo" className="py-32 px-6 bg-slate-50/50">
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-3xl bg-white p-10 md:p-14 border border-slate-100 shadow-xl shadow-slate-200/50">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Записаться на демонстрацию</h2>
+                <p className="text-slate-500 text-lg">Расскажем, как FOXINBURG EBOS подойдёт именно вашей школе.</p>
+              </div>
+              <DemoForm />
             </div>
-            <DemoForm />
           </div>
         </section>
 
-        <section id="contacts" className="py-24 px-6">
+        <section id="contacts" className="py-32 px-6">
           <div className="max-w-5xl mx-auto text-center reveal" ref={useReveal()}>
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-12">Контакты</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-14">Контакты</h2>
             <div className="grid md:grid-cols-2 gap-8 text-left">
-              <div className="p-8 rounded-2xl bg-[#161026] border border-white/10">
-                <h3 className="text-xl font-bold text-[#F5ED75] mb-2">ИП Дымова Вероника Александровна</h3>
-                <p className="text-gray-300 mb-1">Руководитель проекта FOXINBURG EBOS</p>
-                <p className="text-gray-500 text-sm">Организационные вопросы, сотрудничество, демонстрации</p>
+              <div className="p-10 rounded-2xl bg-white border border-slate-100">
+                <h3 className="text-xl font-bold text-[#3A2953] mb-2">ИП Дымова Вероника Александровна</h3>
+                <p className="text-slate-600 mb-1">Руководитель проекта FOXINBURG EBOS</p>
+                <p className="text-slate-400 text-sm">Организационные вопросы, сотрудничество, демонстрации</p>
               </div>
-              <div className="p-8 rounded-2xl bg-[#161026] border border-white/10">
-                <h3 className="text-xl font-bold text-[#F5ED75] mb-2">Дымов Григорий Юрьевич</h3>
-                <p className="text-gray-300 mb-1">Создатель и технический директор</p>
-                <p className="text-gray-500 text-sm">Архитектура продукта, интеграции, техническая поддержка</p>
+              <div className="p-10 rounded-2xl bg-white border border-slate-100">
+                <h3 className="text-xl font-bold text-[#3A2953] mb-2">Дымов Григорий Юрьевич</h3>
+                <p className="text-slate-600 mb-1">Создатель и технический директор</p>
+                <p className="text-slate-400 text-sm">Архитектура продукта, интеграции, техническая поддержка</p>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="py-10 px-6 border-t border-white/5 bg-[#0a0612]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+      <footer className="py-12 px-6 border-t border-slate-100 bg-white">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-400">
           <p>© {new Date().getFullYear()} FOXINBURG EBOS. Все права защищены.</p>
-          <p>Сайт: <span className="text-gray-300">https://foxinburg.ru</span></p>
+          <p>
+            Сайт: <span className="text-slate-600">https://foxinburg.ru</span>
+          </p>
         </div>
       </footer>
 

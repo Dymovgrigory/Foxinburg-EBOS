@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
@@ -22,6 +23,7 @@ from app.routers import (
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws,
 )
+from app.admin import setup_admin
 
 
 @asynccontextmanager
@@ -50,6 +52,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET)
+
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -77,6 +81,8 @@ app.include_router(attendance.router, prefix="/api/v3")
 app.include_router(chats.router, prefix="/api/v3")
 app.include_router(chat_ws.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
+
+setup_admin(app)
 
 
 @app.get("/health")

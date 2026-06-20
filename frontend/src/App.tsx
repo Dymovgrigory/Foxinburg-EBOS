@@ -17,6 +17,7 @@ import CoursesPage from './pages/CoursesPage'
 import BranchesPage from './pages/BranchesPage'
 import StudentsPage from './pages/StudentsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import SchedulePage from './pages/SchedulePage'
 
 function App() {
   return (
@@ -99,7 +100,7 @@ function App() {
         <Route path="certification" element={<ProtectedRoute><PlaceholderPage title="Сертификация" icon="🎓" /></ProtectedRoute>} />
         <Route path="progress" element={<ProtectedRoute><PlaceholderPage title="Мой прогресс" icon="📈" /></ProtectedRoute>} />
         <Route path="library" element={<ProtectedRoute><PlaceholderPage title="Библиотека" icon="📖" /></ProtectedRoute>} />
-        <Route path="calendar" element={<ProtectedRoute><PlaceholderPage title="Календарь" icon="📅" /></ProtectedRoute>} />
+        <Route path="calendar" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
         <Route path="community" element={<ProtectedRoute><PlaceholderPage title="Сообщество" icon="💬" /></ProtectedRoute>} />
         <Route path="notifications" element={<ProtectedRoute><PlaceholderPage title="Уведомления" icon="🔔" /></ProtectedRoute>} />
         <Route path="payments" element={<ProtectedRoute><PlaceholderPage title="Оплата" icon="💳" /></ProtectedRoute>} />

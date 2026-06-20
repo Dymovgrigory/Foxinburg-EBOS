@@ -37,6 +37,12 @@ class SystemEventType(str, Enum):
     NOTIFICATION_SENT = "notification.sent"
     ACHIEVEMENT_EARNED = "achievement.earned"
 
+    SCHEDULE_CREATED = "schedule.created"
+    SCHEDULE_UPDATED = "schedule.updated"
+    SCHEDULE_CANCELLED = "schedule.cancelled"
+
+    CHAT_MESSAGE_SENT = "chat.message.sent"
+
 
 EventHandler = Callable[[SystemEventType, dict, int], Any]
 
@@ -118,7 +124,64 @@ async def notify_on_login(event_type: SystemEventType, payload: dict, user_id: i
         await uow.commit()
 
 
+async def notify_on_schedule_change(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_service import NotificationService
+    from app.models.user import User
+    from app.models.group import Group
+
+    schedule_id = payload.get("schedule_id")
+    group_id = payload.get("group_id")
+    title = payload.get("title", "Занятие")
+    if not group_id:
+        return
+
+    async with UnitOfWork() as uow:
+        group_result = await uow.session.execute(select(Group).where(Group.id == group_id))
+        group = group_result.scalar_one_or_none()
+        if not group:
+            return
+
+        user_ids = []
+        if group.teacher_id:
+            user_ids.append(group.teacher_id)
+        student_result = await uow.session.execute(
+            select(User.id).where(User.group_id == group_id)
+        )
+        user_ids.extend([r[0] for r in student_result.all()])
+        user_ids = list(set(user_ids))
+        if not user_ids:
+            return
+
+        if event_type == SystemEventType.SCHEDULE_CREATED:
+            msg_title = "Новое занятие"
+            msg_body = f"Добавлено занятие \"{title}\""
+        elif event_type == SystemEventType.SCHEDULE_CANCELLED:
+            msg_title = "Занятие отменено"
+            msg_body = f"Занятие \"{title}\" отменено"
+        else:
+            msg_title = "Изменение занятия"
+            msg_body = f"Обновлено занятие \"{title}\""
+
+        await NotificationService(uow).create_bulk_notifications(
+            user_ids=user_ids,
+            title=msg_title,
+            message=msg_body,
+            type_="schedule",
+            entity_type="schedule",
+            entity_id=schedule_id,
+            link="/calendar",
+        )
+        await uow.commit()
+
+
 for event_type in SystemEventType:
     EventBus.subscribe(event_type, log_event_handler)
 
 EventBus.subscribe(SystemEventType.USER_LOGGED_IN, notify_on_login)
+EventBus.subscribe(SystemEventType.SCHEDULE_CREATED, notify_on_schedule_change)
+EventBus.subscribe(SystemEventType.SCHEDULE_UPDATED, notify_on_schedule_change)
+EventBus.subscribe(SystemEventType.SCHEDULE_CANCELLED, notify_on_schedule_change)

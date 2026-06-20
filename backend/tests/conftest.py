@@ -1,11 +1,16 @@
 import asyncio
+import os
+
+# Переключаем все сессии БД приложения на тестовую базу до импорта модулей
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://foxinburg:foxinburg_dev_pass@localhost:5432/foxinburg_test"
+
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.main import app
-from app.database import Base, get_db
+from app.database import Base, get_db, AsyncSessionLocal
 from app.models.user import User
 from app.models.organization import Organization, Branch
 from app.models.course import Course, Module
@@ -13,7 +18,7 @@ from app.models.group import Group
 from app.core.security import get_password_hash, create_access_token
 from app.core.permissions import Role
 
-TEST_DATABASE_URL = "postgresql+asyncpg://foxinburg:foxinburg_dev_pass@localhost:5432/foxinburg_test"
+TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
 TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -84,8 +89,37 @@ async def user_factory(db_session):
 
     yield _create
 
-    # cleanup: откатываем фабрикой созданных пользователей
+    # cleanup: удаляем связанные записи и затем самих пользователей
     for user in created:
+        # Сообщения и участники в чатах, созданных пользователем
+        await db_session.execute(
+            text("""
+                DELETE FROM chat_messages
+                WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
+            """).bindparams(uid=user.id)
+        )
+        await db_session.execute(
+            text("""
+                DELETE FROM chat_participants
+                WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
+            """).bindparams(uid=user.id)
+        )
+        await db_session.execute(
+            text("DELETE FROM chat_rooms WHERE created_by_id = :uid").bindparams(uid=user.id)
+        )
+        # Собственные сообщения/участники в чужих чатах
+        await db_session.execute(
+            text("DELETE FROM chat_messages WHERE sender_id = :uid").bindparams(uid=user.id)
+        )
+        await db_session.execute(
+            text("DELETE FROM chat_participants WHERE user_id = :uid").bindparams(uid=user.id)
+        )
+        await db_session.execute(
+            text("DELETE FROM notifications WHERE user_id = :uid").bindparams(uid=user.id)
+        )
+        await db_session.execute(
+            text("DELETE FROM system_events WHERE user_id = :uid").bindparams(uid=user.id)
+        )
         await db_session.delete(user)
     await db_session.commit()
 

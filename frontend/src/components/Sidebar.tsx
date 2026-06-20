@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import NotificationBadge from '../components/NotificationBadge'
 
 interface MenuItem {
   to: string
   label: string
   icon: string
-  badge?: number
+  badge?: number | React.ReactNode
   roles?: string[]
 }
 
@@ -28,6 +29,8 @@ const adminGroups: MenuGroup[] = [
       { to: '/marketing', label: 'Маркетинг', icon: '📣' },
       { to: '/courses', label: 'Курсы', icon: '📚' },
       { to: '/calendar', label: 'Расписание', icon: '📅' },
+      { to: '/chats', label: 'Чаты', icon: '💬' },
+      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
     ],
   },
   {
@@ -57,8 +60,8 @@ const teacherGroups: MenuGroup[] = [
       { to: '/ai', label: 'AI Помощник', icon: '🤖' },
       { to: '/library', label: 'Библиотека', icon: '📖' },
       { to: '/calendar', label: 'Календарь', icon: '📅' },
-      { to: '/community', label: 'Сообщество', icon: '💬' },
-      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: 3 },
+      { to: '/chats', label: 'Чаты', icon: '💬' },
+      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
       { to: '/settings', label: 'Настройки', icon: '🔧' },
     ],
   },
@@ -73,8 +76,8 @@ const studentGroups: MenuGroup[] = [
       { to: '/progress', label: 'Мой прогресс', icon: '📈' },
       { to: '/library', label: 'Библиотека', icon: '📖' },
       { to: '/calendar', label: 'Календарь', icon: '📅' },
-      { to: '/community', label: 'Сообщество', icon: '💬' },
-      { to: '/notifications', label: 'Уведомления', icon: '🔔' },
+      { to: '/chats', label: 'Чаты', icon: '💬' },
+      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
       { to: '/settings', label: 'Настройки', icon: '🔧' },
     ],
   },
@@ -213,8 +216,12 @@ export default function Sidebar() {
                     <span className="text-lg">{item.icon}</span>
                     {!collapsed && <span className="flex-1">{item.label}</span>}
                     {!collapsed && item.badge && (
-                      <span className="bg-[#4CAF7E] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                        {item.badge}
+                      <span className="flex-shrink-0">
+                        {typeof item.badge === 'number' ? (
+                          <span className="bg-[#4CAF7E] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge}</span>
+                        ) : (
+                          item.badge
+                        )}
                       </span>
                     )}
                   </Link>

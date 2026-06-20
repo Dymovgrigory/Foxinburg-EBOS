@@ -13,13 +13,14 @@ from app.models import (
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
     Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
-    Schedule, Attendance,
+    Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
 )
 
 from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
+    chats, chat_ws,
 )
 
 
@@ -73,6 +74,8 @@ app.include_router(branches.router, prefix="/api/v3")
 app.include_router(progress.router, prefix="/api/v3")
 app.include_router(schedules.router, prefix="/api/v3")
 app.include_router(attendance.router, prefix="/api/v3")
+app.include_router(chats.router, prefix="/api/v3")
+app.include_router(chat_ws.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 
 

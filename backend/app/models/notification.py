@@ -13,10 +13,16 @@ class Notification(Base):
 
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    type = Column(String, default="system")  # system, homework, payment, event, achievement
+    type = Column(String, default="system")  # system, homework, payment, event, achievement, schedule, chat
+
+    # Навигация: к какой сущности относится уведомление
+    link = Column(String, nullable=True)
+    entity_type = Column(String, nullable=True)  # schedule, chat, course, homework, etc.
+    entity_id = Column(Integer, nullable=True)
 
     is_read = Column(Boolean, default=False)
     read_at = Column(DateTime, nullable=True)
+    is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="notifications")

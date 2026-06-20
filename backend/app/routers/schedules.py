@@ -90,11 +90,9 @@ async def update_schedule(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = ScheduleService(uow)
-    schedule = await service.get_by_id(schedule_id)
+    schedule = await service.update_schedule(schedule_id, data=data.model_dump(exclude_unset=True))
     if not schedule:
         return error_response("Занятие не найдено", status_code=404)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(schedule, field, value)
     await uow.commit()
     await uow.session.refresh(schedule)
     return success_response(
@@ -110,9 +108,8 @@ async def delete_schedule(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = ScheduleService(uow)
-    schedule = await service.get_by_id(schedule_id)
+    schedule = await service.delete_schedule(schedule_id)
     if not schedule:
         return error_response("Занятие не найдено", status_code=404)
-    await uow.session.delete(schedule)
     await uow.commit()
     return success_response(data=None, message="Занятие удалено")

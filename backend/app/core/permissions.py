@@ -63,6 +63,12 @@ class Permission(str, Enum):
     # System
     SETTINGS_MANAGE = "settings:manage"
     NOTIFICATION_READ = "notification:read"
+    NOTIFICATION_SEND = "notification:send"
+
+    # Communications / chats
+    MESSAGE_READ = "message:read"
+    MESSAGE_SEND = "message:send"
+    MESSAGE_MANAGE = "message:manage"
 
 
 # Иерархия ролей: кто кого может управлять
@@ -108,7 +114,8 @@ ROLE_PERMISSIONS = {
         Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.HOMEWORK_REVIEW, Permission.ATTENDANCE_MANAGE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
-        Permission.NOTIFICATION_READ,
+        Permission.NOTIFICATION_READ, Permission.NOTIFICATION_SEND,
+        Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
     ],
     Role.METHODIST: [
         Permission.COURSE_CREATE, Permission.COURSE_READ, Permission.COURSE_UPDATE, Permission.COURSE_DELETE, Permission.COURSE_PUBLISH,
@@ -117,6 +124,7 @@ ROLE_PERMISSIONS = {
         Permission.HOMEWORK_REVIEW,
         Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.NOTIFICATION_READ,
+        Permission.MESSAGE_READ, Permission.MESSAGE_SEND,
     ],
     Role.TEACHER: [
         Permission.COURSE_READ,
@@ -125,9 +133,10 @@ ROLE_PERMISSIONS = {
         Permission.GROUP_READ, Permission.PROGRESS_READ,
         Permission.ATTENDANCE_MANAGE,
         Permission.NOTIFICATION_READ,
+        Permission.MESSAGE_READ, Permission.MESSAGE_SEND,
     ],
     Role.MANAGER: [
-        Permission.USER_READ,
+        Permission.USER_READ, Permission.NOTIFICATION_SEND,
         Permission.COURSE_READ,
         Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
@@ -137,6 +146,7 @@ ROLE_PERMISSIONS = {
         Permission.COURSE_READ,
         Permission.MODULE_READ, Permission.LESSON_READ, Permission.LESSON_COMPLETE,
         Permission.PROGRESS_READ, Permission.NOTIFICATION_READ,
+        Permission.MESSAGE_READ, Permission.MESSAGE_SEND,
     ],
     Role.PARENT: [
         Permission.PROGRESS_READ, Permission.NOTIFICATION_READ,

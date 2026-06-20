@@ -15,7 +15,7 @@ from app.models import (
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
     Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
-    Schedule, Attendance,
+    Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
 )
 
 # this is the Alembic Config object, which provides

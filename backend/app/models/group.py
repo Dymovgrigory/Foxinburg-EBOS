@@ -27,6 +27,7 @@ class Group(Base):
     course = relationship("Course")
     students = relationship("User", back_populates="group", foreign_keys="User.group_id")
     schedules = relationship("Schedule", back_populates="group")
+    chat_room = relationship("ChatRoom", back_populates="group", uselist=False)
 
     def __repr__(self):
         return f"<Group {self.name}>"

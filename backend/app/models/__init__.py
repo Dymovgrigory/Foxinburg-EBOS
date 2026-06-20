@@ -14,6 +14,7 @@ from .notification import Notification
 from .achievement import Achievement, UserAchievement
 from .file import File
 from .schedule import Schedule, Attendance
+from .chat import ChatRoom, ChatParticipant, ChatMessage
 
 __all__ = [
     "Base",
@@ -44,4 +45,7 @@ __all__ = [
     "File",
     "Schedule",
     "Attendance",
+    "ChatRoom",
+    "ChatParticipant",
+    "ChatMessage",
 ]

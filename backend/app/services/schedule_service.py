@@ -5,6 +5,7 @@ from sqlalchemy import select, and_
 from app.models.schedule import Schedule, Attendance
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
+from app.core.events import EventBus, SystemEventType
 
 
 class ScheduleService(BaseService[Schedule]):
@@ -79,6 +80,65 @@ class ScheduleService(BaseService[Schedule]):
             status=status,
         )
         await self.add(schedule)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(schedule)
+
+        await EventBus.publish(
+            self.uow,
+            SystemEventType.SCHEDULE_CREATED,
+            {
+                "schedule_id": schedule.id,
+                "group_id": schedule.group_id,
+                "title": schedule.title,
+            },
+            user_id=teacher_id,
+        )
+        return schedule
+
+    async def update_schedule(
+        self,
+        schedule_id: int,
+        *,
+        data: dict,
+    ) -> Optional[Schedule]:
+        schedule = await self.get_by_id(schedule_id)
+        if not schedule:
+            return None
+        for field, value in data.items():
+            setattr(schedule, field, value)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(schedule)
+
+        await EventBus.publish(
+            self.uow,
+            SystemEventType.SCHEDULE_UPDATED,
+            {
+                "schedule_id": schedule.id,
+                "group_id": schedule.group_id,
+                "title": schedule.title,
+            },
+            user_id=schedule.teacher_id,
+        )
+        return schedule
+
+    async def delete_schedule(self, schedule_id: int) -> Optional[Schedule]:
+        schedule = await self.get_by_id(schedule_id)
+        if not schedule:
+            return None
+        payload = {
+            "schedule_id": schedule.id,
+            "group_id": schedule.group_id,
+            "title": schedule.title,
+        }
+        await self.uow.session.delete(schedule)
+        await self.uow.session.flush()
+
+        await EventBus.publish(
+            self.uow,
+            SystemEventType.SCHEDULE_CANCELLED,
+            payload,
+            user_id=schedule.teacher_id,
+        )
         return schedule
 
 

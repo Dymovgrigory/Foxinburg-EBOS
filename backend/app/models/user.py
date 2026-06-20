@@ -49,6 +49,8 @@ class User(Base):
     achievements = relationship("UserAchievement", back_populates="user")
     payments = relationship("Payment", back_populates="student")
     leads = relationship("Lead", back_populates="manager")
+    participations = relationship("ChatParticipant", back_populates="user", cascade="all, delete-orphan")
+    messages = relationship("ChatMessage", back_populates="sender", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email} ({self.role})>"

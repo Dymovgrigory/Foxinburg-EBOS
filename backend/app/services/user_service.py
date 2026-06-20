@@ -1,11 +1,15 @@
 from typing import Optional
 from sqlalchemy import select
+from sqlalchemy import select
+
 from app.models.user import User
+from app.models.chat import ChatRoom
 from app.core.security import get_password_hash
 from app.core.permissions import can_manage_role
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.services.audit_service import AuditService
+from app.services.chat_service import ChatService
 
 
 class UserService(BaseService[User]):
@@ -55,6 +59,20 @@ class UserService(BaseService[User]):
             group_id=group_id,
         )
         await self.add(user)
+        await self.uow.session.flush()
+
+        # Добавляем пользователя в чат группы, если указана
+        if group_id:
+            room_result = await self.uow.session.execute(
+                select(ChatRoom.id).where(ChatRoom.group_id == group_id)
+            )
+            room_id = room_result.scalar_one_or_none()
+            if room_id:
+                chat_service = ChatService(self.uow)
+                role_in_chat = "admin" if user.role == "teacher" else "member"
+                await chat_service.add_participant(
+                    room_id=room_id, user_id=user.id, role=role_in_chat
+                )
 
         await AuditService.log_action(
             self.uow,

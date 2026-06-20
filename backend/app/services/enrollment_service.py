@@ -4,10 +4,12 @@ from sqlalchemy import select
 
 from app.models.enrollment import Enrollment
 from app.models.user import User
+from app.models.chat import ChatRoom
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.services.progress_service import ProgressService
 from app.services.audit_service import AuditService
+from app.services.chat_service import ChatService
 from app.core.events import EventBus, SystemEventType
 
 
@@ -49,6 +51,26 @@ class EnrollmentService(BaseService[Enrollment]):
             enrolled_at=datetime.utcnow(),
         )
         await self.add(enrollment)
+
+        # Привязываем студента к группе и добавляем в групповой чат
+        if group_id:
+            student_result = await self.uow.session.execute(
+                select(User).where(User.id == student_id)
+            )
+            student = student_result.scalar_one_or_none()
+            if student:
+                student.group_id = group_id
+                room_result = await self.uow.session.execute(
+                    select(ChatRoom.id).where(ChatRoom.group_id == group_id)
+                )
+                room_id = room_result.scalar_one_or_none()
+                if room_id:
+                    chat_service = ChatService(self.uow)
+                    await chat_service.add_participant(
+                        room_id=room_id,
+                        user_id=student_id,
+                        role="member",
+                    )
 
         # Создаём прогресс по урокам
         progress_service = ProgressService(self.uow)

@@ -71,12 +71,9 @@ async def update_group(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = GroupService(uow)
-    group = await service.get_by_id(group_id)
+    group = await service.update_group(group_id, **data.model_dump(exclude_unset=True))
     if not group:
         return error_response("Группа не найдена", status_code=404)
-
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(group, field, value)
     await uow.commit()
     await uow.session.refresh(group)
     return success_response(

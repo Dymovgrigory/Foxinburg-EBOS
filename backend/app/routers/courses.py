@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends
 from app.core.dependencies import require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.schemas.course import CourseCreate, CourseResponse
+from app.schemas.course import CourseCreate, CourseResponse, ModuleResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.course_service import CourseService
+from app.services.module_service import ModuleService
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -39,6 +40,26 @@ async def get_course(
     return success_response(
         data=CourseResponse.model_validate(course).model_dump(),
         message="Курс",
+    )
+
+
+@router.get("/{course_id}/modules")
+async def list_course_modules(
+    course_id: int,
+    current_user=Depends(require_permission(Permission.COURSE_READ)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    course_service = CourseService(uow)
+    course = await course_service.get_by_id(course_id)
+    if not course:
+        return error_response("Курс не найден", status_code=404)
+
+    module_service = ModuleService(uow)
+    modules = await module_service.list_by_course(course_id)
+    return success_response(
+        data=[ModuleResponse.model_validate(m).model_dump() for m in modules],
+        message="Модули курса",
+        meta={"total": len(modules)},
     )
 
 

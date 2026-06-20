@@ -8,7 +8,12 @@ from app.models import (
     SystemEvent, AuditLog, Notification, Lead, Deal, Payment, Transaction,
     Homework, HomeworkReview, Test, TestQuestion, TestAttempt, File,
 )
+import secrets
+import logging
+
 from app.core.security import get_password_hash
+
+logger = logging.getLogger(__name__)
 
 
 async def clear_all(db: AsyncSession):
@@ -71,7 +76,11 @@ async def seed_organizations(db: AsyncSession):
 
 
 async def seed_users(db: AsyncSession):
-    default_password = get_password_hash("password123")
+    # Генерируем случайный пароль для тестовых пользователей.
+    # В реальном окружении замените на безопасный механизм выдачи учётных данных.
+    raw_password = secrets.token_urlsafe(16)
+    default_password = get_password_hash(raw_password)
+    logger.warning("Сгенерированы тестовые пользователи. Временный пароль: %s", raw_password)
 
     users_data = [
         # Роль, email, имя

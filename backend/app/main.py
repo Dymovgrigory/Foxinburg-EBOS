@@ -18,15 +18,17 @@ from app.models import (
 from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
-    files, organizations, progress, analytics,
+    files, organizations, progress, analytics, branches,
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Создаём таблицы при старте (для разработки)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # В development используем create_all для удобства;
+    # в production схема управляется Alembic миграциями.
+    if settings.NODE_ENV == "development":
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
@@ -66,6 +68,7 @@ app.include_router(notifications.router, prefix="/api/v3")
 app.include_router(achievements.router, prefix="/api/v3")
 app.include_router(files.router, prefix="/api/v3")
 app.include_router(organizations.router, prefix="/api/v3")
+app.include_router(branches.router, prefix="/api/v3")
 app.include_router(progress.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 

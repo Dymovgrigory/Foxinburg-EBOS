@@ -26,7 +26,7 @@ class User(Base):
 
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id", use_alter=True), nullable=True)
 
     balance = Column(Integer, default=0)  # в копейках
     debt = Column(Integer, default=0)

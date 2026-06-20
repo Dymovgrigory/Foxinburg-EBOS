@@ -14,17 +14,24 @@ from app.schemas.homework import (
 )
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
-from app.core.permissions import Permission
+from app.core.permissions import Permission, has_permission
 
 router = APIRouter(prefix="/homeworks", tags=["homeworks"])
 
 
 @router.get("")
 async def list_homeworks(
-    current_user=Depends(require_permission(Permission.HOMEWORK_REVIEW)),
+    current_user=Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Homework).order_by(Homework.created_at.desc()))
+    if has_permission(current_user.role, Permission.HOMEWORK_REVIEW):
+        result = await db.execute(select(Homework).order_by(Homework.id.desc()))
+    else:
+        result = await db.execute(
+            select(Homework)
+            .where(Homework.student_id == current_user.id)
+            .order_by(Homework.id.desc())
+        )
     homeworks = result.scalars().all()
     return success_response(
         data=[HomeworkResponse.model_validate(h).model_dump() for h in homeworks],

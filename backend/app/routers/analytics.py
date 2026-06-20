@@ -72,14 +72,16 @@ async def finance_analytics(
     income_result = await db.execute(
         select(func.sum(Payment.amount)).where(Payment.type == "income", Payment.status == "completed")
     )
+    income = income_result.scalar() or 0
     refund_result = await db.execute(
         select(func.sum(Payment.amount)).where(Payment.type == "refund", Payment.status == "completed")
     )
+    refund = refund_result.scalar() or 0
     return success_response(
         data={
-            "income_kopecks": income_result.scalar() or 0,
-            "refund_kopecks": refund_result.scalar() or 0,
-            "net_kopecks": (income_result.scalar() or 0) - (refund_result.scalar() or 0),
+            "income_kopecks": income,
+            "refund_kopecks": refund,
+            "net_kopecks": income - refund,
         },
         message="Финансовая аналитика",
     )

@@ -17,6 +17,7 @@ class Homework(Base):
 
     status = Column(String, default="pending")  # pending, submitted, reviewed, revision
     submitted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     lesson = relationship("Lesson", back_populates="homeworks")
     student = relationship("User", back_populates="submitted_homeworks")

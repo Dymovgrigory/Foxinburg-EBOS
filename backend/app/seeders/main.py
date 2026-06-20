@@ -5,8 +5,8 @@ from sqlalchemy.orm import selectinload
 from app.models import (
     User, Organization, Branch, Course, Module, Lesson, LessonContent,
     Group, Enrollment, LessonProgress, Achievement, UserAchievement,
-    SystemEvent, AuditLog, Notification, Lead, Deal, Payment,
-    Homework, HomeworkReview, Test, TestQuestion, TestAttempt,
+    SystemEvent, AuditLog, Notification, Lead, Deal, Payment, Transaction,
+    Homework, HomeworkReview, Test, TestQuestion, TestAttempt, File,
 )
 from app.core.security import get_password_hash
 
@@ -20,11 +20,11 @@ async def clear_all(db: AsyncSession):
         TestAttempt, TestQuestion, Test,
         LessonContent,
         # CRM и финансы
-        Payment, Deal, Lead,
+        Transaction, Payment, Deal, Lead,
         # Зачисления и группы
         Enrollment,
         UserAchievement,
-        Notification, AuditLog, SystemEvent,
+        Notification, AuditLog, SystemEvent, File,
     ]:
         await db.execute(delete(model))
 

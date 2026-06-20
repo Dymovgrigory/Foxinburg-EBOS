@@ -13,12 +13,13 @@ from app.models import (
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
     Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
+    Schedule, Attendance,
 )
 
 from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
-    files, organizations, progress, analytics, branches,
+    files, organizations, progress, analytics, branches, schedules, attendance,
 )
 
 
@@ -70,6 +71,8 @@ app.include_router(files.router, prefix="/api/v3")
 app.include_router(organizations.router, prefix="/api/v3")
 app.include_router(branches.router, prefix="/api/v3")
 app.include_router(progress.router, prefix="/api/v3")
+app.include_router(schedules.router, prefix="/api/v3")
+app.include_router(attendance.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 
 

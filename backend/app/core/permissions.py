@@ -49,6 +49,9 @@ class Permission(str, Enum):
     ENROLLMENT_MANAGE = "enrollment:manage"
     PROGRESS_READ = "progress:read"
 
+    # Schedule & attendance
+    ATTENDANCE_MANAGE = "attendance:manage"
+
     # Homework
     HOMEWORK_REVIEW = "homework:review"
 
@@ -103,7 +106,7 @@ ROLE_PERMISSIONS = {
         Permission.MODULE_CREATE, Permission.MODULE_READ, Permission.MODULE_UPDATE, Permission.MODULE_DELETE,
         Permission.LESSON_CREATE, Permission.LESSON_READ, Permission.LESSON_UPDATE, Permission.LESSON_DELETE,
         Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
-        Permission.HOMEWORK_REVIEW,
+        Permission.HOMEWORK_REVIEW, Permission.ATTENDANCE_MANAGE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
         Permission.NOTIFICATION_READ,
     ],
@@ -120,6 +123,7 @@ ROLE_PERMISSIONS = {
         Permission.MODULE_READ, Permission.LESSON_READ,
         Permission.HOMEWORK_REVIEW,
         Permission.GROUP_READ, Permission.PROGRESS_READ,
+        Permission.ATTENDANCE_MANAGE,
         Permission.NOTIFICATION_READ,
     ],
     Role.MANAGER: [

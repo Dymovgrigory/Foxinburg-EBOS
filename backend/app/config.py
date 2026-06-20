@@ -36,7 +36,17 @@ class Settings(BaseSettings):
     SMTP_SECURE: bool = False
     FROM_EMAIL: str = "noreply@foxinburg.ru"
     FROM_NAME: str = "FOXINBURG"
-    
+
+    # Teacher Academy / Yandex Disk
+    YANDEX_DISK_TOKEN: str = ""
+    YANDEX_DISK_PUBLIC_FOLDER: str = ""
+
+    # Telegram notifications
+    TELEGRAM_BOT_TOKEN: str = ""
+
+    # Password encryption (for owner/superadmin access to user passwords in admin)
+    PASSWORD_ENCRYPTION_KEY: str = ""
+
     class Config:
         env_file = ".env.development"
         env_file_encoding = "utf-8"

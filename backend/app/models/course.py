@@ -26,6 +26,9 @@ class Course(Base):
     is_sequential = Column(Boolean, default=True)  # обязательное последовательное прохождение
     certificate_enabled = Column(Boolean, default=True)
 
+    yandex_disk_public_key = Column(String, nullable=True)
+    last_sync_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

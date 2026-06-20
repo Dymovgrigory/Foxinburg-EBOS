@@ -1,5 +1,8 @@
 from sqladmin import ModelView
+from wtforms import PasswordField, validators
 
+from app.core.security import get_password_hash
+from app.core.encryption import encrypt_text
 from app.models import (
     Achievement,
     AuditLog,
@@ -43,23 +46,42 @@ class BaseAdmin(ModelView):
 
 
 class UserAdmin(BaseAdmin, model=User):
-    column_list = ["id", "email", "name", "role", "plan", "is_active", "is_verified", "created_at"]
+    column_list = ["id", "email", "plain_password", "name", "role", "plan", "is_active", "is_verified", "last_login_at", "created_at"]
     column_labels = {
         "id": "ID",
-        "email": "Email",
+        "email": "Email / Логин",
+        "plain_password": "Пароль",
         "name": "Имя",
         "role": "Роль",
         "plan": "Тариф",
         "is_active": "Активен",
         "is_verified": "Верифицирован",
+        "last_login_at": "Последний вход",
         "created_at": "Создан",
     }
     column_searchable_list = ["email", "name"]
-    column_sortable_list = ["id", "email", "name", "role", "is_active", "created_at"]
+    column_sortable_list = ["id", "email", "name", "role", "is_active", "last_login_at", "created_at"]
     column_default_sort = ("id", True)
+    form_columns = ["email", "name", "role", "plan", "password", "is_active", "is_verified"]
+    form_extra_fields = {
+        "password": PasswordField(
+            "Пароль",
+            validators=[validators.Optional()],
+            description="Заполните, чтобы задать или сменить пароль. Хранится в виде хеша.",
+        ),
+    }
     name = "Пользователь"
     name_plural = "Пользователи"
     icon = "fa-solid fa-user"
+
+    async def on_model_change(self, data, model, is_created):
+        password = data.pop("password", None)
+        if password:
+            model.password_hash = get_password_hash(password)
+            model.encrypted_password = encrypt_text(password)
+        elif is_created and not getattr(model, "password_hash", None):
+            raise ValueError("При создании пользователя необходимо задать пароль")
+        await super().on_model_change(data, model, is_created)
 
 
 class OrganizationAdmin(BaseAdmin, model=Organization):

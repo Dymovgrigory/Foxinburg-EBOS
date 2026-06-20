@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
 from app.database import engine, Base
@@ -21,9 +22,26 @@ from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
-    chats, chat_ws,
+    chats, chat_ws, teacher_academy,
 )
 from app.admin import setup_admin
+
+
+scheduler = AsyncIOScheduler()
+
+
+async def _scheduled_academy_sync():
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.teacher_academy_service import TeacherAcademyService
+
+    try:
+        async with UnitOfWork() as uow:
+            service = TeacherAcademyService(uow)
+            await service.sync_from_yandex_disk()
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("Scheduled academy sync failed")
 
 
 @asynccontextmanager
@@ -33,7 +51,22 @@ async def lifespan(app: FastAPI):
     if settings.NODE_ENV == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    # Автоматическая синхронизация Академии педагогов с Яндекс.Диском
+    if settings.YANDEX_DISK_TOKEN and settings.YANDEX_DISK_PUBLIC_FOLDER:
+        scheduler.add_job(
+            _scheduled_academy_sync,
+            "cron",
+            hour=2,
+            minute=0,
+            id="academy_sync",
+            replace_existing=True,
+        )
+        scheduler.start()
+
     yield
+
+    scheduler.shutdown(wait=False)
     await engine.dispose()
 
 
@@ -80,6 +113,7 @@ app.include_router(schedules.router, prefix="/api/v3")
 app.include_router(attendance.router, prefix="/api/v3")
 app.include_router(chats.router, prefix="/api/v3")
 app.include_router(chat_ws.router, prefix="/api/v3")
+app.include_router(teacher_academy.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 
 setup_admin(app)

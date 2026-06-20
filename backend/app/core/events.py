@@ -185,3 +185,157 @@ EventBus.subscribe(SystemEventType.USER_LOGGED_IN, notify_on_login)
 EventBus.subscribe(SystemEventType.SCHEDULE_CREATED, notify_on_schedule_change)
 EventBus.subscribe(SystemEventType.SCHEDULE_UPDATED, notify_on_schedule_change)
 EventBus.subscribe(SystemEventType.SCHEDULE_CANCELLED, notify_on_schedule_change)
+
+
+async def notify_academy_enrolled(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.course import Course
+    from app.models.user import User
+
+    enrollment_id = payload.get("enrollment_id")
+    student_id = payload.get("student_id")
+    course_id = payload.get("course_id")
+    if not student_id or not course_id:
+        return
+
+    async with UnitOfWork() as uow:
+        course_result = await uow.session.execute(select(Course).where(Course.id == course_id))
+        course = course_result.scalar_one_or_none()
+        if not course or course.type != "teacher_academy":
+            return
+
+        dispatcher = NotificationDispatcher(uow)
+        await dispatcher.notify_user(
+            user_id=student_id,
+            title="Вас зачислили в Академию педагогов",
+            message="Начните обучение в личном кабинете. Первый модуль уже доступен.",
+            type_="academy",
+            link="/academy",
+            entity_type="enrollment",
+            entity_id=enrollment_id,
+        )
+        await uow.commit()
+
+
+async def notify_lesson_available(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.course import Course, Lesson, Module
+    from app.models.enrollment import Enrollment
+
+    student_id = payload.get("student_id")
+    lesson_id = payload.get("lesson_id")
+    enrollment_id = payload.get("enrollment_id")
+    if not student_id or not lesson_id:
+        return
+
+    async with UnitOfWork() as uow:
+        lesson_result = await uow.session.execute(
+            select(Lesson)
+            .where(Lesson.id == lesson_id)
+            .options(selectinload(Lesson.module).selectinload(Module.course))
+        )
+        lesson = lesson_result.scalar_one_or_none()
+        if not lesson or lesson.module.course.type != "teacher_academy":
+            return
+
+        dispatcher = NotificationDispatcher(uow)
+        await dispatcher.notify_user(
+            user_id=student_id,
+            title="Доступен новый модуль Академии",
+            message=f"Модуль «{lesson.module.title}» открыт для прохождения.",
+            type_="academy",
+            link="/academy",
+            entity_type="lesson",
+            entity_id=lesson_id,
+        )
+        await uow.commit()
+
+
+async def notify_lesson_completed(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.course import Course, Lesson, Module
+    from app.models.enrollment import Enrollment
+
+    student_id = payload.get("student_id")
+    lesson_id = payload.get("lesson_id")
+    enrollment_id = payload.get("enrollment_id")
+    if not student_id or not lesson_id:
+        return
+
+    async with UnitOfWork() as uow:
+        lesson_result = await uow.session.execute(
+            select(Lesson)
+            .where(Lesson.id == lesson_id)
+            .options(selectinload(Lesson.module).selectinload(Module.course))
+        )
+        lesson = lesson_result.scalar_one_or_none()
+        if not lesson or lesson.module.course.type != "teacher_academy":
+            return
+
+        dispatcher = NotificationDispatcher(uow)
+        await dispatcher.notify_user(
+            user_id=student_id,
+            title="Модуль Академии завершён",
+            message=f"Вы завершили модуль «{lesson.module.title}».",
+            type_="academy",
+            link="/academy",
+            entity_type="lesson",
+            entity_id=lesson_id,
+        )
+        await uow.commit()
+
+
+async def notify_homework_reviewed(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.homework import Homework, HomeworkReview
+
+    homework_id = payload.get("homework_id")
+    if not homework_id:
+        return
+
+    async with UnitOfWork() as uow:
+        hw_result = await uow.session.execute(
+            select(Homework)
+            .where(Homework.id == homework_id)
+            .options(selectinload(Homework.lesson).selectinload(Lesson.module).selectinload(Module.course))
+        )
+        homework = hw_result.scalar_one_or_none()
+        if not homework or homework.lesson.module.course.type != "teacher_academy":
+            return
+
+        status_text = "принято" if homework.status == "reviewed" else "требует доработки"
+        dispatcher = NotificationDispatcher(uow)
+        await dispatcher.notify_user(
+            user_id=homework.student_id,
+            title="Домашнее задание проверено",
+            message=f"Задание по модулю «{homework.lesson.module.title}» {status_text}.",
+            type_="academy",
+            link="/academy",
+            entity_type="homework",
+            entity_id=homework_id,
+        )
+        await uow.commit()
+
+
+EventBus.subscribe(SystemEventType.COURSE_ENROLLED, notify_academy_enrolled)
+EventBus.subscribe(SystemEventType.LESSON_AVAILABLE, notify_lesson_available)
+EventBus.subscribe(SystemEventType.LESSON_COMPLETED, notify_lesson_completed)
+EventBus.subscribe(SystemEventType.HOMEWORK_REVIEWED, notify_homework_reviewed)

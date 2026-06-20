@@ -3,9 +3,9 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, UserListResponse
+from app.schemas.user import UserCreate, UserResponse, UserListResponse, UserTelegramLink
 from app.core.responses import success_response, error_response
-from app.core.dependencies import require_permission
+from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
@@ -61,4 +61,19 @@ async def get_me(
     return success_response(
         data=UserResponse.model_validate(current_user).model_dump(),
         message="Текущий пользователь",
+    )
+
+
+@router.patch("/me/telegram")
+async def link_telegram(
+    data: UserTelegramLink,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    current_user.telegram_chat_id = data.telegram_chat_id
+    await uow.commit()
+    await uow.session.refresh(current_user)
+    return success_response(
+        data=UserResponse.model_validate(current_user).model_dump(),
+        message="Telegram привязан",
     )

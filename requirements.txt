@@ -33,6 +33,13 @@ httpx==0.27.2
 sqladmin==0.20.1
 itsdangerous==2.2.0
 
+# Teacher Academy / notifications
+python-telegram-bot==21.10
+APScheduler==3.11.0
+
+# Password encryption for admin visibility
+cryptography==49.0.0
+
 # Testing
 pytest==8.3.3
 pytest-asyncio==0.24.0

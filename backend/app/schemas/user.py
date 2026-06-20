@@ -23,10 +23,15 @@ class UserUpdate(BaseModel):
     plan: Optional[str] = None
     is_active: Optional[bool] = None
     phone: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
     avatar_url: Optional[str] = None
     organization_id: Optional[int] = None
     branch_id: Optional[int] = None
     group_id: Optional[int] = None
+
+
+class UserTelegramLink(BaseModel):
+    telegram_chat_id: str
 
 
 class UserResponse(UserBase):
@@ -43,6 +48,7 @@ class UserResponse(UserBase):
     organization_id: Optional[int]
     branch_id: Optional[int]
     group_id: Optional[int]
+    telegram_chat_id: Optional[str]
     created_at: datetime
     updated_at: datetime
     last_login_at: Optional[datetime]

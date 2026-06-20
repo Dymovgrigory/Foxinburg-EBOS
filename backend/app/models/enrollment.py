@@ -16,10 +16,14 @@ class Enrollment(Base):
     status = Column(String, default="active")  # active, completed, dropped, paused
     progress_percent = Column(Integer, default=0)
 
+    assigned_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_at = Column(DateTime, nullable=True)
+
     enrolled_at = Column(DateTime, default=datetime.datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 
-    student = relationship("User", back_populates="enrollments")
+    student = relationship("User", foreign_keys=[student_id], back_populates="enrollments")
+    assigned_by = relationship("User", foreign_keys=[assigned_by_id])
     course = relationship("Course", back_populates="enrollments")
     group = relationship("Group")
 

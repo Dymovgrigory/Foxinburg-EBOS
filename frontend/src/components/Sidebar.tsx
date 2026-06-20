@@ -55,7 +55,8 @@ const teacherGroups: MenuGroup[] = [
       { to: '/my-courses', label: 'Мои курсы', icon: '📚' },
       { to: '/knowledge', label: 'База знаний', icon: '🧠' },
       { to: '/homeworks', label: 'Домашние задания', icon: '📝', badge: 5 },
-      { to: '/certification', label: 'Сертификация', icon: '🎓' },
+      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
+      { to: '/certification', label: 'Сертификация', icon: '🏅' },
       { to: '/progress', label: 'Мой прогресс', icon: '📈' },
       { to: '/ai', label: 'AI Помощник', icon: '🤖' },
       { to: '/library', label: 'Библиотека', icon: '📖' },
@@ -101,6 +102,7 @@ const methodistGroups: MenuGroup[] = [
     items: [
       { to: '/dashboard', label: 'Главная', icon: '🏠' },
       { to: '/courses', label: 'Курсы', icon: '📚' },
+      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
       { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝' },
       { to: '/knowledge', label: 'База знаний', icon: '🧠' },
       { to: '/settings', label: 'Настройки', icon: '🔧' },

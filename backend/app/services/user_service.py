@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.models.user import User
 from app.models.chat import ChatRoom
 from app.core.security import get_password_hash
+from app.core.encryption import encrypt_text
 from app.core.permissions import can_manage_role
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
@@ -51,6 +52,7 @@ class UserService(BaseService[User]):
             email=email,
             name=name,
             password_hash=get_password_hash(password),
+            encrypted_password=encrypt_text(password),
             role=role,
             plan=plan,
             target_language=target_language,

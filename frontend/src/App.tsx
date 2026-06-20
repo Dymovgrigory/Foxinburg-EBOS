@@ -20,6 +20,7 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import SchedulePage from './pages/SchedulePage'
 import NotificationsPage from './pages/NotificationsPage'
 import ChatPage from './pages/ChatPage'
+import TeacherAcademyPage from './pages/TeacherAcademyPage'
 
 function App() {
   return (
@@ -106,6 +107,7 @@ function App() {
         <Route path="chats" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="community" element={<ProtectedRoute><PlaceholderPage title="Сообщество" icon="💬" /></ProtectedRoute>} />
         <Route path="notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="academy" element={<ProtectedRoute><TeacherAcademyPage /></ProtectedRoute>} />
         <Route path="payments" element={<ProtectedRoute><PlaceholderPage title="Оплата" icon="💳" /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

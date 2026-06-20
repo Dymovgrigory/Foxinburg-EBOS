@@ -27,6 +27,7 @@ const adminGroups: MenuGroup[] = [
       { to: '/crm', label: 'CRM', icon: '📋' },
       { to: '/marketing', label: 'Маркетинг', icon: '📣' },
       { to: '/courses', label: 'Курсы', icon: '📚' },
+      { to: '/calendar', label: 'Расписание', icon: '📅' },
     ],
   },
   {

@@ -6,6 +6,13 @@ COMPOSE_FILE="docker-compose.prod.yml"
 
 cd "$APP_DIR"
 
+# Load production environment variables for docker compose substitution
+if [ -f .env.production ]; then
+    set -a
+    source .env.production
+    set +a
+fi
+
 echo "[deploy] pulling latest code..."
 git pull origin main
 

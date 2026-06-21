@@ -366,6 +366,42 @@ export default function CourseBuilderPage() {
     }
   }
 
+  const moveLesson = async (moduleId: number, lessonId: number, direction: -1 | 1) => {
+    const module = modules.find((m) => m.id === moduleId)
+    if (!module?.lessons) return
+    const sorted = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
+    const index = sorted.findIndex((l) => l.id === lessonId)
+    const newIndex = index + direction
+    if (index < 0 || newIndex < 0 || newIndex >= sorted.length) return
+
+    const current = sorted[index]
+    const swap = sorted[newIndex]
+
+    setModules((prev) =>
+      prev.map((m) => {
+        if (m.id !== moduleId) return m
+        const updated = m.lessons.map((l) => {
+          if (l.id === current.id) return { ...l, order_index: swap.order_index }
+          if (l.id === swap.id) return { ...l, order_index: current.order_index }
+          return l
+        })
+        return { ...m, lessons: updated.sort((a, b) => a.order_index - b.order_index) }
+      })
+    )
+
+    try {
+      await Promise.all([
+        lessonsApi.update(current.id, { order_index: swap.order_index }),
+        lessonsApi.update(swap.id, { order_index: current.order_index }),
+      ])
+      showToast('Порядок уроков обновлён', 'success')
+      if (selectedCourseId) loadModules(selectedCourseId)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Не удалось изменить порядок', 'error')
+      if (selectedCourseId) loadModules(selectedCourseId)
+    }
+  }
+
   const createTest = async () => {
     if (!selectedLessonId || !testForm.title) return
     try {
@@ -569,7 +605,7 @@ export default function CourseBuilderPage() {
 
                     {selectedModuleId === module.id && (
                       <div className="px-3 pb-3 space-y-2">
-                        {module.lessons?.map((lesson) => (
+                        {[...module.lessons].sort((a, b) => a.order_index - b.order_index).map((lesson, index, arr) => (
                           <div
                             key={lesson.id}
                             className={[
@@ -583,6 +619,30 @@ export default function CourseBuilderPage() {
                             <span className="mr-2">{lessonTypeIcon(lesson.lesson_type)}</span>
                             <span className="truncate">{lesson.title}</span>
                             <div className="flex gap-1">
+                              {index > 0 && (
+                                <button
+                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    moveLesson(module.id, lesson.id, -1)
+                                  }}
+                                  title="Переместить выше"
+                                >
+                                  ↑
+                                </button>
+                              )}
+                              {index < arr.length - 1 && (
+                                <button
+                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    moveLesson(module.id, lesson.id, 1)
+                                  }}
+                                  title="Переместить ниже"
+                                >
+                                  ↓
+                                </button>
+                              )}
                               <button
                                 className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
                                 onClick={(e) => {

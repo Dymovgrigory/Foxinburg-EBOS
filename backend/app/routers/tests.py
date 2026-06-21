@@ -180,7 +180,9 @@ async def list_attempts(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(TestAttempt).where(TestAttempt.test_id == test_id).order_by(TestAttempt.started_at.desc())
+        select(TestAttempt)
+        .where(TestAttempt.test_id == test_id, TestAttempt.student_id == current_user.id)
+        .order_by(TestAttempt.started_at.desc())
     )
     attempts = result.scalars().all()
     return success_response(

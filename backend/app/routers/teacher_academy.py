@@ -102,24 +102,41 @@ async def get_my_progress(
 
     modules_data = []
     for module in sorted(enrollment.course.modules, key=lambda m: m.order_index):
-        lesson = module.lessons[0] if module.lessons else None
-        status = "locked"
-        if lesson:
+        lessons = sorted(module.lessons, key=lambda l: l.order_index)
+        lesson_ids = [lesson.id for lesson in lessons]
+
+        progresses: dict[int, LessonProgress] = {}
+        if lesson_ids:
             progress_result = await uow.session.execute(
                 select(LessonProgress).where(
                     LessonProgress.student_id == current_user.id,
-                    LessonProgress.lesson_id == lesson.id,
+                    LessonProgress.lesson_id.in_(lesson_ids),
                 )
             )
-            progress = progress_result.scalar_one_or_none()
-            status = progress.status if progress else "locked"
+            progresses = {p.lesson_id: p for p in progress_result.scalars().all()}
+
+        if not lessons:
+            status = "locked"
+        else:
+            statuses = [progresses.get(lesson.id).status if progresses.get(lesson.id) else "locked" for lesson in lessons]
+            if all(s == "completed" for s in statuses):
+                status = "completed"
+            else:
+                first_open = next((s for s in statuses if s != "completed"), statuses[-1])
+                if first_open == "locked":
+                    status = "locked"
+                elif any(s == "completed" for s in statuses):
+                    status = "in_progress"
+                else:
+                    status = first_open
+
         modules_data.append(
             {
                 "id": module.id,
                 "title": module.title,
                 "order_index": module.order_index,
                 "status": status,
-                "lesson_id": lesson.id if lesson else None,
+                "lesson_id": lessons[0].id if lessons else None,
             }
         )
 

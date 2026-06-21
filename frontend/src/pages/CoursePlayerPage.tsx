@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { coursesApi, lessonsApi, progressApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
-import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt } from '../types'
+import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview } from '../types'
 
 interface LessonItem {
   lesson: Lesson
@@ -34,6 +34,22 @@ function parseJson(value?: string | null) {
   }
 }
 
+function homeworkStatusMeta(homework: Homework, review: HomeworkReview | null) {
+  if (homework.status === 'reviewed' && review?.status === 'approved') {
+    return { label: 'Выполнено', variant: 'success' as const }
+  }
+  if (homework.status === 'rejected') {
+    return { label: 'Отклонено', variant: 'error' as const }
+  }
+  if (homework.status === 'revision') {
+    return { label: 'На доработке', variant: 'warning' as const }
+  }
+  if (homework.status === 'submitted') {
+    return { label: 'Отправлено', variant: 'warning' as const }
+  }
+  return { label: 'Назначено', variant: 'default' as const }
+}
+
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>()
   const courseId = Number(id)
@@ -53,6 +69,7 @@ export default function CoursePlayerPage() {
 
   // homework state
   const [homework, setHomework] = useState<Homework | null>(null)
+  const [homeworkReview, setHomeworkReview] = useState<HomeworkReview | null>(null)
   const [homeworkAnswer, setHomeworkAnswer] = useState('')
   const [homeworkSubmitting, setHomeworkSubmitting] = useState(false)
 
@@ -133,8 +150,16 @@ export default function CoursePlayerPage() {
 
   const startTestAttempt = async (test: Test) => {
     try {
-      const a = await testsApi.createAttempt(test.id, {})
-      setAttempt(a)
+      const attempts = await testsApi.listAttempts(test.id)
+      const latest = attempts[0] || null
+      if (latest && latest.is_passed) {
+        setAttempt(latest)
+      } else if (latest && !latest.finished_at) {
+        setAttempt(latest)
+      } else {
+        const a = await testsApi.createAttempt(test.id, {})
+        setAttempt(a)
+      }
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Не удалось начать тест', 'error')
     }
@@ -143,8 +168,14 @@ export default function CoursePlayerPage() {
   const loadHomework = async (lessonId: number) => {
     try {
       const list = await homeworksApi.list(lessonId)
-      setHomework(list[0] || null)
-      if (list[0]?.content) setHomeworkAnswer(list[0].content)
+      const hw = list[0] || null
+      setHomework(hw)
+      setHomeworkReview(null)
+      if (hw?.content) setHomeworkAnswer(hw.content)
+      if (hw) {
+        const reviews = await homeworksApi.reviews(hw.id)
+        setHomeworkReview(reviews[0] || null)
+      }
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Не удалось загрузить задание', 'error')
     }
@@ -411,8 +442,8 @@ export default function CoursePlayerPage() {
                         >
                           {homework.status === 'assigned' ? 'Отправить на проверку' : 'Ответ отправлен'}
                         </Button>
-                        <Badge variant={homework.status === 'reviewed' ? 'success' : homework.status === 'submitted' ? 'warning' : 'default'}>
-                          {homework.status}
+                        <Badge variant={homeworkStatusMeta(homework, homeworkReview).variant}>
+                          {homeworkStatusMeta(homework, homeworkReview).label}
                         </Badge>
                       </div>
                     </>

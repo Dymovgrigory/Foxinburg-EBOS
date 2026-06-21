@@ -124,6 +124,8 @@ export const testsApi = {
     api.patch<ApiResponse<TestQuestion>>(`/tests/${testId}/questions/${questionId}`, data).then(unwrap),
   deleteQuestion: (testId: number, questionId: number) =>
     api.delete<ApiResponse<void>>(`/tests/${testId}/questions/${questionId}`).then(unwrap),
+  listAttempts: (testId: number) =>
+    api.get<ApiResponse<TestAttempt[]>>(`/tests/${testId}/attempts`).then(unwrap),
   createAttempt: (testId: number, data: { answers?: string }) =>
     api.post<ApiResponse<TestAttempt>>(`/tests/${testId}/attempts`, data).then(unwrap),
   updateAttempt: (testId: number, attemptId: number, data: { answers?: string; score?: number; max_score?: number; is_passed?: boolean; finished_at?: string }) =>

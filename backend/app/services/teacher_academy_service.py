@@ -8,7 +8,6 @@ from app.config import settings
 from app.models.course import Course, Module, Lesson, LessonContent
 from app.models.enrollment import Enrollment, LessonProgress
 from app.models.homework import Homework
-from app.models.test import Test, TestAttempt
 from app.models.user import User
 from app.services.enrollment_service import EnrollmentService
 from app.services.progress_service import ProgressService
@@ -149,31 +148,24 @@ class TeacherAcademyService:
         if module.course.type != ACADEMY_COURSE_TYPE:
             raise ValueError("Модуль не относится к Академии педагогов")
 
-        lesson = module.lessons[0] if module.lessons else None
-        if not lesson:
+        if not module.lessons:
             raise ValueError("В модуле отсутствуют уроки")
 
-        progress_result = await self.uow.session.execute(
-            select(LessonProgress)
-            .where(LessonProgress.student_id == student_id, LessonProgress.lesson_id == lesson.id)
-            .options(selectinload(LessonProgress.lesson))
-        )
-        progress = progress_result.scalar_one_or_none()
-        if not progress:
-            raise ValueError("Прогресс не найден. Обратитесь к методисту.")
-        if progress.status == "locked":
-            raise ValueError("Модуль заблокирован. Пройдите предыдущие модули.")
-        if progress.status == "completed":
-            return progress
-
-        await self._ensure_tests_passed(student_id, lesson.id)
-        await self._ensure_homeworks_approved(student_id, lesson.id)
-
         progress_service = ProgressService(self.uow)
-        await progress_service.complete_lesson(student_id, lesson.id)
+        last_progress: Optional[LessonProgress] = None
+        for lesson in sorted(module.lessons, key=lambda l: l.order_index):
+            try:
+                last_progress = await progress_service.complete_lesson(student_id, lesson.id)
+            except ValueError as e:
+                # Добавляем контекст урока, чтобы пользователь понимал, что именно не выполнено
+                raise ValueError(f"{lesson.title}: {e}")
+
+        if last_progress is None:
+            raise ValueError("Прогресс не найден. Обратитесь к методисту.")
+
         await self.uow.commit()
-        await self.uow.session.refresh(progress)
-        return progress
+        await self.uow.session.refresh(last_progress)
+        return last_progress
 
     async def _ensure_homeworks_for_enrollment(self, student_id: int, course_id: int) -> None:
         result = await self.uow.session.execute(
@@ -202,42 +194,6 @@ class TeacherAcademyService:
                             status="assigned",
                         )
                     )
-
-    async def _ensure_tests_passed(self, student_id: int, lesson_id: int) -> None:
-        result = await self.uow.session.execute(
-            select(Test).where(Test.lesson_id == lesson_id, Test.is_active == True)
-        )
-        tests = result.scalars().all()
-        if not tests:
-            return
-        for test in tests:
-            attempts_result = await self.uow.session.execute(
-                select(TestAttempt)
-                .where(TestAttempt.test_id == test.id, TestAttempt.student_id == student_id)
-                .order_by(TestAttempt.started_at.desc())
-            )
-            latest = attempts_result.scalars().first()
-            if not latest or not latest.is_passed:
-                raise ValueError(f"Необходимо пройти тест «{test.title}»")
-
-    async def _ensure_homeworks_approved(self, student_id: int, lesson_id: int) -> None:
-        result = await self.uow.session.execute(
-            select(Homework).where(Homework.lesson_id == lesson_id, Homework.student_id == student_id)
-        )
-        homeworks = result.scalars().all()
-        if not homeworks:
-            return
-        for hw in homeworks:
-            if hw.status != "reviewed":
-                raise ValueError("Домашнее задание ещё не проверено методистом")
-            latest_review = await self.uow.session.execute(
-                select(HomeworkReview)
-                .where(HomeworkReview.homework_id == hw.id)
-                .order_by(HomeworkReview.created_at.desc())
-            )
-            review = latest_review.scalars().first()
-            if not review or review.status != "approved":
-                raise ValueError("Домашнее задание требует доработки или не принято")
 
     async def _get_or_create_course(self) -> Course:
         result = await self.uow.session.execute(

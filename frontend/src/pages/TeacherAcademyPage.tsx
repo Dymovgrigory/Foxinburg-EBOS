@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import AcademyContentViewer from '../components/AcademyContentViewer'
 import { lessonsApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
-import type { Lesson as FullLesson, TestQuestion, TestAttempt, Homework } from '../types'
+import type { Lesson as FullLesson, TestQuestion, TestAttempt, Homework, HomeworkReview } from '../types'
 
 interface LessonContent {
   id: number
@@ -70,6 +70,22 @@ function parseJson(value?: string | null) {
   }
 }
 
+function homeworkStatusMeta(homework: Homework, review: HomeworkReview | null) {
+  if (homework.status === 'reviewed' && review?.status === 'approved') {
+    return { label: 'Выполнено', variant: 'success' as const }
+  }
+  if (homework.status === 'rejected') {
+    return { label: 'Отклонено', variant: 'error' as const }
+  }
+  if (homework.status === 'revision') {
+    return { label: 'На доработке', variant: 'warning' as const }
+  }
+  if (homework.status === 'submitted') {
+    return { label: 'Отправлено', variant: 'warning' as const }
+  }
+  return { label: 'Назначено', variant: 'default' as const }
+}
+
 export default function TeacherAcademyPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
@@ -93,6 +109,7 @@ export default function TeacherAcademyPage() {
 
   // homework state
   const [homework, setHomework] = useState<Homework | null>(null)
+  const [homeworkReview, setHomeworkReview] = useState<HomeworkReview | null>(null)
   const [homeworkAnswer, setHomeworkAnswer] = useState('')
   const [homeworkSubmitting, setHomeworkSubmitting] = useState(false)
 
@@ -180,16 +197,29 @@ export default function TeacherAcademyPage() {
         setAttempt(null)
         setAnswers({})
         setHomework(null)
+        setHomeworkReview(null)
         setHomeworkAnswer('')
         if (lesson.lesson_type === 'test' && lesson.test) {
-          const a = await testsApi.createAttempt(lesson.test.id, {})
-          setAttempt(a)
+          const attempts = await testsApi.listAttempts(lesson.test.id)
+          const latest = attempts[0] || null
+          if (latest && latest.is_passed) {
+            setAttempt(latest)
+          } else if (latest && !latest.finished_at) {
+            setAttempt(latest)
+          } else {
+            const a = await testsApi.createAttempt(lesson.test.id, {})
+            setAttempt(a)
+          }
         }
         if (lesson.lesson_type === 'homework') {
           const list = await homeworksApi.list(lesson.id)
           const hw = list[0] || null
           setHomework(hw)
           if (hw?.content) setHomeworkAnswer(hw.content)
+          if (hw) {
+            const reviews = await homeworksApi.reviews(hw.id)
+            setHomeworkReview(reviews[0] || null)
+          }
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -549,16 +579,8 @@ export default function TeacherAcademyPage() {
                                 >
                                   {homework.status === 'assigned' ? 'Отправить на проверку' : 'Ответ отправлен'}
                                 </Button>
-                                <Badge
-                                  variant={
-                                    homework.status === 'reviewed'
-                                      ? 'success'
-                                      : homework.status === 'submitted'
-                                      ? 'warning'
-                                      : 'default'
-                                  }
-                                >
-                                  {homework.status}
+                                <Badge variant={homeworkStatusMeta(homework, homeworkReview).variant}>
+                                  {homeworkStatusMeta(homework, homeworkReview).label}
                                 </Badge>
                               </div>
                             </>

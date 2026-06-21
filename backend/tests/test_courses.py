@@ -272,3 +272,67 @@ async def test_homework_approval_unlocks_next(client, auth_headers_factory, user
 def student_token(user):
     from app.core.security import create_access_token
     return create_access_token({"user_id": user.id, "role": user.role})
+
+
+async def test_academy_complete_module_completes_all_lessons(client, auth_headers_factory, user_factory):
+    methodist = await auth_headers_factory(Role.METHODIST)
+    student = await user_factory(Role.STUDENT, "academy_student@test.local")
+
+    course = (await client.post("/api/v3/courses", json={
+        "title": "Академия (тест модуля)",
+        "type": "teacher_academy",
+        "is_sequential": True,
+    }, headers=methodist)).json()["data"]
+    module = (await client.post("/api/v3/modules", json={
+        "course_id": course["id"], "title": "Модуль 1",
+    }, headers=methodist)).json()["data"]
+
+    l1 = (await client.post("/api/v3/lessons", json={
+        "module_id": module["id"], "title": "Теория", "lesson_type": "text", "order_index": 0,
+    }, headers=methodist)).json()["data"]
+    l2 = (await client.post("/api/v3/lessons", json={
+        "module_id": module["id"], "title": "Тест", "lesson_type": "test", "order_index": 1,
+        "test": {"title": "Тест", "passing_score": 100, "questions": [
+            {"question_text": "2+2", "question_type": "single", "options": '["3", "4"]', "correct_answers": '["4"]'}
+        ]},
+    }, headers=methodist)).json()["data"]
+    l3 = (await client.post("/api/v3/lessons", json={
+        "module_id": module["id"], "title": "ДЗ", "lesson_type": "homework", "order_index": 2,
+        "homework_title": "Эссе",
+    }, headers=methodist)).json()["data"]
+
+    student_headers = {"Authorization": f"Bearer {student_token(student)}"}
+
+    # Зачисляем студента на Академию
+    enroll_res = await client.post("/api/v3/teacher-academy/enroll", json={"student_id": student.id}, headers=methodist)
+    assert enroll_res.status_code == 201
+
+    # Проходим теорию
+    assert (await client.post(f"/api/v3/lessons/{l1['id']}/complete", headers=student_headers)).status_code == 200
+
+    # Проходим тест
+    test_id = l2["test"]["id"]
+    attempts = (await client.get(f"/api/v3/tests/{test_id}/attempts", headers=student_headers)).json()["data"]
+    assert len(attempts) == 0 or not attempts[0]["finished_at"]
+    attempt = (await client.post(f"/api/v3/tests/{test_id}/attempts", json={}, headers=student_headers)).json()["data"]
+    await client.patch(f"/api/v3/tests/{test_id}/attempts/{attempt['id']}", json={
+        "answers": json.dumps({str(l2["test"]["questions"][0]["id"]): "4"})
+    }, headers=student_headers)
+    scored = (await client.post(f"/api/v3/tests/{test_id}/attempts/{attempt['id']}/submit", headers=student_headers)).json()["data"]
+    assert scored["is_passed"] is True
+
+    # Отправляем и одобряем ДЗ
+    homeworks = (await client.get(f"/api/v3/homeworks?lesson_id={l3['id']}", headers=student_headers)).json()["data"]
+    homework = homeworks[0]
+    await client.post(f"/api/v3/homeworks/{homework['id']}/submit", json={"content": "Моё эссе"}, headers=student_headers)
+    await client.post(f"/api/v3/homeworks/{homework['id']}/reviews", json={
+        "status": "approved", "comment": "Принято",
+    }, headers=methodist)
+
+    # Завершаем модуль целиком
+    complete_res = await client.post(f"/api/v3/teacher-academy/modules/{module['id']}/complete", headers=student_headers)
+    assert complete_res.status_code == 200
+
+    progress = (await client.get("/api/v3/teacher-academy/progress", headers=student_headers)).json()["data"]
+    module_status = next((m["status"] for m in progress["modules"] if m["id"] == module["id"]), None)
+    assert module_status == "completed"

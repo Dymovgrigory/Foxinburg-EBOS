@@ -19,6 +19,7 @@ const ext = (name = '') => {
 }
 
 const streamUrl = (contentId: number) => `/api/v3/teacher-academy/contents/${contentId}/stream`
+const pdfUrl = (contentId: number) => `/api/v3/teacher-academy/contents/${contentId}/pdf`
 
 export default function AcademyContentViewer({ content, watermark }: AcademyContentViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -83,7 +84,19 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
       )
     }
 
-    // Office и прочие документы — открываем через защищённый поток
+    // Office-документы — конвертируем в PDF для встроенного просмотра
+    if (content.content_type === 'office' || ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)) {
+      return (
+        <iframe
+          src={`${pdfUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
+          title={label}
+          className="w-full h-[70vh] rounded-xl bg-white"
+          sandbox="allow-same-origin allow-scripts"
+        />
+      )
+    }
+
+    // Прочие документы — открываем через защищённый поток
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 bg-gray-50 rounded-xl text-center">
         <p className="text-sm text-gray-600">{label}</p>

@@ -2,7 +2,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, Header
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -21,6 +21,7 @@ from app.schemas.academy import (
 from app.schemas.enrollment import EnrollmentResponse
 from app.services.teacher_academy_service import TeacherAcademyService
 from app.services.unit_of_work import UnitOfWork, get_uow
+from app.services.office_converter import convert_office_to_pdf
 from app.services.yandex_disk_service import YandexDiskService
 
 router = APIRouter(prefix="/teacher-academy", tags=["teacher-academy"])
@@ -243,4 +244,72 @@ async def stream_content(
         status_code=status_code,
         headers=response_headers,
         media_type=response_headers.get("Content-Type", "application/octet-stream"),
+    )
+
+
+@router.get("/contents/{content_id}/pdf")
+async def stream_content_pdf(
+    content_id: int,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Конвертирует Office-файл материала в PDF и отдаёт его защищённым потоком.
+
+    Требует тех же прав, что и оригинальный stream-endpoint.
+    """
+    content_result = await uow.session.execute(
+        select(LessonContent)
+        .where(LessonContent.id == content_id)
+        .options(selectinload(LessonContent.lesson).selectinload(Lesson.module).selectinload(Module.course))
+    )
+    content = content_result.scalar_one_or_none()
+    if not content:
+        return error_response("Материал не найден", status_code=404)
+
+    if not content.yandex_disk_path:
+        return error_response("Файл недоступен для конвертации", status_code=404)
+
+    course = content.lesson.module.course
+
+    can_preview = current_user.role in ("methodist", "admin", "owner", "super_admin")
+    if not can_preview:
+        enrollment_result = await uow.session.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == course.id,
+                Enrollment.status == "active",
+            )
+        )
+        if not enrollment_result.scalar_one_or_none():
+            return error_response("Доступ к материалу запрещён", status_code=403)
+
+    try:
+        disk = YandexDiskService()
+        download_url = await disk.get_download_url(content.yandex_disk_path)
+    except Exception as e:
+        return error_response(f"Не удалось получить файл с Яндекс.Диска: {e}", status_code=502)
+
+    if not download_url:
+        return error_response("Файл не найден на Яндекс.Диске", status_code=404)
+
+    try:
+        pdf_path = await convert_office_to_pdf(
+            content_id=content.id,
+            source_url=download_url,
+            source_md5=content.yandex_disk_md5,
+        )
+    except RuntimeError as e:
+        return error_response(str(e), status_code=503)
+    except Exception as e:
+        return error_response(f"Ошибка конвертации в PDF: {e}", status_code=502)
+
+    return FileResponse(
+        path=str(pdf_path),
+        media_type="application/pdf",
+        filename=f"{content.title}.pdf",
+        headers={
+            "Content-Disposition": "inline",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "SAMEORIGIN",
+        },
     )

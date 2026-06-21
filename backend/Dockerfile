@@ -5,6 +5,10 @@ WORKDIR /app/backend
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libreoffice-writer \
+    libreoffice-impress \
+    libreoffice-calc \
+    fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

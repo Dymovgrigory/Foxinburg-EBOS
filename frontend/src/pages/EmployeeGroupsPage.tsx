@@ -30,6 +30,7 @@ export default function EmployeeGroupsPage() {
   const [saving, setSaving] = useState(false)
 
   const [membersGroup, setMembersGroup] = useState<EmployeeGroup | null>(null)
+  const [membersLoading, setMembersLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [adding, setAdding] = useState(false)
@@ -57,16 +58,23 @@ export default function EmployeeGroupsPage() {
 
   useEffect(() => {
     if (!membersGroup) return
-    const loadUsers = async () => {
+    const loadData = async () => {
+      setMembersLoading(true)
       try {
-        const data = await usersApi.list()
-        setUsers(data.filter((u) => EMPLOYEE_ROLES.includes(u.role)))
+        const [detailed, allUsers] = await Promise.all([
+          employeeGroupsApi.get(membersGroup.id),
+          usersApi.list(),
+        ])
+        setMembersGroup(detailed)
+        setUsers(allUsers.filter((u) => EMPLOYEE_ROLES.includes(u.role)))
       } catch (err: any) {
-        showToast(err.response?.data?.message || 'Не удалось загрузить пользователей', 'error')
+        showToast(err.response?.data?.message || 'Не удалось загрузить участников', 'error')
+      } finally {
+        setMembersLoading(false)
       }
     }
-    loadUsers()
-  }, [membersGroup])
+    loadData()
+  }, [membersGroup?.id])
 
   useEffect(() => {
     if (!enrollGroup) return
@@ -310,11 +318,11 @@ export default function EmployeeGroupsPage() {
           footer={<Button variant="ghost" onClick={() => setMembersGroup(null)}>Закрыть</Button>}
         >
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               >
                 <option value="">Выберите сотрудника</option>
                 {users
@@ -323,12 +331,14 @@ export default function EmployeeGroupsPage() {
                     <option key={u.id} value={u.id}>{u.name} ({u.email}) — {u.role}</option>
                   ))}
               </select>
-              <Button onClick={handleAddMember} loading={adding} disabled={!selectedUserId}>
+              <Button className="shrink-0" onClick={handleAddMember} loading={adding} disabled={!selectedUserId}>
                 Добавить
               </Button>
             </div>
             <div className="max-h-[40vh] overflow-y-auto space-y-2">
-              {(membersGroup.members || []).length === 0 ? (
+              {membersLoading ? (
+                <Loader text="Загрузка участников..." />
+              ) : (membersGroup.members || []).length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">В группе пока нет участников</p>
               ) : (
                 (membersGroup.members || []).map((member) => (

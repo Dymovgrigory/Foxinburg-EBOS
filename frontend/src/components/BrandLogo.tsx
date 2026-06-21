@@ -1,9 +1,10 @@
 interface BrandLogoProps {
   collapsed?: boolean
   className?: string
+  darkText?: boolean
 }
 
-export default function BrandLogo({ collapsed = false, className = '' }: BrandLogoProps) {
+export default function BrandLogo({ collapsed = false, className = '', darkText = false }: BrandLogoProps) {
   return (
     <div className={['flex items-center gap-3', className].join(' ')}>
       <div className="w-10 h-10 rounded-xl bg-fox-gold flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -42,8 +43,8 @@ export default function BrandLogo({ collapsed = false, className = '' }: BrandLo
       </div>
       {!collapsed && (
         <div>
-          <div className="font-bold text-white leading-tight">FOXINBURG</div>
-          <div className="text-[10px] text-fox-gold/80 tracking-wider font-semibold">EBOS</div>
+          <div className={`font-bold leading-tight ${darkText ? 'text-fox-purple' : 'text-white'}`}>FOXINBURG</div>
+          <div className={`text-[10px] tracking-wider font-semibold ${darkText ? 'text-fox-purple/60' : 'text-fox-gold/80'}`}>EBOS</div>
         </div>
       )}
     </div>

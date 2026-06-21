@@ -1,52 +1,44 @@
 import { useEffect, useState, useRef } from 'react'
 import Header from '../components/Header'
-import api from '../services/api'
+import { useToast, Button, Card, Modal, Input, Loader, Badge, EmptyState } from '../components/ui'
+import { useAuth } from '../contexts/AuthContext'
 import { useChatSocket } from '../hooks/useChatSocket'
-
-interface ChatRoom {
-  id: number
-  name: string
-  type: string
-  group_id?: number
-  created_at: string
-}
-
-interface ChatMessage {
-  id: number
-  room_id: number
-  sender_id: number
-  sender_name?: string
-  content: string
-  created_at: string
-  is_deleted: boolean
-}
+import { chatsApi, usersApi } from '../api'
+import type { ChatRoom, ChatMessage, User } from '../types'
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 export default function ChatPage() {
+  const { user } = useAuth()
+  const { showToast } = useToast()
   const [rooms, setRooms] = useState<ChatRoom[]>([])
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null)
   const [history, setHistory] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loadingRooms, setLoadingRooms] = useState(true)
-  const [error, setError] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [newRoomName, setNewRoomName] = useState('')
+  const [selectedParticipants, setSelectedParticipants] = useState<number[]>([])
+  const [creating, setCreating] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages: liveMessages, connected, sendMessage } = useChatSocket(selectedRoom?.id ?? null)
 
+  const canCreateRoom = ['owner', 'super_admin', 'admin'].includes(user?.role || '')
+
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await api.get('/chats')
-        const list: ChatRoom[] = res.data.data || []
+        const list = await chatsApi.list()
         setRooms(list)
         if (list.length > 0 && !selectedRoom) {
           setSelectedRoom(list[0])
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Ошибка загрузки чатов')
+        showToast(err.response?.data?.message || 'Ошибка загрузки чатов', 'error')
       } finally {
         setLoadingRooms(false)
       }
@@ -58,10 +50,10 @@ export default function ChatPage() {
     const fetchHistory = async () => {
       if (!selectedRoom) return
       try {
-        const res = await api.get(`/chats/${selectedRoom.id}/messages`)
-        setHistory((res.data.data || []).reverse())
+        const list = await chatsApi.messages(selectedRoom.id)
+        setHistory(list.reverse())
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Ошибка загрузки сообщений')
+        showToast(err.response?.data?.message || 'Ошибка загрузки сообщений', 'error')
       }
     }
     setHistory([])
@@ -71,6 +63,12 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [history, liveMessages])
+
+  useEffect(() => {
+    if (showCreateModal && canCreateRoom) {
+      usersApi.list().then(setUsers).catch(() => setUsers([]))
+    }
+  }, [showCreateModal, canCreateRoom])
 
   const allMessages: ChatMessage[] = [...history, ...liveMessages].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -83,40 +81,69 @@ export default function ChatPage() {
     if (ok) {
       setInput('')
     } else {
-      setError('Не удалось отправить сообщение')
+      showToast('Не удалось отправить сообщение', 'error')
     }
   }
 
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newRoomName.trim()) return
+    setCreating(true)
+    try {
+      const room = await chatsApi.create({
+        name: newRoomName,
+        participant_ids: selectedParticipants,
+      })
+      setRooms((prev) => [...prev, room])
+      setSelectedRoom(room)
+      setShowCreateModal(false)
+      setNewRoomName('')
+      setSelectedParticipants([])
+      showToast('Чат создан', 'success')
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка создания чата', 'error')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const toggleParticipant = (id: number) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
-      <Header
-        title="Чаты"
-        subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'}
-        icon="💬"
-      />
+    <div className="min-h-screen bg-fox-light">
+      <Header title="Чаты" subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'} icon="💬" />
 
-      <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-64px-48px)]">
-        {error && <div className="p-4 mb-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-full flex overflow-hidden">
-          {/* Sidebar rooms */}
-          <div className="w-72 border-r border-gray-100 flex flex-col">
-            <div className="p-4 border-b border-gray-100 font-bold text-gray-900">Чаты</div>
-            <div className="flex-1 overflow-y-auto">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto h-[calc(100vh-64px-32px)]">
+        <Card padding="none" className="h-full flex overflow-hidden">
+          {/* Rooms sidebar */}
+          <div className="w-72 border-r border-fox-border/50 flex flex-col">
+            <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
+              <div className="font-bold text-fox-dark">Чаты</div>
+              {canCreateRoom && (
+                <Button size="sm" onClick={() => setShowCreateModal(true)} leftIcon="+">
+                  Новый
+                </Button>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {loadingRooms ? (
-                <div className="p-4 text-center text-gray-400">Загрузка...</div>
+                <Loader text="Загрузка..." size="sm" />
               ) : rooms.length === 0 ? (
-                <div className="p-4 text-center text-gray-400">Нет чатов</div>
+                <p className="p-4 text-sm text-gray-400 text-center">Нет чатов</p>
               ) : (
                 rooms.map((room) => (
                   <button
                     key={room.id}
                     onClick={() => setSelectedRoom(room)}
                     className={[
-                      'w-full text-left px-4 py-3 text-sm font-medium transition border-b border-gray-50',
+                      'w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition',
                       selectedRoom?.id === room.id
-                        ? 'bg-[#E85D4C]/10 text-[#E85D4C]'
-                        : 'text-gray-700 hover:bg-gray-50',
+                        ? 'bg-fox-purple text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-fox-light',
                     ].join(' ')}
                   >
                     {room.name}
@@ -130,54 +157,117 @@ export default function ChatPage() {
           <div className="flex-1 flex flex-col min-w-0">
             {selectedRoom ? (
               <>
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-gray-900">{selectedRoom.name}</div>
+                    <div className="font-bold text-fox-dark">{selectedRoom.name}</div>
                     <div className="text-xs text-gray-400">
-                      {connected ? 'Подключено' : 'Подключение...'}
+                      {connected ? (
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          Подключено
+                        </span>
+                      ) : (
+                        'Подключение...'
+                      )}
                     </div>
                   </div>
+                  <Badge variant={connected ? 'success' : 'warning'} size="sm">
+                    {connected ? 'online' : 'connecting'}
+                  </Badge>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-fox-light/50">
                   {allMessages.length === 0 ? (
                     <div className="text-center text-gray-400 mt-10">Нет сообщений</div>
                   ) : (
-                    allMessages.map((m) => (
-                      <div key={m.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 max-w-3xl">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-gray-900">{m.sender_name || 'Неизвестно'}</span>
-                          <span className="text-xs text-gray-400">{formatTime(m.created_at)}</span>
+                    allMessages.map((m) => {
+                      const isMe = m.sender_id === user?.id
+                      return (
+                        <div
+                          key={m.id}
+                          className={[
+                            'max-w-[80%] p-3 rounded-2xl text-sm',
+                            isMe
+                              ? 'ml-auto bg-fox-purple text-white rounded-br-none'
+                              : 'bg-white border border-fox-border/50 rounded-bl-none',
+                          ].join(' ')}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={['text-xs font-bold', isMe ? 'text-fox-gold' : 'text-fox-purple'].join(' ')}>
+                              {m.sender_name || 'Неизвестно'}
+                            </span>
+                            <span className={['text-[10px]', isMe ? 'text-white/70' : 'text-gray-400'].join(' ')}>
+                              {formatTime(m.created_at)}
+                            </span>
+                          </div>
+                          <p className={['whitespace-pre-wrap', isMe ? 'text-white/90' : 'text-gray-700'].join(' ')}>
+                            {m.content}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{m.content}</p>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSend} className="p-4 border-t border-gray-100 flex gap-3">
-                  <input
+                <form onSubmit={handleSend} className="p-4 border-t border-fox-border/50 flex gap-3 bg-white">
+                  <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Введите сообщение..."
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]"
+                    className="flex-1"
                   />
-                  <button
-                    type="submit"
-                    disabled={!connected || !input.trim()}
-                    className="px-6 py-2 bg-[#E85D4C] hover:bg-[#D14F40] disabled:bg-gray-300 text-white font-medium rounded-xl transition"
-                  >
+                  <Button type="submit" disabled={!connected || !input.trim()}>
                     Отправить
-                  </button>
+                  </Button>
                 </form>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">Выберите чат</div>
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                <EmptyState icon="💬" title="Выберите чат" description="Или создайте новый, чтобы начать общение." />
+              </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
+
+      {/* Create room modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Новый чат"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Отмена</Button>
+            <Button type="submit" form="chat-form" loading={creating}>Создать</Button>
+          </>
+        }
+      >
+        <form id="chat-form" onSubmit={handleCreateRoom} className="grid gap-4">
+          <Input
+            label="Название чата"
+            required
+            value={newRoomName}
+            onChange={(e) => setNewRoomName(e.target.value)}
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Участники</label>
+            <div className="max-h-48 overflow-y-auto space-y-2 border border-fox-border/50 rounded-xl p-3">
+              {users.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedParticipants.includes(u.id)}
+                    onChange={() => toggleParticipant(u.id)}
+                    className="rounded border-gray-300 text-fox-purple focus:ring-fox-gold"
+                  />
+                  {u.name} <span className="text-gray-400">({u.email})</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

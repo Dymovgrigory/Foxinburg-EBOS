@@ -1,19 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
-import api from '../services/api'
+import { useToast, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { analyticsApi, systemApi, usersApi, coursesApi, organizationsApi } from '../api'
+import type { DashboardAnalytics, SystemPermissionsResponse, User, Course, Organization } from '../types'
 
-interface Stats {
-  tables: number
-  laws: number
-  modules: number
-  endpoints: number
-  users: number
-  roles: number
-  backups: number
-  status: string
-}
-
-const moduleReadiness = [
+const MODULE_READINESS = [
   { name: 'QA', value: 90 },
   { name: 'Identity', value: 85 },
   { name: 'Infrastructure', value: 85 },
@@ -31,7 +22,7 @@ const moduleReadiness = [
   { name: 'Billing', value: 40 },
 ]
 
-const laws = [
+const CONSTITUTION_LAWS = [
   'Пользователь — центр экосистемы',
   'Данные принадлежат организации',
   'Каждая роль видит только своё',
@@ -40,161 +31,381 @@ const laws = [
 ]
 
 export default function SystemCenterPage() {
-  const [stats, setStats] = useState<Stats>({
-    tables: 0,
-    laws: laws.length,
-    modules: 15,
-    endpoints: 0,
-    users: 0,
-    roles: 9,
-    backups: 0,
-    status: 'OK',
-  })
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null)
+  const [system, setSystem] = useState<SystemPermissionsResponse | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [branchesCount, setBranchesCount] = useState(0)
   const [activeTab, setActiveTab] = useState('Обзор')
-  const tabs = ['Обзор', 'Конституция', 'Модули', 'База данных', 'Роли', 'API']
+  const [apiSearch, setApiSearch] = useState('')
+
+  const tabs = ['Обзор', 'Модули', 'Роли', 'API', 'База данных', 'Конституция']
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const [analyticsRes, systemRes, usersRes, coursesRes, orgsRes] = await Promise.all([
+        analyticsApi.dashboard().catch(() => null),
+        systemApi.permissions().catch(() => null),
+        usersApi.list().catch(() => []),
+        coursesApi.list().catch(() => []),
+        organizationsApi.list().catch(() => []),
+      ])
+      setAnalytics(analyticsRes)
+      setSystem(systemRes)
+      setUsers(usersRes)
+      setCourses(coursesRes)
+      setOrganizations(orgsRes)
+
+      const branches = await Promise.all(
+        orgsRes.map((o: Organization) => organizationsApi.branches(o.id).catch(() => []))
+      )
+      setBranchesCount(branches.flat().length)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка загрузки System Center', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [usersRes] = await Promise.all([
-          api.get('/users').catch(() => ({ data: { data: [] } })),
-          api.get('/courses').catch(() => ({ data: { data: [] } })),
-        ])
-        setStats((s) => ({
-          ...s,
-          users: usersRes.data.data?.length || 0,
-          endpoints: 48,
-          tables: 28,
-          backups: 1,
-        }))
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchStats()
+    fetchData()
   }, [])
 
-  const cards = [
-    { label: 'Таблиц БД', sub: '0 записей', value: stats.tables, icon: '🗄️', color: 'bg-blue-500' },
-    { label: 'Законов', sub: 'Конституция', value: stats.laws, icon: '📜', color: 'bg-amber-500' },
-    { label: 'Модулей', sub: '0% готовность', value: stats.modules, icon: '🧩', color: 'bg-emerald-500' },
-    { label: 'API Endpoints', sub: 'Зарегистрировано', value: stats.endpoints, icon: '</>', color: 'bg-violet-500' },
-    { label: 'Пользователей', sub: 'В системе', value: stats.users, icon: '👥', color: 'bg-pink-500' },
-    { label: 'Ролей', sub: 'В матрице', value: stats.roles, icon: '🛡️', color: 'bg-cyan-500' },
-    { label: 'Бэкапов', sub: 'Создано', value: stats.backups, icon: '💾', color: 'bg-teal-500' },
-    { label: 'Статус', sub: 'Система работает', value: stats.status, icon: '✓', color: 'bg-green-500' },
-  ]
+  const stats = useMemo(
+    () => [
+      { label: 'Пользователей', value: users.length, icon: '👥', color: 'bg-fox-purple' },
+      { label: 'Курсов', value: courses.length, icon: '📚', color: 'bg-fox-gold text-fox-purple' },
+      { label: 'Организаций', value: organizations.length, icon: '🏢', color: 'bg-blue-500' },
+      { label: 'Филиалов', value: branchesCount, icon: '🏛️', color: 'bg-emerald-500' },
+      { label: 'API endpoints', value: system?.endpoints_count || 0, icon: '</>', color: 'bg-violet-500' },
+      { label: 'Ролей', value: 9, icon: '🛡️', color: 'bg-pink-500' },
+      { label: 'Бэкапов', value: 1, icon: '💾', color: 'bg-teal-500' },
+      { label: 'Статус', value: 'OK', icon: '✓', color: 'bg-green-500' },
+    ],
+    [users.length, courses.length, organizations.length, branchesCount, system?.endpoints_count]
+  )
+
+  const filteredEndpoints = useMemo(() => {
+    if (!system?.endpoints) return []
+    const term = apiSearch.toLowerCase()
+    return system.endpoints.filter(
+      (e: { method: string; path: string }) =>
+        e.path.toLowerCase().includes(term) || e.method.toLowerCase().includes(term)
+    )
+  }, [system?.endpoints, apiSearch])
+
+  interface RoleRow {
+    role: string
+    perms: string[]
+    managed: string[]
+    modules: string[]
+  }
+
+  const roles: RoleRow[] = useMemo(() => {
+    if (!system?.role_permissions) return []
+    return Object.entries(system.role_permissions).map(([role, perms]) => ({
+      role,
+      perms,
+      managed: system.role_hierarchy[role] || [],
+      modules: Object.entries(system.module_permissions)
+        .filter(([, rolesList]) => (rolesList as string[]).includes(role))
+        .map(([module]) => module),
+    }))
+  }, [system])
+
+  const dbEntities = useMemo(() => {
+    if (!analytics) return []
+    return [
+      { name: 'Пользователи', count: sumValues(analytics.users_by_role), source: analytics.users_by_role },
+      { name: 'Лиды', count: sumValues(analytics.leads_by_status), source: analytics.leads_by_status },
+      { name: 'Сделки', count: sumValues(analytics.deals_by_status), source: analytics.deals_by_status },
+      { name: 'Зачисления', count: sumValues(analytics.enrollments_by_status), source: analytics.enrollments_by_status },
+      { name: 'Домашние задания', count: sumValues(analytics.homeworks_by_status), source: analytics.homeworks_by_status },
+      { name: 'Прогресс уроков', count: sumValues(analytics.progress_by_status), source: analytics.progress_by_status },
+    ]
+  }, [analytics])
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
-      <Header title="System Center" subtitle="v" icon="⚙️" />
+    <div className="min-h-screen bg-fox-light">
+      <Header title="System Center" subtitle="Управление операционной системой школы" icon="⚙️" />
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Stats grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => (
-            <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <div className="flex items-start justify-between mb-4">
-                <div className={['w-10 h-10 rounded-xl text-white flex items-center justify-center text-lg', card.color].join(' ')}>
-                  {card.icon}
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {loading ? '—' : card.value}
-              </div>
-              <div className="text-sm font-medium text-gray-700">{card.label}</div>
-              <div className="text-xs text-gray-400">{card.sub}</div>
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        {loading ? (
+          <Loader text="Загрузка System Center..." />
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {stats.map((s) => (
+                <Card key={s.label} className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${s.color}`}>
+                    {s.icon}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-fox-dark">{s.value}</div>
+                    <div className="text-xs text-gray-500">{s.label}</div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex items-center gap-2 p-2 border-b border-gray-100 overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={[
-                  'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition',
-                  activeTab === tab
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-500 hover:bg-gray-50',
-                ].join(' ')}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'Обзор' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Readiness */}
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🧩</span> Готовность модулей
-                  </h3>
-                  <div className="space-y-4">
-                    {moduleReadiness.map((m) => (
-                      <div key={m.name}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-700">{m.name}</span>
-                          <span className={['font-semibold', colorForValue(m.value)].join(' ')}>{m.value}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={['h-full rounded-full transition-all', barColorForValue(m.value)].join(' ')}
-                            style={{ width: `${m.value}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Laws */}
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>📜</span> Законы Конституции
-                  </h3>
-                  <div className="bg-[#FFF8F0] rounded-2xl p-5 border border-amber-100">
-                    <ol className="space-y-4">
-                      {laws.map((law, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            {idx + 1}
-                          </span>
-                          <span className="text-gray-700 text-sm">{law}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
+            {/* Tabs */}
+            <Card padding="none">
+              <div className="flex items-center gap-2 p-2 border-b border-fox-border overflow-x-auto">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={[
+                      'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition',
+                      activeTab === tab
+                        ? 'bg-fox-purple text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-fox-light',
+                    ].join(' ')}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
-            )}
 
-            {activeTab === 'Конституция' && (
-              <div className="text-gray-500">Конституция EBOS: центр пользователя, безопасность данных, ролевая матрица, аудит, API-first.</div>
-            )}
-            {activeTab === 'Модули' && (
-              <div className="text-gray-500">Список модулей и их готовность.</div>
-            )}
-            {activeTab === 'База данных' && (
-              <div className="text-gray-500">28 таблиц, PostgreSQL, Redis кэш.</div>
-            )}
-            {activeTab === 'Роли' && (
-              <div className="text-gray-500">9 ролей: Владелец, Супер-админ, Администратор, Методист, Педагог, Менеджер, Ученик, Родитель, Гость.</div>
-            )}
-            {activeTab === 'API' && (
-              <div className="text-gray-500">48 endpoints, документация /docs.</div>
-            )}
-          </div>
-        </div>
+              <div className="p-6">
+                {activeTab === 'Обзор' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-fox-dark mb-4">🧩 Готовность модулей</h3>
+                      <div className="space-y-4">
+                        {MODULE_READINESS.map((m) => (
+                          <div key={m.name}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700">{m.name}</span>
+                              <span className={['font-semibold', colorForValue(m.value)].join(' ')}>{m.value}%</span>
+                            </div>
+                            <div className="h-2 bg-fox-border rounded-full overflow-hidden">
+                              <div
+                                className={['h-full rounded-full transition-all', barColorForValue(m.value)].join(' ')}
+                                style={{ width: `${m.value}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-bold text-fox-dark mb-4">📜 Конституция EBOS</h3>
+                      <div className="bg-fox-gold/10 rounded-2xl p-5 border border-fox-gold/30">
+                        <ol className="space-y-4">
+                          {CONSTITUTION_LAWS.map((law, idx) => (
+                            <li key={idx} className="flex items-start gap-3">
+                              <span className="w-6 h-6 rounded-full bg-fox-purple text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="text-gray-700 text-sm">{law}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'Модули' && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-fox-dark">Распределение по статусам</h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {analytics && (
+                        <>
+                          <DistributionCard title="Пользователи по ролям" data={analytics.users_by_role} />
+                          <DistributionCard title="Лиды по статусам" data={analytics.leads_by_status} />
+                          <DistributionCard title="Сделки по статусам" data={analytics.deals_by_status} />
+                          <DistributionCard title="Домашние задания" data={analytics.homeworks_by_status} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'Роли' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-fox-dark">Матрица ролей и прав</h3>
+                      <span className="text-xs text-gray-500">{roles.length} ролей</span>
+                    </div>
+                    {roles.length === 0 ? (
+                      <EmptyState icon="🛡️" title="Нет данных о ролях" description="Попробуй обновить страницу." />
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <Thead>
+                            <tr>
+                              <Th>Роль</Th>
+                              <Th>Управляет</Th>
+                              <Th>Модули</Th>
+                              <Th>Прав</Th>
+                            </tr>
+                          </Thead>
+                          <Tbody>
+                            {roles.map((r: RoleRow) => (
+                              <Tr key={r.role}>
+                                <Td className="font-medium text-fox-dark">{roleLabel(r.role)}</Td>
+                                <Td>
+                                  <div className="flex flex-wrap gap-1">
+                                    {r.managed.slice(0, 3).map((child: string) => (
+                                      <Badge key={child} variant="default" size="sm">
+                                        {roleLabel(child)}
+                                      </Badge>
+                                    ))}
+                                    {r.managed.length > 3 && (
+                                      <Badge variant="default" size="sm">+{r.managed.length - 3}</Badge>
+                                    )}
+                                  </div>
+                                </Td>
+                                <Td>
+                                  <div className="flex flex-wrap gap-1">
+                                    {r.modules.slice(0, 3).map((m: string) => (
+                                      <Badge key={m} variant="purple" size="sm">
+                                        {m}
+                                      </Badge>
+                                    ))}
+                                    {r.modules.length === 0 && <span className="text-xs text-gray-400">—</span>}
+                                  </div>
+                                </Td>
+                                <Td>
+                                  <Badge variant="warning" size="sm">{r.perms.length}</Badge>
+                                </Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'API' && (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+                      <h3 className="text-lg font-bold text-fox-dark">API Endpoints ({filteredEndpoints.length})</h3>
+                      <Input
+                        placeholder="Поиск по пути или методу"
+                        value={apiSearch}
+                        onChange={(e) => setApiSearch(e.target.value)}
+                        className="sm:max-w-xs"
+                      />
+                    </div>
+                    {filteredEndpoints.length === 0 ? (
+                      <EmptyState icon="</>" title="Endpoints не найдены" description="Попробуй изменить поиск." />
+                    ) : (
+                      <div className="overflow-x-auto max-h-[60vh]">
+                        <Table>
+                          <Thead>
+                            <tr>
+                              <Th>Метод</Th>
+                              <Th>Путь</Th>
+                            </tr>
+                          </Thead>
+                          <Tbody>
+                            {filteredEndpoints.map((e: { method: string; path: string }, idx: number) => (
+                              <Tr key={idx}>
+                                <Td>
+                                  <Badge variant={methodVariant(e.method)} size="sm">{e.method}</Badge>
+                                </Td>
+                                <Td className="font-mono text-sm">{e.path}</Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'База данных' && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-fox-dark">Сущности базы данных</h3>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {dbEntities.map((e) => (
+                        <Card key={e.name} className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-fox-dark">{e.count}</div>
+                            <div className="text-xs text-gray-500">{e.name}</div>
+                          </div>
+                          <div className="text-right">
+                            {Object.entries(e.source).slice(0, 2).map(([k, v]) => (
+                              <div key={k} className="text-xs text-gray-500">{k}: {v}</div>
+                            ))}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'Конституция' && (
+                  <div className="max-w-3xl space-y-6">
+                    <p className="text-gray-600 leading-relaxed">
+                      Конституция EBOS определяет базовые принципы платформы: пользователь находится в центре,
+                      данные организации защищены, каждая роль видит только разрешённую информацию, аудит
+                      непрерывен, а интеграции строятся через API первого класса.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {CONSTITUTION_LAWS.map((law, idx) => (
+                        <Card key={idx} className="border-l-4 border-l-fox-gold">
+                          <div className="flex items-start gap-3">
+                            <span className="w-6 h-6 rounded-full bg-fox-purple text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                              {idx + 1}
+                            </span>
+                            <span className="text-sm text-gray-700">{law}</span>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   )
+}
+
+function DistributionCard({ title, data }: { title: string; data: Record<string, number> }) {
+  const entries = useMemo(() => Object.entries(data || {}), [data])
+  const total = entries.reduce((sum, [, v]) => sum + v, 0) || 1
+  return (
+    <Card>
+      <h4 className="text-base font-bold text-fox-dark mb-4">{title}</h4>
+      <div className="space-y-3">
+        {entries.map(([key, value]) => (
+          <div key={key}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-700">{key}</span>
+              <span className="font-medium text-fox-dark">
+                {value} ({Math.round((value / total) * 100)}%)
+              </span>
+            </div>
+            <div className="h-2 bg-fox-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-fox-purple rounded-full"
+                style={{ width: `${(value / total) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+        {entries.length === 0 && <p className="text-sm text-gray-400">Нет данных</p>}
+      </div>
+    </Card>
+  )
+}
+
+function sumValues(obj: Record<string, number>) {
+  return Object.values(obj || {}).reduce((a, b) => a + b, 0)
 }
 
 function colorForValue(value: number) {
@@ -207,4 +418,31 @@ function barColorForValue(value: number) {
   if (value >= 80) return 'bg-green-500'
   if (value >= 60) return 'bg-amber-500'
   return 'bg-red-500'
+}
+
+function methodVariant(method: string): Parameters<typeof Badge>[0]['variant'] {
+  const map: Record<string, Parameters<typeof Badge>[0]['variant']> = {
+    GET: 'success',
+    POST: 'info',
+    PATCH: 'warning',
+    PUT: 'warning',
+    DELETE: 'error',
+    WS: 'purple',
+  }
+  return map[method] || 'default'
+}
+
+function roleLabel(role: string) {
+  const labels: Record<string, string> = {
+    owner: 'Владелец',
+    super_admin: 'Супер-админ',
+    admin: 'Администратор',
+    methodist: 'Методист',
+    teacher: 'Педагог',
+    manager: 'Менеджер',
+    student: 'Ученик',
+    parent: 'Родитель',
+    guest: 'Гость',
+  }
+  return labels[role] || role
 }

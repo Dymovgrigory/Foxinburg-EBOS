@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, get_password_hash
 from app.core.events import EventBus, SystemEventType
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
@@ -13,6 +13,7 @@ from app.schemas.user import UserResponse, UserUpdate
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
 from app.database import get_db
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -121,3 +122,22 @@ async def update_me(
         data=UserResponse.model_validate(current_user).model_dump(),
         message="Профиль обновлён",
     )
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6)
+
+
+@router.patch("/me/password")
+async def change_password(
+    data: PasswordChangeRequest,
+    current_user: User = Depends(require_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.password_hash):
+        return error_response("Неверный текущий пароль", status_code=status.HTTP_400_BAD_REQUEST)
+    current_user.password_hash = get_password_hash(data.new_password)
+    await db.commit()
+    await db.refresh(current_user)
+    return success_response(data=None, message="Пароль изменён")

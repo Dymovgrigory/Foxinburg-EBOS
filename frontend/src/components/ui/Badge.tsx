@@ -1,10 +1,12 @@
 import type React from 'react'
 
 export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'purple'
+export type BadgeSize = 'sm' | 'md'
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode
   variant?: BadgeVariant
+  size?: BadgeSize
   dot?: boolean
 }
 
@@ -17,9 +19,15 @@ const variantClasses: Record<BadgeVariant, string> = {
   purple: 'bg-fox-purple/10 text-fox-purple',
 }
 
+const sizeClasses: Record<BadgeSize, string> = {
+  sm: 'px-2 py-0.5 text-[10px]',
+  md: 'px-2.5 py-0.5 text-xs',
+}
+
 export default function Badge({
   children,
   variant = 'default',
+  size = 'md',
   dot = false,
   className = '',
   ...props
@@ -27,8 +35,9 @@ export default function Badge({
   return (
     <span
       className={[
-        'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full',
+        'inline-flex items-center gap-1.5 font-semibold rounded-full',
         variantClasses[variant],
+        sizeClasses[size],
         className,
       ].join(' ')}
       {...props}

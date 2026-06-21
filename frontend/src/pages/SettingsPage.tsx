@@ -1,107 +1,227 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
-import api from '../services/api'
+import { useToast, Button, Card, Input, Badge } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
+import { authApi } from '../api'
 
 export default function SettingsPage() {
   const { user, login } = useAuth()
-  const [profile, setProfile] = useState({ name: '', phone: '', bio: '' })
+  const { showToast } = useToast()
+  const [activeTab, setActiveTab] = useState('profile')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+
+  const [profile, setProfile] = useState({ name: '', phone: '', bio: '' })
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' })
 
   useEffect(() => {
     if (user) {
-      setProfile({ name: user.name || '', phone: '', bio: '' })
-      fetchProfile()
+      setProfile({ name: user.name || '', phone: user.phone || '', bio: user.bio || '' })
     }
   }, [user])
 
-  const fetchProfile = async () => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
     try {
-      const res = await api.get('/auth/me')
-      const data = res.data.data
-      setProfile({ name: data.name || '', phone: data.phone || '', bio: data.bio || '' })
+      const updated = await authApi.updateMe(profile)
+      login(updated, localStorage.getItem('token') || '')
+      showToast('Профиль сохранён', 'success')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Не удалось загрузить профиль')
+      showToast(err.response?.data?.message || 'Ошибка сохранения', 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (passwords.new !== passwords.confirm) {
+      showToast('Пароли не совпадают', 'error')
+      return
+    }
     setLoading(true)
-    setMessage('')
-    setError('')
     try {
-      const res = await api.patch('/auth/me', profile)
-      const updated = res.data.data
-      login(updated, localStorage.getItem('token') || '')
-      setMessage('Профиль сохранён')
+      await authApi.changePassword(passwords.current, passwords.new)
+      setPasswords({ current: '', new: '', confirm: '' })
+      showToast('Пароль изменён', 'success')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка сохранения')
+      showToast(err.response?.data?.message || 'Ошибка смены пароля', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div className="min-h-screen bg-fox-light">
       <Header title="Настройки" icon="🔧" />
 
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
-        {message && <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">{message}</div>}
-        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
+      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
+          <Card className="md:w-64 h-fit p-2">
+            <div className="space-y-1">
+              <SidebarButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon="👤">
+                Профиль
+              </SidebarButton>
+              <SidebarButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon="🔒">
+                Безопасность
+              </SidebarButton>
+              <SidebarButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon="🔔">
+                Уведомления
+              </SidebarButton>
+            </div>
+          </Card>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <span className="text-amber-500">👤</span> Профиль
-          </h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Имя</label>
-              <input
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input value={user?.email || ''} disabled className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-              <input
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
-              <input value={user?.role || ''} disabled className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">О себе</label>
-              <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#E85D4C] focus:ring-2 focus:ring-[#E85D4C]/20 outline-none transition"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-[#F5C542] hover:bg-[#E5B532] text-gray-900 font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-60"
-              >
-                <span>💾</span> {loading ? 'Сохранение...' : 'Сохранить профиль'}
-              </button>
-            </div>
-          </form>
+          {/* Content */}
+          <div className="flex-1 space-y-6">
+            {activeTab === 'profile' && (
+              <Card>
+                <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
+                  <span className="text-fox-gold">👤</span> Профиль
+                </h2>
+                <form onSubmit={handleProfileSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Input
+                    label="Имя"
+                    value={profile.name}
+                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  />
+                  <Input label="Email" value={user?.email || ''} disabled />
+                  <Input
+                    label="Телефон"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Роль</label>
+                    <div className="px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 text-sm">
+                      <Badge variant="purple">{roleLabel(user?.role)}</Badge>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">О себе</label>
+                    <textarea
+                      value={profile.bio}
+                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      rows={4}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Button type="submit" loading={loading}>
+                      💾 Сохранить профиль
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            )}
+
+            {activeTab === 'security' && (
+              <Card>
+                <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
+                  <span className="text-fox-gold">🔒</span> Безопасность
+                </h2>
+                <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Input
+                    label="Текущий пароль"
+                    type="password"
+                    required
+                    value={passwords.current}
+                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                  />
+                  <div />
+                  <Input
+                    label="Новый пароль"
+                    type="password"
+                    required
+                    value={passwords.new}
+                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                  />
+                  <Input
+                    label="Повторите новый пароль"
+                    type="password"
+                    required
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                  />
+                  <div className="md:col-span-2">
+                    <Button type="submit" loading={loading}>
+                      🔑 Изменить пароль
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            )}
+
+            {activeTab === 'notifications' && (
+              <Card>
+                <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
+                  <span className="text-fox-gold">🔔</span> Уведомления
+                </h2>
+                <div className="space-y-4">
+                  <NotificationRow title="Email-уведомления" description="Получать важные уведомления на email." />
+                  <NotificationRow title="Telegram" description="Привязать Telegram для мгновенных уведомлений." />
+                  <NotificationRow title="Расписание" description="Уведомления о предстоящих занятиях." />
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
+}
+
+function SidebarButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition',
+        active ? 'bg-fox-purple text-white shadow-sm' : 'text-gray-600 hover:bg-fox-light',
+      ].join(' ')}
+    >
+      <span>{icon}</span>
+      {children}
+    </button>
+  )
+}
+
+function NotificationRow({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30">
+      <div>
+        <div className="font-medium text-fox-dark">{title}</div>
+        <div className="text-xs text-gray-500">{description}</div>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" className="sr-only peer" defaultChecked />
+        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fox-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fox-purple" />
+      </label>
+    </div>
+  )
+}
+
+function roleLabel(role?: string) {
+  const labels: Record<string, string> = {
+    owner: 'Владелец',
+    super_admin: 'Супер-админ',
+    admin: 'Администратор',
+    methodist: 'Методист',
+    teacher: 'Педагог',
+    manager: 'Менеджер',
+    student: 'Ученик',
+    parent: 'Родитель',
+    guest: 'Гость',
+  }
+  return labels[role || ''] || role
 }

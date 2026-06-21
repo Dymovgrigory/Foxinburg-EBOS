@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
-import api from '../services/api'
-import { useAuth, User } from '../contexts/AuthContext'
+import { authApi } from '../api'
+import { useAuth } from '../contexts/AuthContext'
+import type { User } from '../types'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -22,26 +23,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setAuthError('')
       setAuthLoading(true)
       try {
-        let response
+        let payload
         if (isLogin) {
-          const params = new URLSearchParams()
-          params.append('username', authEmail)
-          params.append('password', authPassword)
-          response = await api.post('/auth/login', params, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          })
+          payload = await authApi.login(authEmail, authPassword)
         } else {
-          response = await api.post('/auth/register', {
-            email: authEmail,
-            password: authPassword,
-            name: authName,
-          })
+          payload = await authApi.register({ email: authEmail, password: authPassword, name: authName })
         }
-        const payload = response.data.data ?? response.data
-        const token = payload.access_token
-        const user: User = payload.user
-        if (!token || !user) throw new Error('Некорректный ответ сервера')
-        login(user, token)
+        const { access_token, user } = payload
+        if (!access_token || !user) throw new Error('Некорректный ответ сервера')
+        login(user as User, access_token)
         window.location.href = '/system-center'
       } catch (err: any) {
         const msg =
@@ -66,22 +56,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-fox-purple/40 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white border border-slate-100 p-8 shadow-2xl animate-scaleIn"
+        className="w-full max-w-md rounded-card bg-white border border-fox-border/50 p-8 shadow-fox-lg animate-scaleIn"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-slate-900">
+          <h3 className="text-2xl font-bold text-fox-dark">
             {isLogin ? 'Вход в EBOS' : 'Регистрация'}
           </h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 transition text-2xl leading-none"
+            className="text-gray-400 hover:text-fox-dark transition text-2xl leading-none"
             aria-label="Закрыть"
           >
             ×
@@ -97,54 +87,54 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <form onSubmit={handleAuthSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Имя</label>
+              <label className="block text-sm text-gray-500 mb-1">Имя</label>
               <input
                 type="text"
                 value={authName}
                 onChange={(e) => setAuthName(e.target.value)}
                 required={!isLogin}
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#3A2953] focus:ring-1 focus:ring-[#3A2953]/20 transition"
+                className="w-full px-4 py-3 rounded-xl bg-fox-light border border-fox-border/50 text-fox-dark placeholder-gray-400 focus:outline-none focus:border-fox-purple focus:ring-2 focus:ring-fox-gold/50 transition"
                 placeholder="Ваше имя"
               />
             </div>
           )}
           <div>
-            <label className="block text-sm text-slate-500 mb-1">Email</label>
+            <label className="block text-sm text-gray-500 mb-1">Email</label>
             <input
               type="email"
               value={authEmail}
               onChange={(e) => setAuthEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#3A2953] focus:ring-1 focus:ring-[#3A2953]/20 transition"
+              className="w-full px-4 py-3 rounded-xl bg-fox-light border border-fox-border/50 text-fox-dark placeholder-gray-400 focus:outline-none focus:border-fox-purple focus:ring-2 focus:ring-fox-gold/50 transition"
               placeholder="name@company.ru"
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-500 mb-1">Пароль</label>
+            <label className="block text-sm text-gray-500 mb-1">Пароль</label>
             <input
               type="password"
               value={authPassword}
               onChange={(e) => setAuthPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#3A2953] focus:ring-1 focus:ring-[#3A2953]/20 transition"
+              className="w-full px-4 py-3 rounded-xl bg-fox-light border border-fox-border/50 text-fox-dark placeholder-gray-400 focus:outline-none focus:border-fox-purple focus:ring-2 focus:ring-fox-gold/50 transition"
               placeholder="••••••••"
             />
           </div>
           <button
             type="submit"
             disabled={authLoading}
-            className="w-full py-3 rounded-xl bg-[#F5ED75] text-slate-900 font-bold hover:bg-[#e8df60] transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-fox-gold text-fox-purple font-bold hover:bg-fox-gold-light transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {authLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-500">
+        <div className="mt-6 text-center text-sm text-gray-500">
           {isLogin ? 'Ещё нет аккаунта?' : 'Уже есть аккаунт?'}{' '}
           <button
             type="button"
             onClick={toggleMode}
-            className="text-[#3A2953] hover:underline font-medium"
+            className="text-fox-purple hover:underline font-medium"
           >
             {isLogin ? 'Зарегистрироваться' : 'Войти'}
           </button>

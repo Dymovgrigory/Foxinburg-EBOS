@@ -1,84 +1,198 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { useToast, Card, Badge, Loader, Button } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
-
-const widgets = [
-  { title: 'Мои курсы', value: '3', icon: '📚', color: 'bg-blue-500' },
-  { title: 'Домашние задания', value: '5', icon: '📝', color: 'bg-amber-500' },
-  { title: 'Ученики', value: '24', icon: '🎓', color: 'bg-green-500' },
-  { title: 'Уведомления', value: '3', icon: '🔔', color: 'bg-red-500' },
-]
+import { schedulesApi, homeworksApi, usersApi, notificationsApi } from '../api'
+import type { Schedule, Homework, User } from '../types'
 
 export default function TeacherDashboardPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [homeworks, setHomeworks] = useState<Homework[]>([])
+  const [students, setStudents] = useState<User[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const [schedulesRes, homeworksRes, usersRes, countRes] = await Promise.all([
+        user?.id ? schedulesApi.list({ teacher_id: user.id }) : Promise.resolve([]),
+        homeworksApi.list().catch(() => []),
+        usersApi.list().catch(() => []),
+        notificationsApi.unreadCount().catch(() => ({ count: 0 })),
+      ])
+      setSchedules(schedulesRes)
+      setHomeworks(homeworksRes)
+      setStudents(usersRes.filter((u) => u.role === 'student'))
+      setUnreadCount(countRes.count)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка загрузки дашборда', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [user?.id])
+
+  const upcomingLessons = useMemo(() => {
+    const now = new Date().toISOString()
+    return schedules
+      .filter((s) => s.start_time >= now)
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+      .slice(0, 5)
+  }, [schedules])
+
+  const pendingHomeworks = useMemo(
+    () => homeworks.filter((h) => h.status === 'submitted' || h.status === 'in_progress').slice(0, 5),
+    [homeworks]
+  )
+
+  const widgets = [
+    { title: 'Ближайших занятий', value: upcomingLessons.length, icon: '📅', color: 'bg-blue-500' },
+    { title: 'ДЗ на проверку', value: pendingHomeworks.length, icon: '📝', color: 'bg-amber-500' },
+    { title: 'Учеников', value: students.length, icon: '🎓', color: 'bg-green-500' },
+    { title: 'Уведомлений', value: unreadCount, icon: '🔔', color: 'bg-red-500' },
+  ]
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div className="min-h-screen bg-fox-light">
       <Header title="Главная" icon="🏠" />
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="bg-gradient-to-r from-[#E85D4C] to-[#F07B6A] rounded-2xl p-8 text-white">
-          <h2 className="text-2xl font-bold mb-2">Добро пожаловать, {user?.name}!</h2>
-          <p className="opacity-90">Ваша роль: {roleLabel(user?.role)}. У вя 5 новых домашних заданий на проверку.</p>
-        </div>
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        {loading ? (
+          <Loader text="Загрузка дашборда..." />
+        ) : (
+          <>
+            <div className="bg-gradient-to-r from-fox-purple to-fox-purple-light rounded-card p-8 text-white shadow-fox">
+              <h2 className="text-2xl font-bold mb-2">Добро пожаловать, {user?.name}!</h2>
+              <p className="opacity-90">
+                Ваша роль: <span className="text-fox-gold font-semibold">{roleLabel(user?.role)}</span>.
+                У вас {pendingHomeworks.length} домашних заданий на проверку и {upcomingLessons.length} ближайших занятий.
+              </p>
+            </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {widgets.map((w) => (
-            <div key={w.title} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <div className={['w-10 h-10 rounded-xl text-white flex items-center justify-center text-lg mb-4', w.color].join(' ')}>
-                {w.icon}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {widgets.map((w) => (
+                <Card key={w.title} className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${w.color}`}>
+                    {w.icon}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-fox-dark">{w.value}</div>
+                    <div className="text-xs text-gray-500">{w.title}</div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-fox-dark">Ближайшие занятия</h3>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')}>
+                    Календарь →
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {upcomingLessons.length === 0 ? (
+                    <p className="text-sm text-gray-400">Нет ближайших занятий</p>
+                  ) : (
+                    upcomingLessons.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30"
+                      >
+                        <div>
+                          <div className="font-medium text-fox-dark">{s.title}</div>
+                          <div className="text-xs text-gray-500">{s.room || 'Онлайн'}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-fox-purple">{formatTime(s.start_time)}</div>
+                          <div className="text-xs text-gray-500">{formatDate(s.start_time)}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-fox-dark">Проверка ДЗ</h3>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/homeworks')}>
+                    Все задания →
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {pendingHomeworks.length === 0 ? (
+                    <p className="text-sm text-gray-400">Нет заданий на проверку</p>
+                  ) : (
+                    pendingHomeworks.map((h) => (
+                      <div
+                        key={h.id}
+                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30"
+                      >
+                        <div>
+                          <div className="font-medium text-fox-dark">{h.title || `Задание #${h.id}`}</div>
+                          <div className="text-xs text-gray-500">{formatDate(h.created_at)}</div>
+                        </div>
+                        <Badge variant={homeworkStatusVariant(h.status)} size="sm">
+                          {homeworkStatusLabel(h.status)}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-fox-dark">Быстрые действия</h3>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{w.value}</div>
-              <div className="text-sm text-gray-500">{w.title}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Ближайшие занятия</h3>
-            <div className="space-y-4">
-              <LessonRow title="Английский A1" time="10:00 — 11:30" group="Группа A1" />
-              <LessonRow title="IELTS Speaking" time="12:00 — 13:00" group="Индивидуально" />
-              <LessonRow title="Английский B1" time="15:00 — 16:30" group="Группа B1" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Проверка ДЗ</h3>
-            <div className="space-y-4">
-              <HomeworkRow name="Алексей Попов" task="Урок 1.1 — Essay" status="На проверке" />
-              <HomeworkRow name="Марина Васильева" task="Урок 1.2 — Видео" status="На проверке" />
-              <HomeworkRow name="Иван Кузнецов" task="Урок 2.1 — Тест" status="На проверке" />
-            </div>
-          </div>
-        </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => navigate('/homeworks')}>Проверить ДЗ</Button>
+                <Button variant="secondary" onClick={() => navigate('/calendar')}>
+                  Расписание
+                </Button>
+                <Button variant="ghost" onClick={() => navigate('/academy')}>
+                  Академия педагогов
+                </Button>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-function LessonRow({ title, time, group }: { title: string; time: string; group: string }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-      <div>
-        <div className="font-medium text-gray-900">{title}</div>
-        <div className="text-sm text-gray-500">{group}</div>
-      </div>
-      <div className="text-sm font-semibold text-[#E85D4C]">{time}</div>
-    </div>
-  )
+function homeworkStatusVariant(status: string): Parameters<typeof Badge>[0]['variant'] {
+  const map: Record<string, Parameters<typeof Badge>[0]['variant']> = {
+    assigned: 'default',
+    in_progress: 'warning',
+    submitted: 'info',
+    reviewed: 'success',
+    rejected: 'error',
+  }
+  return map[status] || 'default'
 }
 
-function HomeworkRow({ name, task, status }: { name: string; task: string; status: string }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-      <div>
-        <div className="font-medium text-gray-900">{name}</div>
-        <div className="text-sm text-gray-500">{task}</div>
-      </div>
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{status}</span>
-    </div>
-  )
+function homeworkStatusLabel(status: string) {
+  const map: Record<string, string> = {
+    assigned: 'Назначено',
+    in_progress: 'В работе',
+    submitted: 'На проверке',
+    reviewed: 'Проверено',
+    rejected: 'На доработке',
+  }
+  return map[status] || status
 }
 
 function roleLabel(role?: string) {
@@ -94,4 +208,12 @@ function roleLabel(role?: string) {
     guest: 'Гость',
   }
   return labels[role || ''] || role
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }

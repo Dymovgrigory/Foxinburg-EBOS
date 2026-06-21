@@ -47,7 +47,7 @@ class LessonProgress(Base):
     completed_at = Column(DateTime, nullable=True)
 
     student = relationship("User", foreign_keys=[student_id])
-    lesson = relationship("Lesson", foreign_keys=[lesson_id])
+    lesson = relationship("Lesson", foreign_keys=[lesson_id], back_populates="lesson_progress")
     enrollment = relationship("Enrollment", foreign_keys=[enrollment_id], back_populates="lesson_progress")
 
     def __repr__(self):

@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.models.homework import Homework, HomeworkReview
 from app.models.enrollment import Enrollment
+from app.models.course import Module
 from app.models.user import User
 from app.schemas.homework import (
     HomeworkCreate,
@@ -86,9 +87,16 @@ async def assign_homework_to_lesson(
     if not lesson:
         return error_response("Урок не найден", status_code=404)
 
+    course_id_result = await uow.session.execute(
+        select(Module.course_id).where(Module.id == lesson.module_id)
+    )
+    course_id = course_id_result.scalar_one_or_none()
+    if course_id is None:
+        return error_response("Модуль урока не найден", status_code=404)
+
     query = (
         select(Enrollment)
-        .where(Enrollment.course_id == lesson.module.course_id, Enrollment.status == "active")
+        .where(Enrollment.course_id == course_id, Enrollment.status == "active")
     )
     if data.group_id:
         query = query.where(Enrollment.group_id == data.group_id)

@@ -35,8 +35,8 @@ class Schedule(Base):
     group = relationship("Group", back_populates="schedules")
     teacher = relationship("User", foreign_keys=[teacher_id])
     branch = relationship("Branch")
-    course = relationship("Course")
-    lesson = relationship("Lesson")
+    course = relationship("Course", back_populates="schedules")
+    lesson = relationship("Lesson", foreign_keys=[lesson_id], back_populates="schedules")
     attendances = relationship("Attendance", back_populates="schedule", cascade="all, delete-orphan")
 
     def __repr__(self):

@@ -42,6 +42,9 @@ class Course(Base):
         "Enrollment", back_populates="course",
         cascade="all, delete-orphan",
     )
+    schedules = relationship(
+        "Schedule", back_populates="course", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Course {self.title}>"
@@ -100,6 +103,13 @@ class Lesson(Base):
     homeworks = relationship(
         "Homework", back_populates="lesson",
         cascade="all, delete-orphan",
+    )
+    lesson_progress = relationship(
+        "LessonProgress", back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
+    schedules = relationship(
+        "Schedule", back_populates="lesson", passive_deletes=True,
     )
 
     def __repr__(self):

@@ -1,10 +1,13 @@
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.enrollment import Enrollment
 from app.models.user import User
 from app.models.chat import ChatRoom
+from app.models.course import Course, Module, Lesson
+from app.models.homework import Homework
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.services.progress_service import ProgressService
@@ -76,6 +79,9 @@ class EnrollmentService(BaseService[Enrollment]):
         progress_service = ProgressService(self.uow)
         await progress_service.create_progress_for_enrollment(enrollment.id)
 
+        # Создаём персональные ДЗ для уроков-формата homework
+        await self._create_homeworks_for_enrollment(student_id, course_id)
+
         await AuditService.log_action(
             self.uow,
             action="CREATE",
@@ -102,3 +108,25 @@ class EnrollmentService(BaseService[Enrollment]):
             user_id=current_user.id if current_user else None,
         )
         return enrollment
+
+    async def _create_homeworks_for_enrollment(self, student_id: int, course_id: int) -> None:
+        result = await self.uow.session.execute(
+            select(Course)
+            .where(Course.id == course_id)
+            .options(selectinload(Course.modules).selectinload(Module.lessons))
+        )
+        course = result.scalar_one_or_none()
+        if not course:
+            return
+
+        for module in course.modules:
+            for lesson in module.lessons:
+                if lesson.lesson_type == "homework":
+                    homework = Homework(
+                        lesson_id=lesson.id,
+                        student_id=student_id,
+                        title=lesson.homework_title or lesson.title,
+                        description=lesson.homework_description,
+                        status="assigned",
+                    )
+                    self.uow.session.add(homework)

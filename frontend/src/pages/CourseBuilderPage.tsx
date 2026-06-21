@@ -28,7 +28,21 @@ export default function CourseBuilderPage() {
   const [courseModal, setCourseModal] = useState<EditableItem | null>(null)
   const [moduleModal, setModuleModal] = useState<EditableItem & { course_id?: number } | null>(null)
   const [lessonModal, setLessonModal] = useState<
-    Partial<Lesson> & { module_id?: number } | null
+    (Partial<Omit<Lesson, 'test'>> & {
+      module_id?: number
+      test?: {
+        title?: string
+        description?: string
+        passing_score?: number
+        max_attempts?: number
+        time_limit_minutes?: number
+        questions?: any[]
+      }
+      homework?: {
+        title?: string
+        description?: string
+      }
+    }) | null
   >(null)
 
   // Lesson extras
@@ -196,31 +210,147 @@ export default function CourseBuilderPage() {
     }
   }
 
+  const buildLessonPayload = () => {
+    if (!lessonModal) return null
+    const payload: any = {
+      module_id: lessonModal.module_id,
+      title: lessonModal.title,
+      description: lessonModal.description,
+      lesson_type: lessonModal.lesson_type || 'text',
+      order_index: lessonModal.order_index ?? (selectedModule?.lessons.length || 0),
+      duration_minutes: lessonModal.duration_minutes || 15,
+    }
+
+    if (payload.lesson_type === 'test' && lessonModal.test) {
+      payload.test = {
+        title: lessonModal.test.title || lessonModal.title,
+        description: lessonModal.test.description,
+        passing_score: lessonModal.test.passing_score || 70,
+        max_attempts: lessonModal.test.max_attempts || 3,
+        time_limit_minutes: lessonModal.test.time_limit_minutes || undefined,
+        questions: (lessonModal.test.questions || []).map((q, idx) => ({
+          question_text: q.question_text,
+          question_type: q.question_type || 'single',
+          options: q.options ? JSON.stringify(q.options.split(';').map((s: string) => s.trim()).filter(Boolean)) : undefined,
+          correct_answers: q.correct_answers ? JSON.stringify(q.correct_answers.split(';').map((s: string) => s.trim()).filter(Boolean)) : undefined,
+          points: q.points || 1,
+          order_index: idx,
+        })),
+      }
+    }
+
+    if (payload.lesson_type === 'homework' && lessonModal.homework) {
+      payload.homework = {
+        title: lessonModal.homework.title || lessonModal.title,
+        description: lessonModal.homework.description,
+      }
+      payload.homework_title = payload.homework.title
+      payload.homework_description = payload.homework.description
+    }
+
+    return payload
+  }
+
   const saveLesson = async () => {
     if (!lessonModal?.title || !lessonModal.module_id) return
+    const payload = buildLessonPayload()
+    if (!payload) return
+
     try {
       if (lessonModal.id) {
-        await lessonsApi.update(lessonModal.id, {
-          title: lessonModal.title,
-          description: lessonModal.description,
-          duration_minutes: lessonModal.duration_minutes,
-        })
+        await lessonsApi.update(lessonModal.id, payload)
         showToast('Урок обновлён', 'success')
       } else {
-        await lessonsApi.create({
-          module_id: lessonModal.module_id,
-          title: lessonModal.title,
-          description: lessonModal.description,
-          lesson_type: 'text',
-          order_index: selectedModule?.lessons.length || 0,
-          duration_minutes: lessonModal.duration_minutes || 15,
-        })
+        await lessonsApi.create(payload)
         showToast('Урок создан', 'success')
       }
       setLessonModal(null)
       if (selectedCourseId) loadModules(selectedCourseId)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Ошибка сохранения урока', 'error')
+    }
+  }
+
+  const LESSON_TYPE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'text', label: '📄 Текст / Документ' },
+    { value: 'video', label: '🎥 Видео' },
+    { value: 'test', label: '📝 Тест' },
+    { value: 'homework', label: '🏠 Домашнее задание' },
+  ]
+
+  const lessonTypeIcon = (type?: string) => {
+    switch (type) {
+      case 'video':
+        return '🎥'
+      case 'test':
+        return '📝'
+      case 'homework':
+        return '🏠'
+      default:
+        return '📄'
+    }
+  }
+
+  const openLessonModal = async (lesson: Lesson, moduleId: number) => {
+    const modal: any = {
+      id: lesson.id,
+      title: lesson.title,
+      description: lesson.description || '',
+      lesson_type: lesson.lesson_type || 'text',
+      duration_minutes: lesson.duration_minutes,
+      order_index: lesson.order_index,
+      module_id: moduleId,
+      homework_title: lesson.homework_title,
+      homework_description: lesson.homework_description,
+    }
+
+    if (lesson.lesson_type === 'test') {
+      try {
+        const tests = await testsApi.list(lesson.id)
+        const test = tests[0]
+        if (test) {
+          const questions = await testsApi.questions(test.id)
+          modal.test = {
+            title: test.title,
+            description: test.description,
+            passing_score: test.passing_score,
+            max_attempts: test.max_attempts,
+            time_limit_minutes: test.time_limit_minutes,
+            questions: questions.map((q: TestQuestion) => ({
+              question_text: q.question_text,
+              question_type: q.question_type,
+              options: q.options ? safeJoinJson(q.options) : '',
+              correct_answers: q.correct_answers ? safeJoinJson(q.correct_answers) : '',
+              points: q.points,
+            })),
+          }
+        }
+      } catch {
+        // non-critical
+      }
+      if (!modal.test) {
+        modal.test = { questions: [] }
+      }
+    }
+
+    if (lesson.lesson_type === 'homework') {
+      modal.homework = {
+        title: lesson.homework_title || lesson.title,
+        description: lesson.homework_description || '',
+      }
+    }
+
+    setLessonModal(modal)
+  }
+
+  const safeJoinJson = (raw?: string) => {
+    if (!raw) return ''
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.join('; ')
+      return String(parsed)
+    } catch {
+      return raw
     }
   }
 
@@ -450,19 +580,14 @@ export default function CourseBuilderPage() {
                             ].join(' ')}
                             onClick={() => setSelectedLessonId(lesson.id)}
                           >
+                            <span className="mr-2">{lessonTypeIcon(lesson.lesson_type)}</span>
                             <span className="truncate">{lesson.title}</span>
                             <div className="flex gap-1">
                               <button
                                 className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setLessonModal({
-                                    id: lesson.id,
-                                    title: lesson.title,
-                                    description: lesson.description || '',
-                                    duration_minutes: lesson.duration_minutes,
-                                    module_id: module.id,
-                                  })
+                                  openLessonModal(lesson, module.id)
                                 }}
                               >
                                 ✎
@@ -483,7 +608,16 @@ export default function CourseBuilderPage() {
                           size="sm"
                           variant="ghost"
                           className="w-full mt-1"
-                          onClick={() => setLessonModal({ title: '', description: '', module_id: module.id })}
+                          onClick={() =>
+                            setLessonModal({
+                              title: '',
+                              description: '',
+                              module_id: module.id,
+                              lesson_type: 'text',
+                              test: { questions: [] },
+                              homework: { title: '', description: '' },
+                            })
+                          }
                         >
                           + Добавить урок
                         </Button>
@@ -511,13 +645,23 @@ export default function CourseBuilderPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="bg-gray-50 p-3 rounded-xl">
                       <span className="text-gray-400">Тип</span>
-                      <p className="font-medium text-fox-dark">{selectedLesson.lesson_type}</p>
+                      <p className="font-medium text-fox-dark">
+                        {lessonTypeIcon(selectedLesson.lesson_type)}{' '}
+                        {LESSON_TYPE_OPTIONS.find((o) => o.value === selectedLesson.lesson_type)?.label || selectedLesson.lesson_type}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-xl">
                       <span className="text-gray-400">Длительность</span>
                       <p className="font-medium text-fox-dark">{selectedLesson.duration_minutes} мин</p>
                     </div>
                   </div>
+                  {selectedLesson.lesson_type === 'homework' && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm">
+                      <span className="text-gray-400">Шаблон ДЗ</span>
+                      <p className="font-medium text-fox-dark">{selectedLesson.homework_title || selectedLesson.title}</p>
+                      <p className="text-gray-500">{selectedLesson.homework_description}</p>
+                    </div>
+                  )}
                 </Card>
 
                 <Card>
@@ -752,7 +896,7 @@ export default function CourseBuilderPage() {
             />
           }
         >
-          <div className="space-y-3">
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             <Input
               label="Название"
               value={lessonModal.title || ''}
@@ -769,6 +913,186 @@ export default function CourseBuilderPage() {
               value={lessonModal.duration_minutes || 15}
               onChange={(e) => setLessonModal({ ...lessonModal, duration_minutes: Number(e.target.value) })}
             />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Формат урока</label>
+              <select
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm"
+                value={lessonModal.lesson_type || 'text'}
+                onChange={(e) =>
+                  setLessonModal({
+                    ...lessonModal,
+                    lesson_type: e.target.value,
+                    test: e.target.value === 'test' ? lessonModal.test || { questions: [] } : undefined,
+                    homework: e.target.value === 'homework' ? lessonModal.homework || { title: '', description: '' } : undefined,
+                  })
+                }
+              >
+                {LESSON_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {lessonModal.lesson_type === 'test' && (
+              <div className="space-y-3 border-t border-gray-100 pt-3">
+                <p className="text-sm font-medium text-gray-700">Настройки теста</p>
+                <Input
+                  label="Название теста"
+                  value={lessonModal.test?.title || ''}
+                  onChange={(e) =>
+                    setLessonModal({
+                      ...lessonModal,
+                      test: { ...lessonModal.test, title: e.target.value },
+                    })
+                  }
+                />
+                <div className="grid grid-cols-3 gap-3">
+                  <Input
+                    label="Проходной балл, %"
+                    type="number"
+                    value={lessonModal.test?.passing_score || 70}
+                    onChange={(e) =>
+                      setLessonModal({
+                        ...lessonModal,
+                        test: { ...lessonModal.test, passing_score: Number(e.target.value) },
+                      })
+                    }
+                  />
+                  <Input
+                    label="Попыток"
+                    type="number"
+                    value={lessonModal.test?.max_attempts || 3}
+                    onChange={(e) =>
+                      setLessonModal({
+                        ...lessonModal,
+                        test: { ...lessonModal.test, max_attempts: Number(e.target.value) },
+                      })
+                    }
+                  />
+                  <Input
+                    label="Минут"
+                    type="number"
+                    value={lessonModal.test?.time_limit_minutes || ''}
+                    onChange={(e) =>
+                      setLessonModal({
+                        ...lessonModal,
+                        test: { ...lessonModal.test, time_limit_minutes: e.target.value ? Number(e.target.value) : undefined },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Вопросы</p>
+                  {(lessonModal.test?.questions || []).map((q: any, idx: number) => (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-xl space-y-2">
+                      <Input
+                        placeholder="Текст вопроса"
+                        value={q.question_text || ''}
+                        onChange={(e) => {
+                          const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
+                          next.questions[idx] = { ...next.questions[idx], question_text: e.target.value }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      />
+                      <select
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                        value={q.question_type || 'single'}
+                        onChange={(e) => {
+                          const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
+                          next.questions[idx] = { ...next.questions[idx], question_type: e.target.value }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      >
+                        <option value="single">Один правильный ответ</option>
+                        <option value="multiple">Несколько правильных ответов</option>
+                        <option value="text">Текстовый ответ</option>
+                      </select>
+                      <Input
+                        placeholder="Варианты ответов через ;"
+                        value={q.options || ''}
+                        onChange={(e) => {
+                          const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
+                          next.questions[idx] = { ...next.questions[idx], options: e.target.value }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      />
+                      <Input
+                        placeholder="Правильные ответы через ;"
+                        value={q.correct_answers || ''}
+                        onChange={(e) => {
+                          const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
+                          next.questions[idx] = { ...next.questions[idx], correct_answers: e.target.value }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      />
+                      <Input
+                        placeholder="Баллы"
+                        type="number"
+                        value={q.points || 1}
+                        onChange={(e) => {
+                          const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
+                          next.questions[idx] = { ...next.questions[idx], points: Number(e.target.value) }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => {
+                          const next = { ...lessonModal.test, questions: (lessonModal.test?.questions || []).filter((_: any, i: number) => i !== idx) }
+                          setLessonModal({ ...lessonModal, test: next })
+                        }}
+                      >
+                        Удалить вопрос
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const next = {
+                        ...lessonModal.test,
+                        questions: [...(lessonModal.test?.questions || []), { question_type: 'single', points: 1 }],
+                      }
+                      setLessonModal({ ...lessonModal, test: next })
+                    }}
+                  >
+                    + Добавить вопрос
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {lessonModal.lesson_type === 'homework' && (
+              <div className="space-y-3 border-t border-gray-100 pt-3">
+                <p className="text-sm font-medium text-gray-700">Настройки ДЗ</p>
+                <Input
+                  label="Заголовок ДЗ"
+                  value={lessonModal.homework?.title || ''}
+                  onChange={(e) =>
+                    setLessonModal({
+                      ...lessonModal,
+                      homework: { ...lessonModal.homework, title: e.target.value },
+                    })
+                  }
+                />
+                <Input
+                  label="Описание ДЗ"
+                  value={lessonModal.homework?.description || ''}
+                  onChange={(e) =>
+                    setLessonModal({
+                      ...lessonModal,
+                      homework: { ...lessonModal.homework, description: e.target.value },
+                    })
+                  }
+                />
+              </div>
+            )}
           </div>
         </Modal>
       )}

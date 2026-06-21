@@ -83,10 +83,14 @@ class Lesson(Base):
 
     module_id = Column(Integer, ForeignKey("modules.id"), nullable=False)
 
-    # Тип урока: text, video, test, homework, mixed
+    # Тип урока: text, video, test, homework
     lesson_type = Column(String, default="text", nullable=False)
     duration_minutes = Column(Integer, default=15)
     is_active = Column(Boolean, default=True)
+
+    # Шаблон для уроков-ДЗ (Homework создаётся для каждого студента при зачислении)
+    homework_title = Column(String, nullable=True)
+    homework_description = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

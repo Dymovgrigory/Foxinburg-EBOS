@@ -23,6 +23,7 @@ from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission, has_permission
 from app.core.events import EventBus, SystemEventType
 from app.services.unit_of_work import UnitOfWork, get_uow
+from app.services.progress_service import ProgressService
 
 router = APIRouter(prefix="/homeworks", tags=["homeworks"])
 
@@ -223,6 +224,15 @@ async def create_review(
     )
     uow.session.add(review)
     homework.status = _review_status_to_homework_status(data.status)
+
+    if data.status == "approved":
+        progress_service = ProgressService(uow)
+        try:
+            await progress_service.complete_lesson(homework.student_id, homework.lesson_id)
+        except ValueError:
+            # Урок уже завершён или не может быть завершён автоматически
+            pass
+
     await uow.commit()
     await uow.session.refresh(review)
 

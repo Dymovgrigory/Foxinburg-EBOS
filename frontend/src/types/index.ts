@@ -47,6 +47,17 @@ export interface Module {
   lessons: Lesson[]
 }
 
+export interface LessonContent {
+  id: number
+  content_type: string
+  title?: string
+  body?: string
+  file_url?: string
+  external_url?: string
+  yandex_disk_path?: string
+  order_index?: number
+}
+
 export interface Lesson {
   id: number
   title: string
@@ -55,6 +66,10 @@ export interface Lesson {
   duration_minutes: number
   order_index: number
   is_active: boolean
+  homework_title?: string
+  homework_description?: string
+  contents?: LessonContent[]
+  test?: Test
 }
 
 export interface Schedule {
@@ -91,8 +106,10 @@ export interface Homework {
   lesson_id?: number
   title?: string
   description?: string
+  content?: string
+  file_urls?: string
   status: string
-  file_url?: string | null
+  submitted_at?: string
   created_at: string
 }
 
@@ -119,6 +136,18 @@ export interface TestQuestion {
   options?: string
   correct_answers?: string
   points: number
+}
+
+export interface TestAttempt {
+  id: number
+  test_id: number
+  student_id: number
+  answers?: string
+  score: number
+  max_score: number
+  is_passed: boolean
+  started_at: string
+  finished_at?: string
 }
 
 export interface HomeworkReview {

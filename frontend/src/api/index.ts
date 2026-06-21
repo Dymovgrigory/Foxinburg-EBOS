@@ -11,6 +11,7 @@ import type {
   HomeworkReview,
   Test,
   TestQuestion,
+  TestAttempt,
   Payment,
   Transaction,
   Lead,
@@ -58,6 +59,7 @@ export const usersApi = {
 
 export const coursesApi = {
   list: () => api.get<ApiResponse<Course[]>>('/courses').then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Course>>(`/courses/${id}`).then(unwrap),
   create: (data: Partial<Course>) => api.post<ApiResponse<Course>>('/courses', data).then(unwrap),
   update: (id: number, data: Partial<Course>) => api.patch<ApiResponse<Course>>(`/courses/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/courses/${id}`).then(unwrap),
@@ -104,6 +106,7 @@ export const lessonsApi = {
   update: (id: number, data: Partial<Lesson>) =>
     api.patch<ApiResponse<Lesson>>(`/lessons/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/lessons/${id}`).then(unwrap),
+  complete: (id: number) => api.post<ApiResponse<LessonProgress>>(`/lessons/${id}/complete`).then(unwrap),
 }
 
 export const testsApi = {
@@ -121,6 +124,12 @@ export const testsApi = {
     api.patch<ApiResponse<TestQuestion>>(`/tests/${testId}/questions/${questionId}`, data).then(unwrap),
   deleteQuestion: (testId: number, questionId: number) =>
     api.delete<ApiResponse<void>>(`/tests/${testId}/questions/${questionId}`).then(unwrap),
+  createAttempt: (testId: number, data: { answers?: string }) =>
+    api.post<ApiResponse<TestAttempt>>(`/tests/${testId}/attempts`, data).then(unwrap),
+  updateAttempt: (testId: number, attemptId: number, data: { answers?: string; score?: number; max_score?: number; is_passed?: boolean; finished_at?: string }) =>
+    api.patch<ApiResponse<TestAttempt>>(`/tests/${testId}/attempts/${attemptId}`, data).then(unwrap),
+  submitAttempt: (testId: number, attemptId: number) =>
+    api.post<ApiResponse<TestAttempt>>(`/tests/${testId}/attempts/${attemptId}/submit`).then(unwrap),
 }
 
 export const homeworksApi = {
@@ -141,6 +150,8 @@ export const homeworksApi = {
     api.get<ApiResponse<HomeworkReview[]>>(`/homeworks/${homeworkId}/reviews`).then(unwrap),
   createReview: (homeworkId: number, data: Partial<HomeworkReview>) =>
     api.post<ApiResponse<HomeworkReview>>(`/homeworks/${homeworkId}/reviews`, data).then(unwrap),
+  submit: (homeworkId: number, data: { content?: string; file_urls?: string }) =>
+    api.post<ApiResponse<Homework>>(`/homeworks/${homeworkId}/submit`, data).then(unwrap),
 }
 
 export const financeApi = {

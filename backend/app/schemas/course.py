@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
@@ -41,16 +42,71 @@ class ModuleUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+# ---------- Вложенные схемы для форматов урока ----------
+
+class TestQuestionConfigCreate(BaseModel):
+    question_text: str
+    question_type: str = "single"
+    options: Optional[str] = None  # JSON
+    correct_answers: Optional[str] = None  # JSON
+    points: int = 1
+    order_index: int = 0
+
+
+class TestConfigCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    passing_score: int = 70
+    time_limit_minutes: Optional[int] = None
+    max_attempts: int = 3
+    questions: List[TestQuestionConfigCreate] = []
+
+
+class TestQuestionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    test_id: int
+    question_text: str
+    question_type: str
+    options: Optional[str] = None
+    correct_answers: Optional[str] = None
+    points: int
+    order_index: int
+
+
+class LessonTestResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    description: Optional[str] = None
+    passing_score: int
+    time_limit_minutes: Optional[int] = None
+    max_attempts: int
+    is_active: bool
+    questions: List[TestQuestionResponse] = []
+
+
+class HomeworkConfigCreate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+# ---------- Основные схемы урока ----------
+
 class LessonBase(BaseModel):
     title: str
     description: Optional[str] = None
     lesson_type: str = "text"
     order_index: int = 0
     duration_minutes: int = 15
+    homework_title: Optional[str] = None
+    homework_description: Optional[str] = None
 
 
 class LessonCreate(LessonBase):
     module_id: int
+    test: Optional[TestConfigCreate] = None
+    homework: Optional[HomeworkConfigCreate] = None
 
 
 class LessonUpdate(BaseModel):
@@ -60,6 +116,10 @@ class LessonUpdate(BaseModel):
     order_index: Optional[int] = None
     duration_minutes: Optional[int] = None
     is_active: Optional[bool] = None
+    homework_title: Optional[str] = None
+    homework_description: Optional[str] = None
+    test: Optional[TestConfigCreate] = None
+    homework: Optional[HomeworkConfigCreate] = None
 
 
 class LessonResponse(LessonBase):
@@ -68,6 +128,24 @@ class LessonResponse(LessonBase):
     module_id: int
     is_active: bool
     created_at: datetime
+    updated_at: datetime
+
+
+class LessonContentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    content_type: str
+    title: Optional[str] = None
+    body: Optional[str] = None
+    file_url: Optional[str] = None
+    external_url: Optional[str] = None
+    yandex_disk_path: Optional[str] = None
+    order_index: int = 0
+
+
+class LessonDetailResponse(LessonResponse):
+    test: Optional[LessonTestResponse] = None
+    contents: List[LessonContentResponse] = []
 
 
 class ModuleResponse(ModuleBase):

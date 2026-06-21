@@ -3,14 +3,37 @@ from fastapi import APIRouter, Depends
 from app.core.dependencies import require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.schemas.course import LessonCreate, LessonUpdate, LessonResponse
+from app.models.course import Lesson
+from app.schemas.course import LessonCreate, LessonUpdate, LessonResponse, LessonContentResponse
 from app.schemas.progress import LessonProgressResponse
+from app.schemas.test import TestQuestionResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.lesson_service import LessonService
 from app.services.module_service import ModuleService
 from app.services.progress_service import ProgressService
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
+
+
+def _lesson_detail_dict(lesson: Lesson) -> dict:
+    """Сериализует урок вместе с вложенным тестом и вопросами."""
+    data = LessonResponse.model_validate(lesson).model_dump()
+    data["contents"] = [LessonContentResponse.model_validate(c).model_dump() for c in lesson.contents]
+    test = lesson.tests[0] if lesson.tests else None
+    if test:
+        data["test"] = {
+            "id": test.id,
+            "title": test.title,
+            "description": test.description,
+            "passing_score": test.passing_score,
+            "time_limit_minutes": test.time_limit_minutes,
+            "max_attempts": test.max_attempts,
+            "is_active": test.is_active,
+            "questions": [TestQuestionResponse.model_validate(q).model_dump() for q in test.questions],
+        }
+    else:
+        data["test"] = None
+    return data
 
 
 @router.get("/{lesson_id}")
@@ -24,7 +47,7 @@ async def get_lesson(
     if not lesson:
         return error_response("Урок не найден", status_code=404)
     return success_response(
-        data=LessonResponse.model_validate(lesson).model_dump(),
+        data=_lesson_detail_dict(lesson),
         message="Урок",
     )
 
@@ -48,9 +71,14 @@ async def create_lesson(
         lesson_type=data.lesson_type,
         order_index=data.order_index,
         duration_minutes=data.duration_minutes,
+        homework_title=data.homework_title,
+        homework_description=data.homework_description,
+        test=data.test.model_dump() if data.test else None,
+        homework=data.homework.model_dump() if data.homework else None,
     )
+    lesson = await service.get_by_id(lesson.id)
     return success_response(
-        data=LessonResponse.model_validate(lesson).model_dump(),
+        data=_lesson_detail_dict(lesson),
         message="Урок создан",
         status_code=201,
     )
@@ -68,7 +96,7 @@ async def update_lesson(
     if not lesson:
         return error_response("Урок не найден", status_code=404)
 
-    updated = await service.update_lesson(
+    await service.update_lesson(
         lesson,
         title=data.title,
         description=data.description,
@@ -76,9 +104,14 @@ async def update_lesson(
         order_index=data.order_index,
         duration_minutes=data.duration_minutes,
         is_active=data.is_active,
+        homework_title=data.homework_title,
+        homework_description=data.homework_description,
+        test=data.test.model_dump() if data.test else None,
+        homework=data.homework.model_dump() if data.homework else None,
     )
+    lesson = await service.get_by_id(lesson_id)
     return success_response(
-        data=LessonResponse.model_validate(updated).model_dump(),
+        data=_lesson_detail_dict(lesson),
         message="Урок обновлён",
     )
 

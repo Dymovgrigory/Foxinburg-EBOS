@@ -172,7 +172,16 @@ export default function StudentDashboardPage() {
                     <div key={course.id}>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-gray-700">{course.title}</span>
-                        <span className="font-semibold text-fox-dark">{courseProgress}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-fox-dark">{courseProgress}%</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/courses/${course.id}/learn`)}
+                          >
+                            Учиться →
+                          </Button>
+                        </div>
                       </div>
                       <div className="h-2 bg-fox-border rounded-full overflow-hidden">
                         <div

@@ -3,8 +3,12 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from sqlalchemy import desc
+
 from app.models.course import Course, Module, Lesson
 from app.models.enrollment import Enrollment, LessonProgress
+from app.models.test import Test, TestAttempt
+from app.models.homework import Homework, HomeworkReview
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.core.events import EventBus, SystemEventType
@@ -90,6 +94,12 @@ class ProgressService(BaseService[LessonProgress]):
         if progress.status == "completed":
             return progress
 
+        lesson_type = progress.lesson.lesson_type
+        if lesson_type == "test":
+            await self._ensure_test_passed(progress.student_id, progress.lesson_id)
+        elif lesson_type == "homework":
+            await self._ensure_homework_approved(progress.student_id, progress.lesson_id)
+
         progress.status = "completed"
         progress.completed_at = datetime.utcnow()
         await self.uow.session.flush()
@@ -145,6 +155,42 @@ class ProgressService(BaseService[LessonProgress]):
         if idx == -1 or idx + 1 >= len(lessons):
             return None
         return lessons[idx + 1]
+
+    async def _ensure_test_passed(self, student_id: int, lesson_id: int) -> None:
+        test_result = await self.uow.session.execute(
+            select(Test).where(Test.lesson_id == lesson_id, Test.is_active == True)
+        )
+        test = test_result.scalar_one_or_none()
+        if not test:
+            return
+
+        attempt_result = await self.uow.session.execute(
+            select(TestAttempt)
+            .where(TestAttempt.test_id == test.id, TestAttempt.student_id == student_id)
+            .order_by(desc(TestAttempt.finished_at))
+        )
+        latest_attempt = attempt_result.scalars().first()
+        if not latest_attempt or not latest_attempt.is_passed:
+            raise ValueError(f"Необходимо успешно пройти тест «{test.title}»")
+
+    async def _ensure_homework_approved(self, student_id: int, lesson_id: int) -> None:
+        hw_result = await self.uow.session.execute(
+            select(Homework).where(Homework.lesson_id == lesson_id, Homework.student_id == student_id)
+        )
+        homework = hw_result.scalar_one_or_none()
+        if not homework:
+            raise ValueError("Домашнее задание не назначено")
+        if homework.status != "reviewed":
+            raise ValueError("Домашнее задание ещё не проверено методистом")
+
+        review_result = await self.uow.session.execute(
+            select(HomeworkReview)
+            .where(HomeworkReview.homework_id == homework.id)
+            .order_by(desc(HomeworkReview.id))
+        )
+        latest_review = review_result.scalars().first()
+        if not latest_review or latest_review.status != "approved":
+            raise ValueError("Домашнее задание требует доработки или не принято")
 
     async def _unlock_lesson(self, enrollment_id: int, lesson_id: int) -> None:
         result = await self.uow.session.execute(

@@ -19,6 +19,8 @@ from app.schemas.test import (
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
+from app.services.unit_of_work import UnitOfWork, get_uow
+from app.services.test_service import TestService
 
 router = APIRouter(prefix="/tests", tags=["tests"])
 
@@ -224,3 +226,30 @@ async def update_attempt(
     await db.commit()
     await db.refresh(attempt)
     return success_response(data=TestAttemptResponse.model_validate(attempt).model_dump(), message="Попытка обновлена")
+
+
+@router.post("/{test_id}/attempts/{attempt_id}/submit")
+async def submit_attempt(
+    test_id: int,
+    attempt_id: int,
+    current_user=Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Завершает попытку теста: автоматически считает баллы и, при прохождении, завершает урок."""
+    service = TestService(uow)
+    attempt = await service.get_attempt_by_id(attempt_id)
+    if not attempt or attempt.test_id != test_id:
+        return error_response("Попытка не найдена", status_code=404)
+    if attempt.student_id != current_user.id:
+        return error_response("Можно отправлять только свои попытки", status_code=403)
+
+    try:
+        scored = await service.score_attempt(attempt_id)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+    message = "Тест пройден" if scored.is_passed else "Тест не пройден"
+    return success_response(
+        data=TestAttemptResponse.model_validate(scored).model_dump(),
+        message=message,
+    )

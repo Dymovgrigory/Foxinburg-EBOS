@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class HomeworkBase(BaseModel):
     lesson_id: int
     student_id: int
+    title: Optional[str] = None
+    description: Optional[str] = None
     content: Optional[str] = None
     file_urls: Optional[str] = None  # JSON-строка со списком URL
     status: Optional[str] = "assigned"

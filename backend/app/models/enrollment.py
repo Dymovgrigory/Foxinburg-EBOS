@@ -26,6 +26,10 @@ class Enrollment(Base):
     assigned_by = relationship("User", foreign_keys=[assigned_by_id])
     course = relationship("Course", back_populates="enrollments")
     group = relationship("Group")
+    lesson_progress = relationship(
+        "LessonProgress", back_populates="enrollment",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Enrollment student={self.student_id} course={self.course_id}>"
@@ -44,7 +48,7 @@ class LessonProgress(Base):
 
     student = relationship("User", foreign_keys=[student_id])
     lesson = relationship("Lesson", foreign_keys=[lesson_id])
-    enrollment = relationship("Enrollment", foreign_keys=[enrollment_id])
+    enrollment = relationship("Enrollment", foreign_keys=[enrollment_id], back_populates="lesson_progress")
 
     def __repr__(self):
         return f"<LessonProgress lesson={self.lesson_id} status={self.status}>"

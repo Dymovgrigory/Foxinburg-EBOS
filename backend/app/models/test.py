@@ -22,8 +22,14 @@ class Test(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     lesson = relationship("Lesson", back_populates="tests")
-    questions = relationship("TestQuestion", back_populates="test", order_by="TestQuestion.order_index")
-    attempts = relationship("TestAttempt", back_populates="test")
+    questions = relationship(
+        "TestQuestion", back_populates="test", order_by="TestQuestion.order_index",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    attempts = relationship(
+        "TestAttempt", back_populates="test",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Test {self.title}>"

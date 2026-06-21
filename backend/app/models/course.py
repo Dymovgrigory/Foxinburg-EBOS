@@ -34,8 +34,14 @@ class Course(Base):
 
     organization = relationship("Organization", back_populates="courses")
     author = relationship("User", foreign_keys=[author_id])
-    modules = relationship("Module", back_populates="course", order_by="Module.order_index")
-    enrollments = relationship("Enrollment", back_populates="course")
+    modules = relationship(
+        "Module", back_populates="course", order_by="Module.order_index",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    enrollments = relationship(
+        "Enrollment", back_populates="course",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Course {self.title}>"
@@ -55,7 +61,10 @@ class Module(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     course = relationship("Course", back_populates="modules")
-    lessons = relationship("Lesson", back_populates="module", order_by="Lesson.order_index")
+    lessons = relationship(
+        "Lesson", back_populates="module", order_by="Lesson.order_index",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Module {self.title}>"
@@ -80,9 +89,18 @@ class Lesson(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     module = relationship("Module", back_populates="lessons")
-    contents = relationship("LessonContent", back_populates="lesson")
-    tests = relationship("Test", back_populates="lesson")
-    homeworks = relationship("Homework", back_populates="lesson")
+    contents = relationship(
+        "LessonContent", back_populates="lesson",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    tests = relationship(
+        "Test", back_populates="lesson",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    homeworks = relationship(
+        "Homework", back_populates="lesson",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Lesson {self.title}>"

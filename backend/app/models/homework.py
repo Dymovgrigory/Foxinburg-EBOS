@@ -12,6 +12,9 @@ class Homework(Base):
     lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=False)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
+    title = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+
     content = Column(Text, nullable=True)
     file_urls = Column(Text, nullable=True)  # JSON array of URLs
 
@@ -21,7 +24,10 @@ class Homework(Base):
 
     lesson = relationship("Lesson", back_populates="homeworks")
     student = relationship("User", back_populates="submitted_homeworks")
-    reviews = relationship("HomeworkReview", back_populates="homework")
+    reviews = relationship(
+        "HomeworkReview", back_populates="homework",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Homework lesson={self.lesson_id} student={self.student_id}>"

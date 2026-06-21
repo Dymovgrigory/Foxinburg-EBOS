@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationBadge from '../components/NotificationBadge'
+import BrandLogo from './BrandLogo'
 
 interface MenuItem {
   to: string
@@ -43,7 +44,7 @@ const adminGroups: MenuGroup[] = [
       { to: '/system-center', label: 'OS Center', icon: '⚙️' },
       { to: '/roles', label: 'Role Ecosystem', icon: '🛡️' },
       { to: '/settings', label: 'Настройки', icon: '🔧' },
-      { to: '/builder', label: 'Конструктор', icon: '🛠️', badge: undefined },
+      { to: '/builder', label: 'Конструктор', icon: '🛠️' },
     ],
   },
 ]
@@ -141,7 +142,27 @@ function groupsForRole(role: string): MenuGroup[] {
   return adminGroups
 }
 
-export default function Sidebar() {
+function roleLabel(role?: string) {
+  const labels: Record<string, string> = {
+    owner: 'Владелец',
+    super_admin: 'Супер-админ',
+    admin: 'Администратор',
+    methodist: 'Методист',
+    teacher: 'Педагог',
+    manager: 'Менеджер',
+    student: 'Ученик',
+    parent: 'Родитель',
+    guest: 'Гость',
+  }
+  return labels[role || ''] || role
+}
+
+interface SidebarProps {
+  mobileOpen: boolean
+  onCloseMobile: () => void
+}
+
+export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -155,36 +176,23 @@ export default function Sidebar() {
     navigate('/login')
   }
 
-  return (
-    <aside
-      className={[
-        'h-screen bg-white border-r border-gray-100 flex flex-col transition-all duration-300',
-        collapsed ? 'w-20' : 'w-64',
-      ].join(' ')}
-    >
+  const sidebarContent = (
+    <>
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-gray-100">
-        <div className="w-8 h-8 rounded-lg bg-[#E85D4C] flex items-center justify-center text-white text-lg mr-3 flex-shrink-0">
-          ✦
-        </div>
-        {!collapsed && (
-          <div>
-            <div className="font-bold text-gray-900 leading-tight">FOXINBURG</div>
-            <div className="text-[10px] text-gray-400 tracking-wider">EBOS</div>
-          </div>
-        )}
+      <div className="h-16 flex items-center px-4 border-b border-white/10 flex-shrink-0">
+        <BrandLogo collapsed={collapsed} />
       </div>
 
       {/* Profile */}
       {!collapsed && (
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#E85D4C] text-white flex items-center justify-center font-semibold">
+            <div className="w-10 h-10 rounded-full bg-fox-gold text-fox-purple flex items-center justify-center font-bold flex-shrink-0">
               {user?.name?.[0] || '?'}
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">{user?.email}</div>
-              <div className="text-xs text-[#E85D4C] capitalize">{roleLabel(user?.role)}</div>
+              <div className="text-sm font-medium text-white truncate">{user?.email}</div>
+              <div className="text-xs text-fox-gold/80 capitalize font-medium">{roleLabel(user?.role)}</div>
             </div>
           </div>
         </div>
@@ -195,7 +203,7 @@ export default function Sidebar() {
         {groups.map((group, gi) => (
           <div key={gi}>
             {!collapsed && group.title && (
-              <div className="px-3 mb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="px-3 mb-2 text-[10px] font-semibold text-white/40 uppercase tracking-wider">
                 {group.title}
               </div>
             )}
@@ -206,11 +214,12 @@ export default function Sidebar() {
                   <Link
                     key={item.to}
                     to={item.to}
+                    onClick={onCloseMobile}
                     className={[
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                       active
-                        ? 'bg-[#E85D4C] text-white shadow-md shadow-[#E85D4C]/25'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                        ? 'bg-fox-gold text-fox-purple shadow-md shadow-fox-gold/20'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white',
                       collapsed && 'justify-center',
                     ].join(' ')}
                     title={collapsed ? item.label : undefined}
@@ -220,7 +229,9 @@ export default function Sidebar() {
                     {!collapsed && item.badge && (
                       <span className="flex-shrink-0">
                         {typeof item.badge === 'number' ? (
-                          <span className="bg-[#4CAF7E] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge}</span>
+                          <span className="bg-fox-gold text-fox-purple text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                            {item.badge}
+                          </span>
                         ) : (
                           item.badge
                         )}
@@ -235,11 +246,11 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="p-3 border-t border-gray-100 space-y-1">
+      <div className="p-3 border-t border-white/10 space-y-1 flex-shrink-0">
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={collapsed ? 'Развернуть' : 'Свернуть'}
@@ -250,7 +261,7 @@ export default function Sidebar() {
         <button
           onClick={handleLogout}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-red-500/20 hover:text-red-200 transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={collapsed ? 'Выйти' : undefined}
@@ -259,21 +270,38 @@ export default function Sidebar() {
           {!collapsed && <span>Выйти</span>}
         </button>
       </div>
-    </aside>
+    </>
   )
-}
 
-function roleLabel(role?: string) {
-  const labels: Record<string, string> = {
-    owner: 'Владелец',
-    super_admin: 'Супер-админ',
-    admin: 'Администратор',
-    methodist: 'Методист',
-    teacher: 'Педагог',
-    manager: 'Менеджер',
-    student: 'Ученик',
-    parent: 'Родитель',
-    guest: 'Гость',
-  }
-  return labels[role || ''] || role
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        className={[
+          'hidden lg:flex h-screen bg-fox-purple flex-col transition-all duration-300 flex-shrink-0',
+          collapsed ? 'w-20' : 'w-64',
+        ].join(' ')}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-fox-purple/60 backdrop-blur-sm lg:hidden"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={[
+          'fixed inset-y-0 left-0 z-50 w-64 bg-fox-purple flex-col transition-transform duration-300 lg:hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
+        {sidebarContent}
+      </aside>
+    </>
+  )
 }

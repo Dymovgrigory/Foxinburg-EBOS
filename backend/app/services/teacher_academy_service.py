@@ -271,18 +271,22 @@ class TeacherAcademyService:
         existing = list(existing_result.scalars().all())
 
         # Сначала убираем дубли, которые могли появиться из-за race condition
-        # или старой логики синхронизации. Оставляем запись с наименьшим id.
+        # или старой логики синхронизации. Оставляем запись с наименьшим id,
+        # предпочитая строки с yandex_disk_path.
         existing_by_path: dict[str, LessonContent] = {}
         existing_by_title: dict[str, LessonContent] = {}
+        kept_titles: set[str] = set()
         dedup_delete: list[LessonContent] = []
-        for content in sorted(existing, key=lambda c: c.id):
+        for content in sorted(existing, key=lambda c: (c.yandex_disk_path is None, c.id)):
             if content.yandex_disk_path:
                 if content.yandex_disk_path in existing_by_path:
                     dedup_delete.append(content)
                     continue
                 existing_by_path[content.yandex_disk_path] = content
+                if content.title:
+                    kept_titles.add(content.title)
             else:
-                if content.title in existing_by_title:
+                if content.title in kept_titles or content.title in existing_by_title:
                     dedup_delete.append(content)
                     continue
                 existing_by_title[content.title] = content

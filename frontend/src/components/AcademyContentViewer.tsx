@@ -70,11 +70,11 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
 
     if (content.content_type === 'pdf' || fileExt === 'pdf') {
       return (
-        <iframe
+        <embed
           src={`${pdfUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
+          type="application/pdf"
           title={label}
           className="w-full h-[70vh] rounded-xl bg-white"
-          sandbox="allow-same-origin allow-scripts"
         />
       )
     }
@@ -94,11 +94,11 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     // Office-документы — конвертируем в PDF для встроенного просмотра
     if (content.content_type === 'office' || ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)) {
       return (
-        <iframe
+        <embed
           src={`${pdfUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
+          type="application/pdf"
           title={label}
           className="w-full h-[70vh] rounded-xl bg-white"
-          sandbox="allow-same-origin allow-scripts"
         />
       )
     }

@@ -18,14 +18,21 @@ const ext = (name = '') => {
   return parts[parts.length - 1]?.toLowerCase() || ''
 }
 
-const streamUrl = (contentId: number) => `/api/v3/teacher-academy/contents/${contentId}/stream`
-const pdfUrl = (contentId: number) => `/api/v3/teacher-academy/contents/${contentId}/pdf`
+const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '')
+
+const streamUrl = (contentId: number) => {
+  const token = getToken()
+  return `/api/v3/teacher-academy/contents/${contentId}/stream${token ? `?access_token=${encodeURIComponent(token)}` : ''}`
+}
+const pdfUrl = (contentId: number) => {
+  const token = getToken()
+  return `/api/v3/teacher-academy/contents/${contentId}/pdf${token ? `?access_token=${encodeURIComponent(token)}` : ''}`
+}
 
 export default function AcademyContentViewer({ content, watermark }: AcademyContentViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const fileExt = ext(content.title)
   const label = content.title || 'Материал'
-  const src = streamUrl(content.id)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -55,7 +62,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           preload="metadata"
           playsInline
         >
-          <source src={src} type="video/mp4" />
+          <source src={streamUrl(content.id)} type="video/mp4" />
           Ваш браузер не поддерживает воспроизведение видео.
         </video>
       )
@@ -64,7 +71,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     if (content.content_type === 'pdf' || fileExt === 'pdf') {
       return (
         <iframe
-          src={`${src}#toolbar=0&navpanes=0&scrollbar=0`}
+          src={`${pdfUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
           title={label}
           className="w-full h-[70vh] rounded-xl bg-white"
           sandbox="allow-same-origin allow-scripts"
@@ -75,7 +82,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)) {
       return (
         <img
-          src={src}
+          src={streamUrl(content.id)}
           alt={label}
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
@@ -104,7 +111,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           Файл открывается в защищённом просмотре. Скачивание и копирование ограничены.
         </p>
         <a
-          href={src}
+          href={streamUrl(content.id)}
           target="_blank"
           rel="noreferrer"
           className="px-4 py-2 text-sm font-medium text-white bg-fox-purple rounded-lg hover:bg-fox-purple-light transition"
@@ -113,7 +120,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         </a>
       </div>
     )
-  }, [content.content_type, fileExt, label, src])
+  }, [content.content_type, fileExt, label, content.id])
 
   return (
     <div

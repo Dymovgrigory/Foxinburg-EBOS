@@ -6,7 +6,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.core.dependencies import require_active_user, require_permission
+from app.core.dependencies import (
+    require_active_user,
+    require_active_user_from_header_or_query,
+    require_permission,
+)
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
 from app.models.course import Course, LessonContent, Module, Lesson
@@ -48,7 +52,7 @@ async def sync_academy(
 
 @router.get("/course")
 async def get_academy_course(
-    current_user: User = Depends(require_active_user),
+    current_user: User = Depends(require_active_user_from_header_or_query),
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = TeacherAcademyService(uow)
@@ -167,7 +171,7 @@ async def complete_module(
 @router.get("/contents/{content_id}/stream")
 async def stream_content(
     content_id: int,
-    current_user: User = Depends(require_active_user),
+    current_user: User = Depends(require_active_user_from_header_or_query),
     uow: UnitOfWork = Depends(get_uow),
     range: Optional[str] = Header(None),
 ):
@@ -250,7 +254,7 @@ async def stream_content(
 @router.get("/contents/{content_id}/pdf")
 async def stream_content_pdf(
     content_id: int,
-    current_user: User = Depends(require_active_user),
+    current_user: User = Depends(require_active_user_from_header_or_query),
     uow: UnitOfWork = Depends(get_uow),
 ):
     """Конвертирует Office-файл материала в PDF и отдаёт его защищённым потоком.

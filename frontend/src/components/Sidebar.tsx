@@ -103,6 +103,7 @@ const methodistGroups: MenuGroup[] = [
     items: [
       { to: '/dashboard', label: 'Главная', icon: '🏠' },
       { to: '/courses', label: 'Курсы', icon: '📚' },
+      { to: '/course-builder', label: 'Конструктор курсов', icon: '🛠️' },
       { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
       { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝' },
       { to: '/knowledge', label: 'База знаний', icon: '🧠' },

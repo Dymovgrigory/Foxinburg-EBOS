@@ -227,38 +227,39 @@ async def stream_content(
     if not download_url:
         return error_response("Файл не найден на Яндекс.Диске", status_code=404)
 
-    headers = {}
+    request_headers = {}
     if range:
-        headers["Range"] = range
+        request_headers["Range"] = range
+
+    # Открываем upstream-поток заранее, чтобы получить реальные статус и заголовки
+    # (Content-Range, Content-Length partial и т.д.) и корректно проксировать их клиенту.
+    client = httpx.AsyncClient(timeout=120.0, follow_redirects=True)
+    request = client.build_request("GET", download_url, headers=request_headers)
+    response = await client.send(request, stream=True)
+
+    pass_through_headers = ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"]
+    response_headers = {
+        key: value
+        for key, value in response.headers.items()
+        if key.lower() in pass_through_headers
+    }
+    response_headers["Content-Disposition"] = "inline"
+    response_headers["X-Content-Type-Options"] = "nosniff"
+    response_headers["X-Frame-Options"] = "SAMEORIGIN"
 
     async def stream():
-        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
-            async with client.stream("GET", download_url, headers=headers) as response:
-                async for chunk in response.aiter_raw():
-                    yield chunk
+        try:
+            async for chunk in response.aiter_raw():
+                yield chunk
+        finally:
+            await response.aclose()
+            await client.aclose()
 
-    response_headers = {
-        "Accept-Ranges": "bytes",
-        "Content-Disposition": "inline",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "SAMEORIGIN",
-    }
-
-    # Проксируем content-type и длину, если они есть
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as head_client:
-        head_response = await head_client.head(download_url)
-        if head_response.status_code < 400:
-            if head_response.headers.get("content-type"):
-                response_headers["Content-Type"] = head_response.headers["content-type"]
-            if head_response.headers.get("content-length"):
-                response_headers["Content-Length"] = head_response.headers["content-length"]
-
-    status_code = 206 if range else 200
     return StreamingResponse(
         stream(),
-        status_code=status_code,
+        status_code=response.status_code,
         headers=response_headers,
-        media_type=response_headers.get("Content-Type", "application/octet-stream"),
+        media_type=response.headers.get("Content-Type", "application/octet-stream"),
     )
 
 
@@ -322,6 +323,7 @@ async def stream_content_pdf(
             content_id=content.id,
             source_url=download_url,
             source_md5=content.yandex_disk_md5,
+            source_name=content.title,
         )
     except RuntimeError as e:
         return error_response(str(e), status_code=503)

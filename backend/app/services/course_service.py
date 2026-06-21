@@ -78,3 +78,36 @@ class CourseService(BaseService[Course]):
             user_id=author.id if author else None,
         )
         return course
+
+    async def update_course(
+        self,
+        course: Course,
+        *,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        short_description: Optional[str] = None,
+        status: Optional[str] = None,
+        passing_score: Optional[int] = None,
+        is_sequential: Optional[bool] = None,
+        certificate_enabled: Optional[bool] = None,
+    ) -> Course:
+        if title is not None:
+            course.title = title
+        if description is not None:
+            course.description = description
+        if short_description is not None:
+            course.short_description = short_description
+        if status is not None:
+            course.status = status
+        if passing_score is not None:
+            course.passing_score = passing_score
+        if is_sequential is not None:
+            course.is_sequential = is_sequential
+        if certificate_enabled is not None:
+            course.certificate_enabled = certificate_enabled
+        await self.uow.session.flush()
+        await self.uow.session.refresh(course)
+        return course
+
+    async def delete_course(self, course: Course) -> None:
+        await self.uow.session.delete(course)

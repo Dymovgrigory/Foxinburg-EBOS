@@ -51,6 +51,10 @@ def _convert_sync(input_path: Path, output_dir: Path) -> Path:
     if not soffice:
         raise RuntimeError("LibreOffice (soffice) не найден. Установите LibreOffice для просмотра Office-файлов.")
 
+    # В headless-контейнере LibreOffice требует стабильный HOME для профиля пользователя
+    env = os.environ.copy()
+    env.setdefault("HOME", "/tmp")
+
     cmd = [
         soffice,
         "--headless",
@@ -60,25 +64,25 @@ def _convert_sync(input_path: Path, output_dir: Path) -> Path:
         str(output_dir),
         str(input_path),
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180, env=env)
+
+    # Проверяем, что PDF действительно создан, даже если soffice выдал некритичные warning'и
+    # (например, javaldx в контейнерах без полноценной Java-среды).
+    candidates = list(output_dir.glob("*.pdf"))
+    if candidates and candidates[0].stat().st_size > 0:
+        return candidates[0]
+
     if result.returncode != 0:
         raise RuntimeError(f"Ошибка конвертации LibreOffice: {result.stderr or result.stdout}")
 
-    base_name = input_path.stem
-    pdf_path = output_dir / f"{base_name}.pdf"
-    if not pdf_path.exists():
-        # LibreOffice иногда меняет расширение/имя
-        candidates = list(output_dir.glob("*.pdf"))
-        if not candidates:
-            raise RuntimeError("PDF не создан после конвертации")
-        pdf_path = candidates[0]
-    return pdf_path
+    raise RuntimeError("PDF не создан после конвертации")
 
 
 async def convert_office_to_pdf(
     content_id: int,
     source_url: str,
     source_md5: Optional[str] = None,
+    source_name: Optional[str] = None,
 ) -> Path:
     """Возвращает путь к PDF-версии Office-файла, кешируя результат."""
     cache_path = _pdf_cache_path(content_id, source_md5)
@@ -90,7 +94,7 @@ async def convert_office_to_pdf(
         async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
             response = await client.get(source_url)
             response.raise_for_status()
-            original_ext = _guess_extension(response.headers.get("content-type", ""))
+            original_ext = _guess_extension(response.headers.get("content-type", ""), source_name)
             input_file = tmp_path / f"source{original_ext}"
             input_file.write_bytes(response.content)
 
@@ -100,7 +104,7 @@ async def convert_office_to_pdf(
     return cache_path
 
 
-def _guess_extension(content_type: str) -> str:
+def _guess_extension(content_type: str, file_name: Optional[str] = None) -> str:
     mapping = {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
         "application/msword": ".doc",
@@ -109,6 +113,11 @@ def _guess_extension(content_type: str) -> str:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
         "application/vnd.ms-excel": ".xls",
     }
+    if file_name:
+        name_lower = file_name.lower()
+        for ext in (".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".odt", ".ods", ".odp"):
+            if name_lower.endswith(ext):
+                return ext
     return mapping.get(content_type, ".bin")
 
 

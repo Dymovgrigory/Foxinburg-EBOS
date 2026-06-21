@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from app.core.dependencies import require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.schemas.course import LessonCreate, LessonResponse
+from app.schemas.course import LessonCreate, LessonUpdate, LessonResponse
 from app.schemas.progress import LessonProgressResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.lesson_service import LessonService
@@ -54,6 +54,48 @@ async def create_lesson(
         message="Урок создан",
         status_code=201,
     )
+
+
+@router.patch("/{lesson_id}")
+async def update_lesson(
+    lesson_id: int,
+    data: LessonUpdate,
+    current_user=Depends(require_permission(Permission.LESSON_UPDATE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = LessonService(uow)
+    lesson = await service.get_by_id(lesson_id)
+    if not lesson:
+        return error_response("Урок не найден", status_code=404)
+
+    updated = await service.update_lesson(
+        lesson,
+        title=data.title,
+        description=data.description,
+        lesson_type=data.lesson_type,
+        order_index=data.order_index,
+        duration_minutes=data.duration_minutes,
+        is_active=data.is_active,
+    )
+    return success_response(
+        data=LessonResponse.model_validate(updated).model_dump(),
+        message="Урок обновлён",
+    )
+
+
+@router.delete("/{lesson_id}")
+async def delete_lesson(
+    lesson_id: int,
+    current_user=Depends(require_permission(Permission.LESSON_DELETE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = LessonService(uow)
+    lesson = await service.get_by_id(lesson_id)
+    if not lesson:
+        return error_response("Урок не найден", status_code=404)
+
+    await service.delete_lesson(lesson)
+    return success_response(message="Урок удалён")
 
 
 @router.post("/{lesson_id}/complete")

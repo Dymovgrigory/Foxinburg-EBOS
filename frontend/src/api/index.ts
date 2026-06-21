@@ -3,10 +3,14 @@ import type {
   ApiResponse,
   User,
   Course,
+  Module,
+  Lesson,
   Schedule,
   Group,
   Homework,
   HomeworkReview,
+  Test,
+  TestQuestion,
   Payment,
   Transaction,
   Lead,
@@ -82,11 +86,57 @@ export const schedulesApi = {
   delete: (id: number) => api.delete<ApiResponse<void>>(`/schedules/${id}`).then(unwrap),
 }
 
+export const modulesApi = {
+  get: (id: number) => api.get<ApiResponse<Module>>(`/modules/${id}`).then(unwrap),
+  create: (data: Partial<Module> & { course_id: number }) =>
+    api.post<ApiResponse<Module>>('/modules', data).then(unwrap),
+  update: (id: number, data: Partial<Module>) =>
+    api.patch<ApiResponse<Module>>(`/modules/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/modules/${id}`).then(unwrap),
+  lessons: (moduleId: number) =>
+    api.get<ApiResponse<Lesson[]>>(`/modules/${moduleId}/lessons`).then(unwrap),
+}
+
+export const lessonsApi = {
+  get: (id: number) => api.get<ApiResponse<Lesson>>(`/lessons/${id}`).then(unwrap),
+  create: (data: Partial<Lesson> & { module_id: number }) =>
+    api.post<ApiResponse<Lesson>>('/lessons', data).then(unwrap),
+  update: (id: number, data: Partial<Lesson>) =>
+    api.patch<ApiResponse<Lesson>>(`/lessons/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/lessons/${id}`).then(unwrap),
+}
+
+export const testsApi = {
+  list: (lessonId?: number) =>
+    api.get<ApiResponse<Test[]>>('/tests', { params: lessonId ? { lesson_id: lessonId } : {} }).then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Test>>(`/tests/${id}`).then(unwrap),
+  create: (data: Partial<Test>) => api.post<ApiResponse<Test>>('/tests', data).then(unwrap),
+  update: (id: number, data: Partial<Test>) => api.patch<ApiResponse<Test>>(`/tests/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/tests/${id}`).then(unwrap),
+  questions: (testId: number) =>
+    api.get<ApiResponse<TestQuestion[]>>(`/tests/${testId}/questions`).then(unwrap),
+  createQuestion: (testId: number, data: Partial<TestQuestion>) =>
+    api.post<ApiResponse<TestQuestion>>(`/tests/${testId}/questions`, data).then(unwrap),
+  updateQuestion: (testId: number, questionId: number, data: Partial<TestQuestion>) =>
+    api.patch<ApiResponse<TestQuestion>>(`/tests/${testId}/questions/${questionId}`, data).then(unwrap),
+  deleteQuestion: (testId: number, questionId: number) =>
+    api.delete<ApiResponse<void>>(`/tests/${testId}/questions/${questionId}`).then(unwrap),
+}
+
 export const homeworksApi = {
-  list: () => api.get<ApiResponse<Homework[]>>('/homeworks').then(unwrap),
+  list: (lessonId?: number) =>
+    api.get<ApiResponse<Homework[]>>(`/homeworks${lessonId ? `?lesson_id=${lessonId}` : ''}`).then(unwrap),
   create: (data: Partial<Homework>) => api.post<ApiResponse<Homework>>('/homeworks', data).then(unwrap),
   update: (id: number, data: Partial<Homework>) =>
     api.patch<ApiResponse<Homework>>(`/homeworks/${id}`, data).then(unwrap),
+  assignToLesson: (data: {
+    lesson_id: number
+    group_id?: number
+    title?: string
+    description?: string
+    content?: string
+    file_urls?: string
+  }) => api.post<ApiResponse<Homework[]>>('/homeworks/assign-to-lesson', data).then(unwrap),
   reviews: (homeworkId: number) =>
     api.get<ApiResponse<HomeworkReview[]>>(`/homeworks/${homeworkId}/reviews`).then(unwrap),
   createReview: (homeworkId: number, data: Partial<HomeworkReview>) =>

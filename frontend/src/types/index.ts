@@ -50,6 +50,7 @@ export interface Module {
 export interface Lesson {
   id: number
   title: string
+  description?: string
   lesson_type: string
   duration_minutes: number
   order_index: number
@@ -93,6 +94,31 @@ export interface Homework {
   status: string
   file_url?: string | null
   created_at: string
+}
+
+export interface Test {
+  id: number
+  title: string
+  description?: string
+  lesson_id: number
+  passing_score: number
+  time_limit_minutes?: number
+  max_attempts: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  questions?: TestQuestion[]
+}
+
+export interface TestQuestion {
+  id: number
+  test_id: number
+  order_index: number
+  question_text: string
+  question_type: string
+  options?: string
+  correct_answers?: string
+  points: number
 }
 
 export interface HomeworkReview {

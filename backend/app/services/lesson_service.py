@@ -44,3 +44,33 @@ class LessonService(BaseService[Lesson]):
         )
         await self.add(lesson)
         return lesson
+
+    async def update_lesson(
+        self,
+        lesson: Lesson,
+        *,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        lesson_type: Optional[str] = None,
+        order_index: Optional[int] = None,
+        duration_minutes: Optional[int] = None,
+        is_active: Optional[bool] = None,
+    ) -> Lesson:
+        if title is not None:
+            lesson.title = title
+        if description is not None:
+            lesson.description = description
+        if lesson_type is not None:
+            lesson.lesson_type = lesson_type
+        if order_index is not None:
+            lesson.order_index = order_index
+        if duration_minutes is not None:
+            lesson.duration_minutes = duration_minutes
+        if is_active is not None:
+            lesson.is_active = is_active
+        await self.uow.session.flush()
+        await self.uow.session.refresh(lesson)
+        return lesson
+
+    async def delete_lesson(self, lesson: Lesson) -> None:
+        await self.uow.session.delete(lesson)

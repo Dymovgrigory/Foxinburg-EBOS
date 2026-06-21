@@ -8,8 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-writer \
     libreoffice-impress \
     libreoffice-calc \
+    libreoffice-java-common \
+    default-jre-headless \
     fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
+
+# LibreOffice в headless-режиме требует стабильный HOME для профиля пользователя
+ENV HOME=/tmp/libreoffice-home
+RUN mkdir -p /tmp/libreoffice-home
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -34,6 +34,13 @@ class ModuleCreate(ModuleBase):
     course_id: int
 
 
+class ModuleUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    order_index: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
 class LessonBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -44,6 +51,15 @@ class LessonBase(BaseModel):
 
 class LessonCreate(LessonBase):
     module_id: int
+
+
+class LessonUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    lesson_type: Optional[str] = None
+    order_index: Optional[int] = None
+    duration_minutes: Optional[int] = None
+    is_active: Optional[bool] = None
 
 
 class LessonResponse(LessonBase):

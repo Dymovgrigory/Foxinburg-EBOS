@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,10 +25,14 @@ router = APIRouter(prefix="/tests", tags=["tests"])
 
 @router.get("")
 async def list_tests(
+    lesson_id: Optional[int] = None,
     current_user=Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Test).order_by(Test.created_at.desc()))
+    query = select(Test)
+    if lesson_id:
+        query = query.where(Test.lesson_id == lesson_id)
+    result = await db.execute(query.order_by(Test.created_at.desc()))
     tests = result.scalars().all()
     return success_response(
         data=[TestResponse.model_validate(t).model_dump() for t in tests],

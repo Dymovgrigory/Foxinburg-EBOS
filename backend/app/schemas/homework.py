@@ -27,6 +27,15 @@ class HomeworkSubmitRequest(BaseModel):
     file_urls: Optional[str] = None  # JSON-строка со списком URL
 
 
+class HomeworkAssignToLesson(BaseModel):
+    lesson_id: int
+    group_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    file_urls: Optional[str] = None
+
+
 class HomeworkResponse(HomeworkBase):
     model_config = ConfigDict(from_attributes=True)
 

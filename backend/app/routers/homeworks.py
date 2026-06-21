@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
 from app.models.homework import Homework, HomeworkReview
+from app.models.enrollment import Enrollment
 from app.models.user import User
 from app.schemas.homework import (
     HomeworkCreate,
@@ -14,6 +15,7 @@ from app.schemas.homework import (
     HomeworkReviewCreate,
     HomeworkReviewUpdate,
     HomeworkReviewResponse,
+    HomeworkAssignToLesson,
 )
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
@@ -36,17 +38,16 @@ def _review_status_to_homework_status(review_status: str) -> str:
 
 @router.get("")
 async def list_homeworks(
+    lesson_id: Optional[int] = None,
     current_user: User = Depends(require_active_user),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    if has_permission(current_user.role, Permission.HOMEWORK_REVIEW):
-        result = await uow.session.execute(select(Homework).order_by(Homework.id.desc()))
-    else:
-        result = await uow.session.execute(
-            select(Homework)
-            .where(Homework.student_id == current_user.id)
-            .order_by(Homework.id.desc())
-        )
+    query = select(Homework)
+    if not has_permission(current_user.role, Permission.HOMEWORK_REVIEW):
+        query = query.where(Homework.student_id == current_user.id)
+    if lesson_id:
+        query = query.where(Homework.lesson_id == lesson_id)
+    result = await uow.session.execute(query.order_by(Homework.id.desc()))
     homeworks = result.scalars().all()
     return success_response(
         data=[HomeworkResponse.model_validate(h).model_dump() for h in homeworks],
@@ -67,6 +68,57 @@ async def create_homework(
     return success_response(
         data=HomeworkResponse.model_validate(homework).model_dump(),
         message="Домашнее задание создано",
+        status_code=201,
+    )
+
+
+@router.post("/assign-to-lesson")
+async def assign_homework_to_lesson(
+    data: HomeworkAssignToLesson,
+    current_user=Depends(require_permission(Permission.HOMEWORK_REVIEW)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Создаёт домашние задания для всех учеников урока (группы или курса)."""
+    from app.services.lesson_service import LessonService
+
+    lesson_service = LessonService(uow)
+    lesson = await lesson_service.get_by_id(data.lesson_id)
+    if not lesson:
+        return error_response("Урок не найден", status_code=404)
+
+    query = (
+        select(Enrollment)
+        .where(Enrollment.course_id == lesson.module.course_id, Enrollment.status == "active")
+    )
+    if data.group_id:
+        query = query.where(Enrollment.group_id == data.group_id)
+
+    result = await uow.session.execute(query)
+    enrollments = result.scalars().all()
+    if not enrollments:
+        return error_response("Активные ученики не найдены", status_code=404)
+
+    created = []
+    for enrollment in enrollments:
+        homework = Homework(
+            lesson_id=data.lesson_id,
+            student_id=enrollment.student_id,
+            title=data.title,
+            description=data.description,
+            content=data.content,
+            file_urls=data.file_urls,
+            status="assigned",
+        )
+        uow.session.add(homework)
+        created.append(homework)
+
+    await uow.commit()
+    for h in created:
+        await uow.session.refresh(h)
+
+    return success_response(
+        data=[HomeworkResponse.model_validate(h).model_dump() for h in created],
+        message=f"Домашнее задание назначено {len(created)} ученикам",
         status_code=201,
     )
 

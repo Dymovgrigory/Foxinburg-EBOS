@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 
 interface User {
   id: number
@@ -23,24 +24,35 @@ const filters = [
   { key: 'guest', label: 'Гость' },
 ]
 
+const roleVariants: Record<string, Parameters<typeof Badge>[0]['variant']> = {
+  owner: 'error',
+  super_admin: 'purple',
+  admin: 'info',
+  manager: 'warning',
+  methodist: 'warning',
+  teacher: 'success',
+  student: 'default',
+  parent: 'default',
+  guest: 'default',
+}
+
 export default function EmployeesPage() {
+  const { showToast } = useToast()
   const [users, setUsers] = useState<User[]>([])
-  const [filtered, setFiltered] = useState<User[]>([])
   const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student', plan: 'FREE', target_language: 'ru' })
 
   const fetchUsers = async () => {
     setLoading(true)
-    setError('')
     try {
       const res = await api.get('/users')
-      const data = res.data.data ?? []
-      setUsers(data)
+      setUsers(res.data.data ?? [])
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка загрузки')
+      showToast(err.response?.data?.message || 'Ошибка загрузки', 'error')
     } finally {
       setLoading(false)
     }
@@ -50,138 +62,160 @@ export default function EmployeesPage() {
     fetchUsers()
   }, [])
 
-  useEffect(() => {
-    if (filter === 'all') {
-      setFiltered(users)
-    } else {
-      setFiltered(users.filter((u) => u.role === filter))
+  const filtered = useMemo(() => {
+    let list = filter === 'all' ? users : users.filter((u) => u.role === filter)
+    if (search) {
+      list = list.filter(
+        (u) =>
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase())
+      )
     }
-  }, [filter, users])
+    return list
+  }, [filter, users, search])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitting(true)
     try {
       await api.post('/users', form)
       setShowForm(false)
       setForm({ name: '', email: '', password: '', role: 'student', plan: 'FREE', target_language: 'ru' })
+      showToast('Пользователь создан', 'success')
       await fetchUsers()
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка создания пользователя')
+      showToast(err.response?.data?.message || 'Ошибка создания пользователя', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div className="min-h-screen bg-fox-light">
       <Header title="Сотрудники" subtitle={`Всего: ${filtered.length}`} icon="👥" />
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
-
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={[
-                  'px-4 py-2 rounded-xl text-sm font-medium transition',
-                  filter === f.key
-                    ? 'bg-[#E85D4C] text-white shadow-md shadow-[#E85D4C]/25'
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50',
-                ].join(' ')}
-              >
-                {f.label}
-              </button>
-            ))}
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        <Card>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-fox-dark">Список пользователей</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{filtered.length} из {users.length}</p>
+            </div>
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+              {showForm ? 'Отмена' : 'Добавить пользователя'}
+            </Button>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-[#E85D4C] hover:bg-[#D14F40] text-white text-sm font-medium rounded-xl transition"
-          >
-            {showForm ? 'Отмена' : '+ Добавить пользователя'}
-          </button>
-        </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 mt-5">
+            <Input
+              placeholder="Поиск по имени или email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="sm:max-w-sm"
+            />
+            <div className="flex flex-wrap gap-2">
+              {filters.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-xs font-semibold transition border',
+                    filter === f.key
+                      ? 'bg-fox-purple text-white border-fox-purple shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-fox-purple hover:text-fox-purple',
+                  ].join(' ')}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 grid md:grid-cols-3 gap-4">
-            <input required placeholder="Имя" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <input required type="password" placeholder="Пароль" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
-              {filters.filter((f) => f.key !== 'all').map((f) => (
-                <option key={f.key} value={f.key}>{f.label}</option>
-              ))}
-            </select>
-            <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
-              <option value="FREE">FREE</option>
-              <option value="PREMIUM">PREMIUM</option>
-            </select>
-            <select value={form.target_language} onChange={(e) => setForm({ ...form, target_language: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
-              <option value="ru">Русский</option>
-              <option value="en">English</option>
-              <option value="de">Deutsch</option>
-            </select>
-            <button type="submit" className="md:col-span-3 px-4 py-2 bg-[#7C5CFC] hover:bg-[#6B4FD6] text-white rounded-xl font-medium">Создать пользователя</button>
-          </form>
+          <Card>
+            <h3 className="text-base font-bold text-fox-dark mb-4">Новый пользователь</h3>
+            <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-4">
+              <Input required placeholder="Имя" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input required type="password" placeholder="Пароль" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              >
+                {filters.filter((f) => f.key !== 'all').map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+              <select
+                value={form.plan}
+                onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              >
+                <option value="FREE">FREE</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
+              <select
+                value={form.target_language}
+                onChange={(e) => setForm({ ...form, target_language: e.target.value })}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              >
+                <option value="ru">Русский</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+              <div className="md:col-span-3">
+                <Button type="submit" loading={submitting}>Создать пользователя</Button>
+              </div>
+            </form>
+          </Card>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Загрузка...</div>
-          ) : (
-            <table className="w-full text-left">
-              <thead className="bg-gray-50">
+        {loading ? (
+          <Loader text="Загрузка пользователей..." />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="👥"
+            title="Пользователи не найдены"
+            description={search || filter !== 'all' ? 'Попробуй изменить фильтры.' : 'Добавь первого пользователя.'}
+            actionLabel={!search && filter === 'all' ? 'Добавить пользователя' : undefined}
+            onAction={!search && filter === 'all' ? () => setShowForm(true) : undefined}
+          />
+        ) : (
+          <Card padding="none">
+            <Table>
+              <Thead>
                 <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Имя</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Роль</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Статус</th>
+                  <Th>Имя</Th>
+                  <Th>Email</Th>
+                  <Th>Роль</Th>
+                  <Th>Статус</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </Thead>
+              <Tbody>
                 {filtered.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{u.name}</td>
-                    <td className="px-6 py-4 text-gray-600 flex items-center gap-2">
-                      <span>✉️</span> {u.email}
-                    </td>
-                    <td className="px-6 py-4">
-                      <RoleBadge role={u.role} />
-                    </td>
-                    <td className="px-6 py-4">
+                  <Tr key={u.id}>
+                    <Td className="font-medium text-fox-dark">{u.name}</Td>
+                    <Td>{u.email}</Td>
+                    <Td>
+                      <Badge variant={roleVariants[u.role] || 'default'}>{roleLabel(u.role)}</Badge>
+                    </Td>
+                    <Td>
                       {u.is_active ? (
-                        <span className="text-green-600 text-sm">Активен</span>
+                        <Badge variant="success">Активен</Badge>
                       ) : (
-                        <span className="text-gray-400 text-sm">Неактивен</span>
+                        <Badge variant="default">Неактивен</Badge>
                       )}
-                    </td>
-                  </tr>
+                    </Td>
+                  </Tr>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </Tbody>
+            </Table>
+          </Card>
+        )}
       </div>
     </div>
-  )
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const styles: Record<string, string> = {
-    owner: 'bg-red-100 text-red-700',
-    super_admin: 'bg-purple-100 text-purple-700',
-    admin: 'bg-blue-100 text-blue-700',
-    manager: 'bg-amber-100 text-amber-700',
-    methodist: 'bg-yellow-100 text-yellow-700',
-    teacher: 'bg-green-100 text-green-700',
-    student: 'bg-cyan-100 text-cyan-700',
-    parent: 'bg-pink-100 text-pink-700',
-    guest: 'bg-gray-100 text-gray-600',
-  }
-  return (
-    <span className={['px-3 py-1 rounded-full text-xs font-semibold', styles[role] || styles.guest].join(' ')}>
-      {roleLabel(role)}
-    </span>
   )
 }
 

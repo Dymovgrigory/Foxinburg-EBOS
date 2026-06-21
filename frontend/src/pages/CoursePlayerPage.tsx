@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
+import { useAuth } from '../contexts/AuthContext'
 import { coursesApi, lessonsApi, progressApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
 import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview } from '../types'
@@ -53,6 +54,7 @@ function homeworkStatusMeta(homework: Homework, review: HomeworkReview | null) {
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>()
   const courseId = Number(id)
+  const { user } = useAuth()
   const { showToast } = useToast()
 
   const [course, setCourse] = useState<Course | null>(null)
@@ -168,7 +170,7 @@ export default function CoursePlayerPage() {
   const loadHomework = async (lessonId: number) => {
     try {
       const list = await homeworksApi.list(lessonId)
-      const hw = list[0] || null
+      const hw = list.find((h) => h.student_id === user?.id) || list[0] || null
       setHomework(hw)
       setHomeworkReview(null)
       if (hw?.content) setHomeworkAnswer(hw.content)

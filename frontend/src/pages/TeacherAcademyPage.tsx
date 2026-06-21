@@ -213,7 +213,7 @@ export default function TeacherAcademyPage() {
         }
         if (lesson.lesson_type === 'homework') {
           const list = await homeworksApi.list(lesson.id)
-          const hw = list[0] || null
+          const hw = list.find((h) => h.student_id === user?.id) || list[0] || null
           setHomework(hw)
           if (hw?.content) setHomeworkAnswer(hw.content)
           if (hw) {

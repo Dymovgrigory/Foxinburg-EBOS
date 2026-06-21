@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Modal, Input, Loader, Badge, EmptyState } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
@@ -37,8 +38,8 @@ export default function ChatPage() {
         if (list.length > 0 && !selectedRoom) {
           setSelectedRoom(list[0])
         }
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Ошибка загрузки чатов', 'error')
+      } catch (err: unknown) {
+        showToast(getErrorMessage(err, 'Ошибка загрузки чатов'), 'error')
       } finally {
         setLoadingRooms(false)
       }
@@ -52,8 +53,8 @@ export default function ChatPage() {
       try {
         const list = await chatsApi.messages(selectedRoom.id)
         setHistory(list.reverse())
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Ошибка загрузки сообщений', 'error')
+      } catch (err: unknown) {
+        showToast(getErrorMessage(err, 'Ошибка загрузки сообщений'), 'error')
       }
     }
     setHistory([])
@@ -100,8 +101,8 @@ export default function ChatPage() {
       setNewRoomName('')
       setSelectedParticipants([])
       showToast('Чат создан', 'success')
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка создания чата', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка создания чата'), 'error')
     } finally {
       setCreating(false)
     }

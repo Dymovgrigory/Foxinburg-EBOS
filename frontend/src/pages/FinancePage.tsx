@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { financeApi, usersApi } from '../api'
@@ -50,8 +51,8 @@ export default function FinancePage() {
       setTransactions(transactionsRes)
       setAnalytics(analyticsRes)
       setUsers(usersRes)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки финансов', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки финансов'), 'error')
     } finally {
       setLoading(false)
     }
@@ -106,8 +107,8 @@ export default function FinancePage() {
       setShowModal(false)
       resetForm()
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка сохранения платежа', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка сохранения платежа'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -119,8 +120,8 @@ export default function FinancePage() {
       await financeApi.deletePayment(payment.id)
       showToast('Платёж удалён', 'success')
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка удаления', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка удаления'), 'error')
     }
   }
 

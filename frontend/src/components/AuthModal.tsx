@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { getErrorMessage } from '../utils/error'
 import { authApi } from '../api'
 import { useAuth } from '../contexts/AuthContext'
 import type { User } from '../types'
@@ -33,13 +34,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (!access_token || !user) throw new Error('Некорректный ответ сервера')
         login(user as User, access_token)
         window.location.href = '/system-center'
-      } catch (err: any) {
-        const msg =
-          err.response?.data?.message ||
-          err.response?.data?.detail ||
-          err.message ||
-          'Ошибка авторизации'
-        setAuthError(msg)
+      } catch (err: unknown) {
+        setAuthError(getErrorMessage(err, 'Ошибка авторизации'))
       } finally {
         setAuthLoading(false)
       }

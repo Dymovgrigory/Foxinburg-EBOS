@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import BrandLogo from '../components/BrandLogo'
 import { authApi } from '../api'
@@ -32,8 +33,8 @@ export default function LoginPage() {
       }
       login(user as User, access_token)
       navigate('/system-center')
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || 'Ошибка авторизации'
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err, 'Ошибка авторизации')
       setError(msg)
     } finally {
       setLoading(false)

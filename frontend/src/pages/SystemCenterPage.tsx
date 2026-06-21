@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { analyticsApi, systemApi, usersApi, coursesApi, organizationsApi } from '../api'
@@ -64,8 +65,8 @@ export default function SystemCenterPage() {
         orgsRes.map((o: Organization) => organizationsApi.branches(o.id).catch(() => []))
       )
       setBranchesCount(branches.flat().length)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки System Center', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки System Center'), 'error')
     } finally {
       setLoading(false)
     }

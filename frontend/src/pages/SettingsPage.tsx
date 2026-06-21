@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Input, Badge } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
@@ -26,8 +27,8 @@ export default function SettingsPage() {
       const updated = await authApi.updateMe(profile)
       login(updated, localStorage.getItem('token') || '')
       showToast('Профиль сохранён', 'success')
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка сохранения', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка сохранения'), 'error')
     } finally {
       setLoading(false)
     }
@@ -44,8 +45,8 @@ export default function SettingsPage() {
       await authApi.changePassword(passwords.current, passwords.new)
       setPasswords({ current: '', new: '', confirm: '' })
       showToast('Пароль изменён', 'success')
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка смены пароля', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка смены пароля'), 'error')
     } finally {
       setLoading(false)
     }

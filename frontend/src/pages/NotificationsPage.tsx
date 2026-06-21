@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
@@ -35,8 +36,8 @@ export default function NotificationsPage() {
       const [list, count] = await Promise.all([notificationsApi.list(), notificationsApi.unreadCount()])
       setNotifications(list)
       setUnreadCount(count.count)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки уведомлений', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки уведомлений'), 'error')
     } finally {
       setLoading(false)
     }
@@ -52,8 +53,8 @@ export default function NotificationsPage() {
     try {
       await notificationsApi.markRead(id)
       await fetchNotifications()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка'), 'error')
     }
   }
 
@@ -62,8 +63,8 @@ export default function NotificationsPage() {
       await notificationsApi.markAllRead()
       await fetchNotifications()
       showToast('Все уведомления прочитаны', 'success')
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка'), 'error')
     }
   }
 
@@ -71,8 +72,8 @@ export default function NotificationsPage() {
     try {
       await notificationsApi.delete(id)
       await fetchNotifications()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка'), 'error')
     }
   }
 

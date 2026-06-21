@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useToast, Card, Badge, Loader, Button } from '../components/ui'
@@ -32,8 +33,8 @@ export default function StudentDashboardPage() {
       setProgress(progressRes)
       setCourses(coursesRes)
       setUnreadCount(countRes.count)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки дашборда', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки дашборда'), 'error')
     } finally {
       setLoading(false)
     }

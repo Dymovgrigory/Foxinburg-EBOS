@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState } from '../components/ui'
 import { analyticsApi } from '../api'
@@ -15,7 +16,7 @@ export default function AnalyticsPage() {
     analyticsApi
       .dashboard()
       .then(setData)
-      .catch((err) => showToast(err.response?.data?.message || 'Ошибка загрузки аналитики', 'error'))
+      .catch((err) => showToast(getErrorMessage(err, 'Ошибка загрузки аналитики'), 'error'))
       .finally(() => setLoading(false))
   }, [])
 

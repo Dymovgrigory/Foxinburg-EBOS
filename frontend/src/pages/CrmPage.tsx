@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { crmApi, usersApi } from '../api'
@@ -62,8 +63,8 @@ export default function CrmPage() {
       setLeads(leadsRes)
       setDeals(dealsRes)
       setUsers(usersRes)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки CRM', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки CRM'), 'error')
     } finally {
       setLoading(false)
     }
@@ -136,8 +137,8 @@ export default function CrmPage() {
       setShowLeadModal(false)
       resetLeadForm()
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка сохранения лида', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка сохранения лида'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -163,8 +164,8 @@ export default function CrmPage() {
       setShowDealModal(false)
       resetDealForm()
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка сохранения сделки', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка сохранения сделки'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -176,8 +177,8 @@ export default function CrmPage() {
       await crmApi.deleteLead(lead.id)
       showToast('Лид удалён', 'success')
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка удаления', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка удаления'), 'error')
     }
   }
 
@@ -187,8 +188,8 @@ export default function CrmPage() {
       await crmApi.deleteDeal(deal.id)
       showToast('Сделка удалена', 'success')
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка удаления', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка удаления'), 'error')
     }
   }
 

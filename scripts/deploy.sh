@@ -22,10 +22,13 @@ if [ ! -f .env.production ]; then
     exit 1
 fi
 
-# 3. Load environment
+# 3. Load environment and ensure docker compose uses it for interpolation
 set -a
 source .env.production
 set +a
+# Docker Compose reads .env by default for variable interpolation in the YAML file.
+# Keep .env in sync with .env.production so secrets are actually used at runtime.
+cp .env.production .env
 
 # 4. SSL certificates
 if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then

@@ -14,6 +14,8 @@ export default function DashboardPage() {
       navigate('/teacher-dashboard', { replace: true })
     } else if (user.role === 'student') {
       navigate('/student-dashboard', { replace: true })
+    } else if (user.role === 'methodist') {
+      navigate('/methodist-dashboard', { replace: true })
     } else {
       navigate('/system-center', { replace: true })
     }

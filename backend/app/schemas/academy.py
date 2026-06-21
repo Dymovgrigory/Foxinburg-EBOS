@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 
 
 class AcademyContentResponse(BaseModel):
@@ -9,9 +9,14 @@ class AcademyContentResponse(BaseModel):
     id: int
     content_type: str
     title: Optional[str]
-    file_url: Optional[str]
     external_url: Optional[str]
     order_index: int
+
+    @computed_field
+    @property
+    def file_url(self) -> Optional[str]:
+        """Защищённая ссылка для просмотра/стриминга через бэкенд."""
+        return f"/api/v3/teacher-academy/contents/{self.id}/stream"
 
 
 class AcademyLessonResponse(BaseModel):

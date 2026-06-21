@@ -1,4 +1,9 @@
+import os
+
 from pydantic_settings import BaseSettings
+
+
+_ENV_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".env.development")
 
 
 class Settings(BaseSettings):
@@ -48,7 +53,7 @@ class Settings(BaseSettings):
     PASSWORD_ENCRYPTION_KEY: str = ""
 
     class Config:
-        env_file = ".env.development"
+        env_file = _ENV_PATH
         env_file_encoding = "utf-8"
 
 

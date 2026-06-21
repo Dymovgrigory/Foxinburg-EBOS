@@ -10,6 +10,7 @@ import FinancePage from './pages/FinancePage'
 import SettingsPage from './pages/SettingsPage'
 import TeacherDashboardPage from './pages/TeacherDashboardPage'
 import StudentDashboardPage from './pages/StudentDashboardPage'
+import MethodistDashboardPage from './pages/MethodistDashboardPage'
 import PlaceholderPage from './components/PlaceholderPage'
 import CrmPage from './pages/CrmPage'
 import HomeworksPage from './pages/HomeworksPage'
@@ -46,6 +47,7 @@ function App() {
         <Route path="settings" element={<Protected><SettingsPage /></Protected>} />
         <Route path="teacher-dashboard" element={<RoleProtected path="/teacher-dashboard"><TeacherDashboardPage /></RoleProtected>} />
         <Route path="student-dashboard" element={<RoleProtected path="/student-dashboard"><StudentDashboardPage /></RoleProtected>} />
+        <Route path="methodist-dashboard" element={<RoleProtected path="/methodist-dashboard"><MethodistDashboardPage /></RoleProtected>} />
         <Route path="branches" element={<RoleProtected path="/branches"><BranchesPage /></RoleProtected>} />
         <Route path="students" element={<RoleProtected path="/students"><StudentsPage /></RoleProtected>} />
         <Route path="analytics" element={<RoleProtected path="/analytics"><AnalyticsPage /></RoleProtected>} />

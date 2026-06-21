@@ -96,10 +96,15 @@ class LessonContent(Base):
 
     content_type = Column(String, nullable=False)  # text, video, pdf, file, embed
     title = Column(String, nullable=True)
-    body = Column(Text, nullable=True)  # для текста
-    file_url = Column(String, nullable=True)  # для видео/файлов
-    external_url = Column(String, nullable=True)  # для embed
+    body = Column(Text, nullable=True)  # для текста или md5
+    file_url = Column(String, nullable=True)  # устаревшее; оставлено для совместимости
+    external_url = Column(String, nullable=True)  # для embed / preview
     order_index = Column(Integer, default=0)
+
+    # Yandex Disk integration
+    yandex_disk_path = Column(String, nullable=True, index=True)
+    yandex_disk_md5 = Column(String, nullable=True)
+    file_size = Column(Integer, nullable=True)
 
     lesson = relationship("Lesson", back_populates="contents")
 

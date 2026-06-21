@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+
+import httpx
+from fastapi import APIRouter, Depends, Header
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.dependencies import require_active_user, require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.models.course import Course, Module, Lesson
+from app.models.course import Course, LessonContent, Module, Lesson
 from app.models.enrollment import Enrollment, LessonProgress
 from app.models.user import User
 from app.schemas.academy import (
@@ -17,6 +21,7 @@ from app.schemas.academy import (
 from app.schemas.enrollment import EnrollmentResponse
 from app.services.teacher_academy_service import TeacherAcademyService
 from app.services.unit_of_work import UnitOfWork, get_uow
+from app.services.yandex_disk_service import YandexDiskService
 
 router = APIRouter(prefix="/teacher-academy", tags=["teacher-academy"])
 
@@ -155,4 +160,87 @@ async def complete_module(
             message="Модуль завершён",
         ).model_dump(),
         message="Модуль завершён",
+    )
+
+
+@router.get("/contents/{content_id}/stream")
+async def stream_content(
+    content_id: int,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+    range: Optional[str] = Header(None),
+):
+    """Защищённая прокси-отдача файла материала Академии педагогов.
+
+    Проверяет права пользователя, получает свежую прямую ссылку с Яндекс.Диска
+    и проксирует поток через бэкенд, чтобы не раскрывать внешние URL.
+    """
+    content_result = await uow.session.execute(
+        select(LessonContent)
+        .where(LessonContent.id == content_id)
+        .options(selectinload(LessonContent.lesson).selectinload(Lesson.module).selectinload(Module.course))
+    )
+    content = content_result.scalar_one_or_none()
+    if not content:
+        return error_response("Материал не найден", status_code=404)
+
+    if not content.yandex_disk_path:
+        return error_response("Файл недоступен для потоковой передачи", status_code=404)
+
+    course = content.lesson.module.course
+
+    # Методисты и администраторы могут просматривать без зачисления
+    can_preview = current_user.role in ("methodist", "admin", "owner", "super_admin")
+    if not can_preview:
+        enrollment_result = await uow.session.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == course.id,
+                Enrollment.status == "active",
+            )
+        )
+        if not enrollment_result.scalar_one_or_none():
+            return error_response("Доступ к материалу запрещён", status_code=403)
+
+    try:
+        disk = YandexDiskService()
+        download_url = await disk.get_download_url(content.yandex_disk_path)
+    except Exception as e:
+        return error_response(f"Не удалось получить файл с Яндекс.Диска: {e}", status_code=502)
+
+    if not download_url:
+        return error_response("Файл не найден на Яндекс.Диске", status_code=404)
+
+    headers = {}
+    if range:
+        headers["Range"] = range
+
+    async def stream():
+        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+            async with client.stream("GET", download_url, headers=headers) as response:
+                async for chunk in response.aiter_raw():
+                    yield chunk
+
+    response_headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+    }
+
+    # Проксируем content-type и длину, если они есть
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as head_client:
+        head_response = await head_client.head(download_url)
+        if head_response.status_code < 400:
+            if head_response.headers.get("content-type"):
+                response_headers["Content-Type"] = head_response.headers["content-type"]
+            if head_response.headers.get("content-length"):
+                response_headers["Content-Length"] = head_response.headers["content-length"]
+
+    status_code = 206 if range else 200
+    return StreamingResponse(
+        stream(),
+        status_code=status_code,
+        headers=response_headers,
+        media_type=response_headers.get("Content-Type", "application/octet-stream"),
     )

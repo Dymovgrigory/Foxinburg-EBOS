@@ -114,8 +114,8 @@ async def notify_on_login(event_type: SystemEventType, payload: dict, user_id: i
     from app.services.notification_service import NotificationService
 
     async with UnitOfWork() as uow:
-        await NotificationService.create_notification(
-            uow,
+        service = NotificationService(uow)
+        await service.create_notification(
             user_id=user_id,
             title="Вы вошли в систему",
             message=f"Добро пожаловать, {payload.get('email', '')}",
@@ -318,20 +318,88 @@ async def notify_homework_reviewed(
             .options(selectinload(Homework.lesson).selectinload(Lesson.module).selectinload(Module.course))
         )
         homework = hw_result.scalar_one_or_none()
-        if not homework or homework.lesson.module.course.type != "teacher_academy":
+        if not homework:
             return
 
-        status_text = "принято" if homework.status == "reviewed" else "требует доработки"
         dispatcher = NotificationDispatcher(uow)
+        status_text = "принято" if homework.status == "reviewed" else "требует доработки"
+        link = "/academy" if homework.lesson.module.course.type == "teacher_academy" else "/homeworks"
         await dispatcher.notify_user(
             user_id=homework.student_id,
             title="Домашнее задание проверено",
             message=f"Задание по модулю «{homework.lesson.module.title}» {status_text}.",
-            type_="academy",
-            link="/academy",
+            type_="academy" if homework.lesson.module.course.type == "teacher_academy" else "homework",
+            link=link,
             entity_type="homework",
             entity_id=homework_id,
         )
+        await uow.commit()
+
+
+async def notify_homework_submitted(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    """Уведомляет преподавателя/методиста о сданном домашнем задании."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.homework import Homework
+    from app.models.course import Lesson
+    from app.models.user import User
+    from app.models.group import Group
+
+    homework_id = payload.get("homework_id")
+    student_id = payload.get("student_id")
+    if not homework_id or not student_id:
+        return
+
+    async with UnitOfWork() as uow:
+        hw_result = await uow.session.execute(
+            select(Homework)
+            .where(Homework.id == homework_id)
+            .options(selectinload(Homework.lesson).selectinload(Lesson.module))
+        )
+        homework = hw_result.scalar_one_or_none()
+        if not homework:
+            return
+
+        student_result = await uow.session.execute(
+            select(User).where(User.id == student_id)
+        )
+        student = student_result.scalar_one_or_none()
+        if not student or not student.group_id:
+            return
+
+        group_result = await uow.session.execute(
+            select(Group).where(Group.id == student.group_id)
+        )
+        group = group_result.scalar_one_or_none()
+
+        dispatcher = NotificationDispatcher(uow)
+        recipient_ids = set()
+        if group and group.teacher_id:
+            recipient_ids.add(group.teacher_id)
+
+        # Добавляем методистов и администраторов филиала студента
+        staff_result = await uow.session.execute(
+            select(User.id).where(
+                User.branch_id == student.branch_id,
+                User.role.in_(["methodist", "admin", "owner", "super_admin"]),
+            )
+        )
+        recipient_ids.update([r[0] for r in staff_result.all()])
+
+        for recipient_id in recipient_ids:
+            await dispatcher.notify_user(
+                user_id=recipient_id,
+                title="Новое домашнее задание на проверку",
+                message=f"Ученик {student.name or student.email} сдал задание по уроку «{homework.lesson.title}».",
+                type_="homework",
+                link="/homeworks",
+                entity_type="homework",
+                entity_id=homework_id,
+            )
         await uow.commit()
 
 
@@ -339,3 +407,4 @@ EventBus.subscribe(SystemEventType.COURSE_ENROLLED, notify_academy_enrolled)
 EventBus.subscribe(SystemEventType.LESSON_AVAILABLE, notify_lesson_available)
 EventBus.subscribe(SystemEventType.LESSON_COMPLETED, notify_lesson_completed)
 EventBus.subscribe(SystemEventType.HOMEWORK_REVIEWED, notify_homework_reviewed)
+EventBus.subscribe(SystemEventType.HOMEWORK_SUBMITTED, notify_homework_submitted)

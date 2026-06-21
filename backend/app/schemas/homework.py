@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, List
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class HomeworkBase(BaseModel):
     lesson_id: int
     student_id: int
     content: Optional[str] = None
-    file_urls: Optional[str] = None
-    status: Optional[str] = "pending"
+    file_urls: Optional[str] = None  # JSON-строка со списком URL
+    status: Optional[str] = "assigned"
 
 
 class HomeworkCreate(HomeworkBase):
@@ -22,6 +22,11 @@ class HomeworkUpdate(BaseModel):
     submitted_at: Optional[datetime] = None
 
 
+class HomeworkSubmitRequest(BaseModel):
+    content: Optional[str] = None
+    file_urls: Optional[str] = None  # JSON-строка со списком URL
+
+
 class HomeworkResponse(HomeworkBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,9 +36,7 @@ class HomeworkResponse(HomeworkBase):
 
 
 class HomeworkReviewBase(BaseModel):
-    homework_id: int
-    reviewed_by_id: int
-    status: Optional[str] = "approved"
+    status: str = "approved"  # approved, rejected, revision
     score: Optional[int] = None
     comment: Optional[str] = None
 
@@ -48,8 +51,13 @@ class HomeworkReviewUpdate(BaseModel):
     comment: Optional[str] = None
 
 
-class HomeworkReviewResponse(HomeworkReviewBase):
+class HomeworkReviewResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    homework_id: int
+    reviewed_by_id: int
+    status: str
+    score: Optional[int]
+    comment: Optional[str]
     created_at: datetime

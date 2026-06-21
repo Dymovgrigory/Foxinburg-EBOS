@@ -15,7 +15,7 @@ class Homework(Base):
     content = Column(Text, nullable=True)
     file_urls = Column(Text, nullable=True)  # JSON array of URLs
 
-    status = Column(String, default="pending")  # pending, submitted, reviewed, revision
+    status = Column(String, default="assigned")  # assigned, submitted, reviewed, revision, rejected
     submitted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

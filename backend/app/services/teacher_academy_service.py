@@ -27,8 +27,8 @@ class TeacherAcademyService:
         self.disk = YandexDiskService()
 
     async def sync_from_yandex_disk(self) -> Course:
-        if not settings.YANDEX_DISK_TOKEN or not settings.YANDEX_DISK_PUBLIC_FOLDER:
-            raise ValueError("YANDEX_DISK_TOKEN и YANDEX_DISK_PUBLIC_FOLDER должны быть заданы")
+        if not settings.YANDEX_DISK_PUBLIC_FOLDER:
+            raise ValueError("YANDEX_DISK_PUBLIC_FOLDER должна быть задана")
 
         course = await self._get_or_create_course()
         modules_data = await self.disk.list_modules()
@@ -164,9 +164,7 @@ class TeacherAcademyService:
         if progress.status == "completed":
             return progress
 
-        # Проверяем тесты модуля
         await self._ensure_tests_passed(student_id, lesson.id)
-        # Проверяем домашние задания модуля
         await self._ensure_homeworks_approved(student_id, lesson.id)
 
         progress_service = ProgressService(self.uow)
@@ -272,22 +270,25 @@ class TeacherAcademyService:
         )
         existing = list(existing_result.scalars().all())
 
-        new_by_md5 = {f.md5: f for f in files if f.md5}
-        existing_by_md5 = {c.body: c for c in existing if c.body}
+        new_by_path = {f.path: f for f in files if f.path}
+        existing_by_path = {c.yandex_disk_path: c for c in existing if c.yandex_disk_path}
 
-        for md5, content in existing_by_md5.items():
-            if md5 not in new_by_md5:
+        for path, content in existing_by_path.items():
+            if path not in new_by_path:
                 await self.uow.session.delete(content)
 
         for order, file in enumerate(files, start=1):
-            content = existing_by_md5.get(file.md5)
+            content = existing_by_path.get(file.path)
             if not content:
                 content = LessonContent(lesson_id=lesson.id)
                 self.uow.session.add(content)
 
-            content.content_type = self.disk.detect_content_type(file.mime_type)
+            content.content_type = self.disk.detect_content_type(file.mime_type, file.name)
             content.title = file.name
             content.file_url = file.file_url or file.public_url
             content.external_url = file.preview
             content.body = file.md5
             content.order_index = order
+            content.yandex_disk_path = file.path
+            content.yandex_disk_md5 = file.md5
+            content.file_size = file.size

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 export interface LessonContent {
   id: number
@@ -18,32 +18,43 @@ const ext = (name = '') => {
   return parts[parts.length - 1]?.toLowerCase() || ''
 }
 
-const officeUrl = (fileUrl: string) =>
-  `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
-
-const googleDocUrl = (fileUrl: string) =>
-  `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(fileUrl)}`
+const streamUrl = (contentId: number) => `/api/v3/teacher-academy/contents/${contentId}/stream`
 
 export default function AcademyContentViewer({ content, watermark }: AcademyContentViewerProps) {
-  const fileUrl = content.file_url
+  const containerRef = useRef<HTMLDivElement>(null)
   const fileExt = ext(content.title)
   const label = content.title || 'Материал'
+  const src = streamUrl(content.id)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ['p', 's', 'c', 'v', 'a'].includes(e.key.toLowerCase())
+      ) {
+        e.preventDefault()
+      }
+      if (e.key === 'PrintScreen') {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   const viewer = useMemo(() => {
-    if (!fileUrl) {
-      return <p className="text-sm text-gray-500">Ссылка на материал отсутствует</p>
-    }
-
-    if (content.content_type === 'video') {
+    if (content.content_type === 'video' || fileExt.match(/^(mp4|webm|ogg|mov|mkv)$/)) {
       return (
         <video
           controls
-          controlsList="nodownload"
+          controlsList="nodownload noremoteplayback"
+          disablePictureInPicture
           onContextMenu={(e) => e.preventDefault()}
           className="w-full max-h-[70vh] rounded-xl bg-black"
           preload="metadata"
+          playsInline
         >
-          <source src={fileUrl} />
+          <source src={src} type="video/mp4" />
           Ваш браузер не поддерживает воспроизведение видео.
         </video>
       )
@@ -52,27 +63,18 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     if (content.content_type === 'pdf' || fileExt === 'pdf') {
       return (
         <iframe
-          src={`${fileUrl}#toolbar=0&navpanes=0`}
+          src={`${src}#toolbar=0&navpanes=0&scrollbar=0`}
           title={label}
           className="w-full h-[70vh] rounded-xl bg-white"
+          sandbox="allow-same-origin allow-scripts"
         />
       )
     }
 
-    if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileExt)) {
-      return (
-        <iframe
-          src={officeUrl(fileUrl)}
-          title={label}
-          className="w-full h-[70vh] rounded-xl bg-white"
-        />
-      )
-    }
-
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt)) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)) {
       return (
         <img
-          src={fileUrl}
+          src={src}
           alt={label}
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
@@ -81,38 +83,36 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
       )
     }
 
-    // Fallback: пробуем Google Docs viewer для прочих документов
-    if (['txt', 'rtf', 'odt', 'ods', 'odp'].includes(fileExt)) {
-      return (
-        <iframe
-          src={googleDocUrl(fileUrl)}
-          title={label}
-          className="w-full h-[70vh] rounded-xl bg-white"
-        />
-      )
-    }
-
+    // Office и прочие документы — открываем через защищённый поток
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 bg-gray-50 rounded-xl text-center">
-        <p className="text-sm text-gray-600">Предпросмотр для этого типа файла недоступен</p>
+        <p className="text-sm text-gray-600">{label}</p>
+        <p className="text-xs text-gray-400">
+          Файл открывается в защищённом просмотре. Скачивание и копирование ограничены.
+        </p>
         <a
-          href={fileUrl}
+          href={src}
           target="_blank"
           rel="noreferrer"
-          className="px-4 py-2 text-sm font-medium text-white bg-[#7C5CFC] rounded-lg hover:bg-[#6B4FD6] transition"
+          className="px-4 py-2 text-sm font-medium text-white bg-fox-purple rounded-lg hover:bg-fox-purple-light transition"
         >
-          Открыть оригинал
+          Открыть материал
         </a>
       </div>
     )
-  }, [fileUrl, content.content_type, fileExt, label])
+  }, [content.content_type, fileExt, label, src])
 
   return (
     <div
+      ref={containerRef}
       className="relative group rounded-xl overflow-hidden bg-black/5 select-none"
       onContextMenu={(e) => e.preventDefault()}
       onCopy={(e) => e.preventDefault()}
       onCut={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      onDrag={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
     >
       {viewer}
       {watermark && (

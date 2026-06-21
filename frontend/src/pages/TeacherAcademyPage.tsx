@@ -64,9 +64,20 @@ export default function TeacherAcademyPage() {
   const [course, setCourse] = useState<Course | null>(null)
   const [progress, setProgress] = useState<Progress | null>(null)
   const [activeModuleId, setActiveModuleId] = useState<number | null>(null)
+  const [activeLessonId, setActiveLessonId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [completing, setCompleting] = useState<number | null>(null)
+
+  const activeModule = useMemo(
+    () => course?.modules.find((m) => m.id === activeModuleId),
+    [course, activeModuleId]
+  )
+
+  const activeLesson = useMemo(
+    () => activeModule?.lessons.find((l) => l.id === activeLessonId),
+    [activeModule, activeLessonId]
+  )
 
   const fetchCourse = async () => {
     try {
@@ -114,6 +125,15 @@ export default function TeacherAcademyPage() {
     }
   }, [course, progress, activeModuleId, isMethodist])
 
+  useEffect(() => {
+    if (!activeModule) {
+      setActiveLessonId(null)
+      return
+    }
+    if (activeLessonId && activeModule.lessons.some((l) => l.id === activeLessonId)) return
+    setActiveLessonId(activeModule.lessons[0]?.id || null)
+  }, [activeModule, activeLessonId])
+
   const handleSync = async () => {
     setSyncing(true)
     try {
@@ -147,11 +167,6 @@ export default function TeacherAcademyPage() {
   }
 
   const canOpenModule = (moduleId: number) => isMethodist || moduleStatus(moduleId) !== 'locked'
-
-  const activeModule = useMemo(
-    () => course?.modules.find((m) => m.id === activeModuleId),
-    [course, activeModuleId]
-  )
 
   const completedCount = useMemo(
     () => progress?.modules.filter((m) => m.status === 'completed').length || 0,
@@ -325,9 +340,28 @@ export default function TeacherAcademyPage() {
                     )}
                   </div>
 
+                  {activeModule.lessons.length > 1 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {activeModule.lessons.map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          onClick={() => setActiveLessonId(lesson.id)}
+                          className={[
+                            'px-3 py-1.5 text-xs font-medium rounded-lg border transition',
+                            activeLessonId === lesson.id
+                              ? 'bg-fox-purple text-white border-fox-purple'
+                              : 'bg-white text-fox-dark border-gray-200 hover:border-fox-purple/30',
+                          ].join(' ')}
+                        >
+                          {lesson.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="space-y-6">
-                    {activeModule.lessons[0]?.contents.length ? (
-                      activeModule.lessons[0].contents.map((content) => (
+                    {activeLesson?.contents.length ? (
+                      activeLesson.contents.map((content) => (
                         <div key={content.id}>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="w-2 h-2 rounded-full bg-fox-purple" />
@@ -341,7 +375,7 @@ export default function TeacherAcademyPage() {
                       ))
                     ) : (
                       <div className="p-8 text-center text-gray-400 bg-fox-light rounded-xl">
-                        В модуле пока нет материалов.
+                        В уроке пока нет материалов.
                       </div>
                     )}
                   </div>

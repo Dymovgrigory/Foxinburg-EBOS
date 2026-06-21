@@ -189,7 +189,18 @@ async def stream_content(
     if not content:
         return error_response("Материал не найден", status_code=404)
 
-    if not content.yandex_disk_path:
+    disk_path = content.yandex_disk_path
+    if not disk_path and content.title and content.lesson and content.lesson.module:
+        # Fallback: ищем файл по названию модуля и названию файла
+        try:
+            disk = YandexDiskService()
+            disk_path = await disk.find_file_path(content.lesson.module.title, content.title)
+            if disk_path:
+                content.yandex_disk_path = disk_path
+        except Exception:
+            pass
+
+    if not disk_path:
         return error_response("Файл недоступен для потоковой передачи", status_code=404)
 
     course = content.lesson.module.course
@@ -209,7 +220,7 @@ async def stream_content(
 
     try:
         disk = YandexDiskService()
-        download_url = await disk.get_download_url(content.yandex_disk_path)
+        download_url = await disk.get_download_url(disk_path)
     except Exception as e:
         return error_response(f"Не удалось получить файл с Яндекс.Диска: {e}", status_code=502)
 
@@ -270,7 +281,17 @@ async def stream_content_pdf(
     if not content:
         return error_response("Материал не найден", status_code=404)
 
-    if not content.yandex_disk_path:
+    disk_path = content.yandex_disk_path
+    if not disk_path and content.title and content.lesson and content.lesson.module:
+        try:
+            disk = YandexDiskService()
+            disk_path = await disk.find_file_path(content.lesson.module.title, content.title)
+            if disk_path:
+                content.yandex_disk_path = disk_path
+        except Exception:
+            pass
+
+    if not disk_path:
         return error_response("Файл недоступен для конвертации", status_code=404)
 
     course = content.lesson.module.course
@@ -289,7 +310,7 @@ async def stream_content_pdf(
 
     try:
         disk = YandexDiskService()
-        download_url = await disk.get_download_url(content.yandex_disk_path)
+        download_url = await disk.get_download_url(disk_path)
     except Exception as e:
         return error_response(f"Не удалось получить файл с Яндекс.Диска: {e}", status_code=502)
 

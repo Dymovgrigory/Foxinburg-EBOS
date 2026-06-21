@@ -133,6 +133,20 @@ class YandexDiskService:
         data = await self._request("public/resources", params)
         return data.get("file", "")
 
+    async def find_file_path(self, module_title: str, file_title: str) -> Optional[str]:
+        """Находит путь к файлу по названию модуля и названию файла.
+
+        Fallback для материалов, созданных до появления поля yandex_disk_path.
+        """
+        modules = await self.list_modules()
+        module = next((m for m in modules if m.get("name") == module_title), None)
+        if not module:
+            return None
+
+        files = await self.list_module_files(module["path"])
+        file = next((f for f in files if f.name == file_title), None)
+        return file.path if file else None
+
     def detect_content_type(self, mime_type: str, file_name: str = "") -> str:
         name_lower = file_name.lower()
 

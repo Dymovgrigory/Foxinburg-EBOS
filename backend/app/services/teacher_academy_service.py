@@ -271,14 +271,20 @@ class TeacherAcademyService:
         existing = list(existing_result.scalars().all())
 
         new_by_path = {f.path: f for f in files if f.path}
+        new_by_title = {f.name: f for f in files}
         existing_by_path = {c.yandex_disk_path: c for c in existing if c.yandex_disk_path}
+        # Материалы, созданные до появления yandex_disk_path, сопоставляем по названию
+        existing_by_title = {c.title: c for c in existing if not c.yandex_disk_path}
 
-        for path, content in existing_by_path.items():
-            if path not in new_by_path:
+        # Удаляем материалы, которых больше нет на Яндекс.Диске
+        for content in existing:
+            key = content.yandex_disk_path or content.title
+            lookup = new_by_path if content.yandex_disk_path else new_by_title
+            if key not in lookup:
                 await self.uow.session.delete(content)
 
         for order, file in enumerate(files, start=1):
-            content = existing_by_path.get(file.path)
+            content = existing_by_path.get(file.path) or existing_by_title.get(file.name)
             if not content:
                 content = LessonContent(lesson_id=lesson.id)
                 self.uow.session.add(content)

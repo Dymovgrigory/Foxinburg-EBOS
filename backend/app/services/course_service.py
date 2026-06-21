@@ -77,7 +77,7 @@ class CourseService(BaseService[Course]):
             {"course_id": course.id, "title": course.title},
             user_id=author.id if author else None,
         )
-        return course
+        return await self.get_by_id(course.id)
 
     async def update_course(
         self,
@@ -107,7 +107,7 @@ class CourseService(BaseService[Course]):
             course.certificate_enabled = certificate_enabled
         await self.uow.session.flush()
         await self.uow.session.refresh(course)
-        return course
+        return await self.get_by_id(course.id)
 
     async def delete_course(self, course: Course) -> None:
         await self.uow.session.delete(course)

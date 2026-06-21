@@ -14,7 +14,9 @@ class ModuleService(BaseService[Module]):
         super().__init__(uow)
 
     async def get_by_id(self, module_id: int) -> Optional[Module]:
-        result = await self.uow.session.execute(select(Module).where(Module.id == module_id))
+        result = await self.uow.session.execute(
+            select(Module).where(Module.id == module_id).options(selectinload(Module.lessons))
+        )
         return result.scalar_one_or_none()
 
     async def list_by_course(self, course_id: int) -> List[Module]:
@@ -43,7 +45,7 @@ class ModuleService(BaseService[Module]):
             is_active=is_active,
         )
         await self.add(module)
-        return module
+        return await self.get_by_id(module.id)
 
     async def update_module(
         self,
@@ -64,7 +66,7 @@ class ModuleService(BaseService[Module]):
             module.is_active = is_active
         await self.uow.session.flush()
         await self.uow.session.refresh(module)
-        return module
+        return await self.get_by_id(module.id)
 
     async def delete_module(self, module: Module) -> None:
         await self.uow.session.delete(module)

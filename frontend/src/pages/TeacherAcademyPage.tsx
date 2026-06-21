@@ -583,6 +583,24 @@ export default function TeacherAcademyPage() {
                                   {homeworkStatusMeta(homework, homeworkReview).label}
                                 </Badge>
                               </div>
+                              {homeworkReview && (
+                                <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                                  <div className="text-sm font-semibold text-fox-dark">
+                                    Результат проверки
+                                    {homeworkReview.score !== undefined && homeworkReview.score !== null && (
+                                      <span className="ml-2 text-fox-purple">{homeworkReview.score} балл(ов)</span>
+                                    )}
+                                  </div>
+                                  {homeworkReview.comment && (
+                                    <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                                      {homeworkReview.comment}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {new Date(homeworkReview.created_at).toLocaleString('ru-RU')}
+                                  </p>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <p className="text-sm text-gray-500">Домашнее задание не назначено.</p>

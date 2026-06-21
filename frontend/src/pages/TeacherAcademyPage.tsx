@@ -319,7 +319,7 @@ export default function TeacherAcademyPage() {
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
                     <div>
                       <span className="inline-block px-2.5 py-0.5 mb-2 text-[10px] font-semibold uppercase tracking-wide text-fox-purple bg-fox-purple/10 rounded-md">
-                        Модуль {activeModule.order_index + 1}
+                        Модуль {course.modules.findIndex((m) => m.id === activeModule.id) + 1}
                       </span>
                       <h3 className="text-xl font-bold text-fox-dark">{activeModule.title}</h3>
                     </div>

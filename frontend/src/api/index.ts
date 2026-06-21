@@ -26,6 +26,7 @@ import type {
   Achievement,
   DashboardAnalytics,
   FinanceAnalytics,
+  MethodistAnalytics,
 } from '../types'
 
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
@@ -261,6 +262,11 @@ export interface SystemPermissionsResponse {
 
 export const systemApi = {
   permissions: () => api.get<ApiResponse<SystemPermissionsResponse>>('/system/permissions').then(unwrap),
+}
+
+export const methodistsApi = {
+  dashboard: () => api.get<ApiResponse<{ courses_count: number; groups_count: number; students_count: number; pending_homeworks_count: number }>>('/methodists/dashboard').then(unwrap),
+  analytics: () => api.get<ApiResponse<MethodistAnalytics>>('/methodists/analytics').then(unwrap),
 }
 
 export const teacherAcademyApi = {

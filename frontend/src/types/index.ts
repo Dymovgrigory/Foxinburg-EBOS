@@ -322,3 +322,112 @@ export interface SystemPermissionsResponse {
   endpoints: { method: string; path: string }[]
   endpoints_count: number
 }
+
+export interface MethodistOverview {
+  courses_count: number
+  published_courses_count: number
+  groups_count: number
+  employee_groups_count: number
+  students_count: number
+  teachers_count: number
+  active_enrollments_count: number
+  pending_homeworks_count: number
+  overdue_homeworks_count: number
+  average_progress_percent: number
+  average_attendance_percent: number
+}
+
+export interface MethodistCourseStat {
+  id: number
+  title: string
+  type: string
+  status: string
+  modules_count: number
+  lessons_count: number
+  students_count: number
+  active_enrollments_count: number
+  completed_enrollments_count: number
+  average_progress_percent: number
+  completion_rate_percent: number
+}
+
+export interface MethodistStudentStat {
+  id: number
+  name: string
+  email: string
+  group_id?: number | null
+  group_name?: string | null
+  active_enrollments_count: number
+  average_progress_percent: number
+  homeworks_submitted: number
+  homeworks_reviewed: number
+  homeworks_overdue: number
+  attendance_percent: number
+  risk_status: 'low' | 'medium' | 'high'
+}
+
+export interface HomeworkStatusCounts {
+  assigned: number
+  submitted: number
+  reviewed: number
+  revision: number
+  rejected: number
+}
+
+export interface PendingHomeworkItem {
+  id: number
+  title: string
+  student_name: string
+  lesson_title: string
+  submitted_at?: string
+  is_overdue: boolean
+}
+
+export interface RecentTestAttemptItem {
+  id: number
+  student_name: string
+  test_title: string
+  score: number
+  max_score: number
+  is_passed: boolean
+  finished_at?: string
+}
+
+export interface MethodistHomeworksAndTests {
+  homework_status_counts: HomeworkStatusCounts
+  pending_homeworks: PendingHomeworkItem[]
+  average_test_score: number
+  test_pass_rate_percent: number
+  recent_test_attempts: RecentTestAttemptItem[]
+}
+
+export interface MethodistTeacherStat {
+  id: number
+  name: string
+  email: string
+  groups_count: number
+  students_count: number
+  schedules_count: number
+  academy_progress_percent: number
+  academy_status: 'not_enrolled' | 'in_progress' | 'completed'
+}
+
+export interface UpcomingScheduleItem {
+  id: number
+  title: string
+  course_title?: string | null
+  group_name?: string | null
+  teacher_name: string
+  room?: string | null
+  start_time: string
+  end_time: string
+}
+
+export interface MethodistAnalytics {
+  overview: MethodistOverview
+  courses: MethodistCourseStat[]
+  students: MethodistStudentStat[]
+  homeworks_and_tests: MethodistHomeworksAndTests
+  teachers: MethodistTeacherStat[]
+  upcoming_schedule: UpcomingScheduleItem[]
+}

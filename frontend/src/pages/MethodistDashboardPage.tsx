@@ -1,44 +1,224 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
-import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { Card, Button, Loader } from '../components/ui'
+import { useToast, Button, Card, Loader, Tabs, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { methodistsApi } from '../api'
+import type { MethodistAnalytics, PendingHomeworkItem, UpcomingScheduleItem } from '../types'
 
-interface DashboardStats {
-  courses_count: number
-  groups_count: number
-  students_count: number
-  pending_homeworks_count: number
+const TABS = [
+  { id: 'overview', label: 'Обзор', icon: '📊' },
+  { id: 'courses', label: 'Курсы', icon: '📚' },
+  { id: 'students', label: 'Студенты', icon: '🎓' },
+  { id: 'homeworks', label: 'ДЗ и тесты', icon: '📝' },
+  { id: 'teachers', label: 'Преподаватели', icon: '👨‍🏫' },
+]
+
+const RISK_LABELS: Record<string, { label: string; color: string }> = {
+  low: { label: 'Низкий', color: 'bg-green-100 text-green-700' },
+  medium: { label: 'Средний', color: 'bg-yellow-100 text-yellow-700' },
+  high: { label: 'Высокий', color: 'bg-red-100 text-red-700' },
 }
 
-const widgets = [
-  { key: 'courses_count', label: 'Курсы', icon: '📚', path: '/courses', color: 'bg-fox-purple/10 text-fox-purple' },
-  { key: 'groups_count', label: 'Группы', icon: '👥', path: '/employee-groups', color: 'bg-fox-gold/20 text-fox-dark' },
-  { key: 'students_count', label: 'Ученики', icon: '🎓', path: '/students', color: 'bg-green-100 text-green-700' },
-  { key: 'pending_homeworks_count', label: 'ДЗ на проверку', icon: '📝', path: '/homeworks', color: 'bg-orange-100 text-orange-700' },
-]
+const ACADEMY_STATUS_LABELS: Record<string, string> = {
+  not_enrolled: 'Не зачислен',
+  in_progress: 'В процессе',
+  completed: 'Завершено',
+}
+
+const HOMEWORK_STATUS_LABELS: Record<string, string> = {
+  assigned: 'Назначено',
+  submitted: 'На проверке',
+  reviewed: 'Проверено',
+  revision: 'На доработке',
+  rejected: 'Отклонено',
+}
+
+const COURSE_STATUS_LABELS: Record<string, string> = {
+  draft: 'Черновик',
+  published: 'Опубликован',
+  archived: 'В архиве',
+}
+
+function formatDateTime(iso?: string | null) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function KpiCard({ icon, value, label, color = 'bg-fox-purple/10 text-fox-purple' }: { icon: string; value: string | number; label: string; color?: string }) {
+  return (
+    <Card className="flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
+      <div>
+        <p className="text-2xl font-bold text-fox-dark">{value}</p>
+        <p className="text-xs text-gray-500">{label}</p>
+      </div>
+    </Card>
+  )
+}
+
+function ProgressBar({ value, label, color = 'bg-fox-purple' }: { value: number; label?: string; color?: string }) {
+  const percent = Math.min(100, Math.max(0, value))
+  return (
+    <div className="w-full">
+      {label && <div className="flex justify-between text-xs mb-1"><span className="text-gray-600">{label}</span><span className="font-medium text-fox-dark">{percent}%</span></div>}
+      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function DonutChart({ segments, size = 120 }: { segments: { label: string; value: number; color: string }[]; size?: number }) {
+  const total = segments.reduce((sum, s) => sum + s.value, 0)
+  const radius = size / 2 - 8
+  const circumference = 2 * Math.PI * radius
+  let offset = 0
+
+  return (
+    <div className="flex items-center gap-4">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#F3F4F6" strokeWidth="12" />
+        {segments.map((s, i) => {
+          const dash = total ? (s.value / total) * circumference : 0
+          const circle = (
+            <circle
+              key={i}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="12"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-offset}
+              strokeLinecap="butt"
+            />
+          )
+          offset += dash
+          return circle
+        })}
+      </svg>
+      <div className="space-y-1">
+        {segments.map((s, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-gray-600">{s.label}</span>
+            <span className="font-medium text-fox-dark ml-auto">{s.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RiskBadge({ status }: { status: string }) {
+  const cfg = RISK_LABELS[status] || RISK_LABELS.low
+  return <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
+}
+
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="font-bold text-fox-dark">{title}</h3>
+      {action}
+    </div>
+  )
+}
 
 export default function MethodistDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const { showToast } = useToast()
+
+  const [analytics, setAnalytics] = useState<MethodistAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [courseFilter, setCourseFilter] = useState('')
+  const [studentFilter, setStudentFilter] = useState('')
+  const [teacherFilter, setTeacherFilter] = useState('')
 
   useEffect(() => {
-    api
-      .get('/methodists/dashboard')
-      .then((res) => setStats(res.data.data))
-      .catch(() => setStats({ courses_count: 0, groups_count: 0, students_count: 0, pending_homeworks_count: 0 }))
-      .finally(() => setLoading(false))
-  }, [])
+    const load = async () => {
+      setLoading(true)
+      try {
+        const data = await methodistsApi.analytics()
+        setAnalytics(data)
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'Не удалось загрузить аналитику', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [showToast])
 
-  if (loading) {
+  const overviewCards = useMemo(() => {
+    if (!analytics) return []
+    const o = analytics.overview
+    return [
+      { icon: '📚', value: o.courses_count, label: 'Курсов', color: 'bg-fox-purple/10 text-fox-purple', path: '/courses' },
+      { icon: '👥', value: o.groups_count, label: 'Групп', color: 'bg-fox-gold/20 text-fox-dark', path: '/employee-groups' },
+      { icon: '🎓', value: o.students_count, label: 'Учеников', color: 'bg-green-100 text-green-700', path: '/students' },
+      { icon: '👨‍🏫', value: o.teachers_count, label: 'Преподавателей', color: 'bg-blue-100 text-blue-700', path: '/employee-groups' },
+      { icon: '📝', value: o.pending_homeworks_count, label: 'ДЗ на проверку', color: 'bg-orange-100 text-orange-700', path: '/homeworks' },
+      { icon: '⏰', value: o.overdue_homeworks_count, label: 'Просроченные ДЗ', color: 'bg-red-100 text-red-700', path: '/homeworks' },
+      { icon: '📈', value: `${o.average_progress_percent}%`, label: 'Средний прогресс', color: 'bg-teal-100 text-teal-700' },
+      { icon: '✅', value: `${o.average_attendance_percent}%`, label: 'Посещаемость', color: 'bg-indigo-100 text-indigo-700' },
+    ]
+  }, [analytics])
+
+  const filteredCourses = useMemo(() => {
+    if (!analytics) return []
+    if (!courseFilter.trim()) return analytics.courses
+    const q = courseFilter.toLowerCase()
+    return analytics.courses.filter((c) => c.title.toLowerCase().includes(q))
+  }, [analytics, courseFilter])
+
+  const filteredStudents = useMemo(() => {
+    if (!analytics) return []
+    if (!studentFilter.trim()) return analytics.students
+    const q = studentFilter.toLowerCase()
+    return analytics.students.filter((s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
+  }, [analytics, studentFilter])
+
+  const filteredTeachers = useMemo(() => {
+    if (!analytics) return []
+    if (!teacherFilter.trim()) return analytics.teachers
+    const q = teacherFilter.toLowerCase()
+    return analytics.teachers.filter((t) => t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q))
+  }, [analytics, teacherFilter])
+
+  const homeworkSegments = useMemo(() => {
+    if (!analytics) return []
+    const counts = analytics.homeworks_and_tests.homework_status_counts
+    return [
+      { label: HOMEWORK_STATUS_LABELS.assigned, value: counts.assigned, color: '#9CA3AF' },
+      { label: HOMEWORK_STATUS_LABELS.submitted, value: counts.submitted, color: '#F59E0B' },
+      { label: HOMEWORK_STATUS_LABELS.reviewed, value: counts.reviewed, color: '#10B981' },
+      { label: HOMEWORK_STATUS_LABELS.revision, value: counts.revision, color: '#3B82F6' },
+      { label: HOMEWORK_STATUS_LABELS.rejected, value: counts.rejected, color: '#EF4444' },
+    ].filter((s) => s.value > 0)
+  }, [analytics])
+
+  if (loading || !analytics) {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Дашборд методиста" subtitle="Обзор учебного процесса" icon="📊" />
-        <div className="p-6 max-w-6xl mx-auto">
-          <Loader text="Загрузка статистики..." />
+        <div className="p-6 max-w-7xl mx-auto">
+          <Loader text="Загрузка аналитики..." />
         </div>
       </div>
     )
@@ -53,62 +233,373 @@ export default function MethodistDashboardPage() {
       />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {widgets.map((widget) => (
-            <Card key={widget.key} className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${widget.color}`}>
-                {widget.icon}
+        <Card className="p-0 overflow-hidden">
+          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          <div className="p-5">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {overviewCards.map((card) => (
+                    <div key={card.label} onClick={() => card.path && navigate(card.path)} className={card.path ? 'cursor-pointer' : ''}>
+                      <KpiCard icon={card.icon} value={card.value} label={card.label} color={card.color} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <Card className="lg:col-span-1 space-y-4">
+                    <SectionHeader title="Распределение ДЗ" />
+                    {homeworkSegments.length > 0 ? (
+                      <DonutChart segments={homeworkSegments} />
+                    ) : (
+                      <p className="text-sm text-gray-500">Нет данных по домашним заданиям</p>
+                    )}
+                  </Card>
+
+                  <Card className="lg:col-span-1 space-y-4">
+                    <SectionHeader title="Ключевые показатели" />
+                    <div className="space-y-4">
+                      <ProgressBar value={analytics.overview.average_progress_percent} label="Средний прогресс по курсам" />
+                      <ProgressBar value={analytics.overview.average_attendance_percent} label="Средняя посещаемость" color="bg-fox-gold" />
+                      <ProgressBar
+                        value={analytics.overview.published_courses_count && analytics.overview.courses_count ? Math.round((analytics.overview.published_courses_count / analytics.overview.courses_count) * 100) : 0}
+                        label="Опубликовано курсов"
+                        color="bg-green-500"
+                      />
+                    </div>
+                  </Card>
+
+                  <Card className="lg:col-span-1 space-y-4">
+                    <SectionHeader title="Быстрые действия" />
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={() => navigate('/courses')}>Курсы</Button>
+                      <Button variant="secondary" onClick={() => navigate('/academy')}>Академия</Button>
+                      <Button variant="secondary" onClick={() => navigate('/homeworks')}>Проверка ДЗ</Button>
+                      <Button variant="secondary" onClick={() => navigate('/employee-groups')}>Группы</Button>
+                      <Button variant="secondary" onClick={() => navigate('/students')}>Ученики</Button>
+                      <Button variant="secondary" onClick={() => navigate('/course-builder')}>Конструктор</Button>
+                    </div>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <Card className="space-y-4">
+                    <SectionHeader
+                      title="ДЗ на проверку"
+                      action={<Button size="sm" variant="ghost" onClick={() => navigate('/homeworks')}>Все ДЗ</Button>}
+                    />
+                    {analytics.homeworks_and_tests.pending_homeworks.length === 0 ? (
+                      <p className="text-sm text-gray-500">Нет заданий на проверку</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {analytics.homeworks_and_tests.pending_homeworks.map((hw) => (
+                          <PendingHomeworkRow key={hw.id} homework={hw} />
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+
+                  <Card className="space-y-4">
+                    <SectionHeader title="Ближайшие занятия" />
+                    {analytics.upcoming_schedule.length === 0 ? (
+                      <p className="text-sm text-gray-500">Нет запланированных занятий</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {analytics.upcoming_schedule.map((s) => (
+                          <ScheduleRow key={s.id} schedule={s} />
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-fox-dark">
-                  {stats?.[widget.key as keyof DashboardStats] ?? 0}
-                </p>
-                <p className="text-xs text-gray-500">{widget.label}</p>
+            )}
+
+            {activeTab === 'courses' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 justify-between">
+                  <input
+                    type="text"
+                    placeholder="Поиск курса..."
+                    value={courseFilter}
+                    onChange={(e) => setCourseFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                  />
+                  <Button onClick={() => navigate('/courses')}>Управление курсами</Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th>Курс</Th>
+                        <Th>Статус</Th>
+                        <Th>Модули</Th>
+                        <Th>Уроки</Th>
+                        <Th>Студенты</Th>
+                        <Th>Средний прогресс</Th>
+                        <Th>Завершено</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {filteredCourses.map((course) => (
+                        <Tr key={course.id}>
+                          <Td>
+                            <div className="font-medium text-fox-dark">{course.title}</div>
+                            <div className="text-xs text-gray-400">{course.type}</div>
+                          </Td>
+                          <Td><Badge variant={course.status === 'published' ? 'success' : 'default'}>{COURSE_STATUS_LABELS[course.status] || course.status}</Badge></Td>
+                          <Td>{course.modules_count}</Td>
+                          <Td>{course.lessons_count}</Td>
+                          <Td>{course.students_count}</Td>
+                          <Td>
+                            <ProgressBar value={course.average_progress_percent} />
+                          </Td>
+                          <Td>{course.completion_rate_percent}%</Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </div>
+                {filteredCourses.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Курсы не найдены</p>}
               </div>
-            </Card>
-          ))}
+            )}
+
+            {activeTab === 'students' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 justify-between">
+                  <input
+                    type="text"
+                    placeholder="Поиск по имени или email..."
+                    value={studentFilter}
+                    onChange={(e) => setStudentFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                  />
+                  <Button onClick={() => navigate('/students')}>Все ученики</Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th>Ученик</Th>
+                        <Th>Группа</Th>
+                        <Th>Курсы</Th>
+                        <Th>Прогресс</Th>
+                        <Th>ДЗ</Th>
+                        <Th>Посещаемость</Th>
+                        <Th>Риск</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {filteredStudents.map((student) => (
+                        <Tr key={student.id}>
+                          <Td>
+                            <div className="font-medium text-fox-dark">{student.name}</div>
+                            <div className="text-xs text-gray-400">{student.email}</div>
+                          </Td>
+                          <Td>{student.group_name || '—'}</Td>
+                          <Td>{student.active_enrollments_count}</Td>
+                          <Td>
+                            <ProgressBar value={student.average_progress_percent} />
+                          </Td>
+                          <Td>
+                            <div className="text-xs">
+                              <span className="text-green-600">{student.homeworks_reviewed}</span>
+                              {' / '}
+                              <span className="text-orange-600">{student.homeworks_submitted}</span>
+                              {student.homeworks_overdue > 0 && (
+                                <span className="ml-2 text-red-500">+{student.homeworks_overdue} проср.</span>
+                              )}
+                            </div>
+                          </Td>
+                          <Td>{student.attendance_percent}%</Td>
+                          <Td><RiskBadge status={student.risk_status} /></Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </div>
+                {filteredStudents.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Ученики не найдены</p>}
+              </div>
+            )}
+
+            {activeTab === 'homeworks' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <Card className="space-y-4">
+                    <SectionHeader title="Статусы ДЗ" />
+                    {homeworkSegments.length > 0 ? (
+                      <DonutChart segments={homeworkSegments} />
+                    ) : (
+                      <p className="text-sm text-gray-500">Нет данных</p>
+                    )}
+                  </Card>
+                  <Card className="space-y-4">
+                    <SectionHeader title="Тесты" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <KpiCard icon="📝" value={analytics.homeworks_and_tests.average_test_score} label="Средний балл" color="bg-fox-purple/10 text-fox-purple" />
+                      <KpiCard icon="✅" value={`${analytics.homeworks_and_tests.test_pass_rate_percent}%`} label="Проходной балл" color="bg-green-100 text-green-700" />
+                    </div>
+                  </Card>
+                  <Card className="space-y-4">
+                    <SectionHeader title="Действия" />
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={() => navigate('/homeworks')}>Проверить ДЗ</Button>
+                      <Button variant="secondary" onClick={() => navigate('/course-builder')}>Добавить тест</Button>
+                    </div>
+                  </Card>
+                </div>
+
+                <Card className="space-y-4">
+                  <SectionHeader title="ДЗ на проверку" />
+                  {analytics.homeworks_and_tests.pending_homeworks.length === 0 ? (
+                    <p className="text-sm text-gray-500">Нет заданий на проверку</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <Thead>
+                          <Tr>
+                            <Th>Задание</Th>
+                            <Th>Ученик</Th>
+                            <Th>Урок</Th>
+                            <Th>Сдано</Th>
+                            <Th>Статус</Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {analytics.homeworks_and_tests.pending_homeworks.map((hw) => (
+                            <Tr key={hw.id}>
+                              <Td>{hw.title}</Td>
+                              <Td>{hw.student_name}</Td>
+                              <Td>{hw.lesson_title}</Td>
+                              <Td>{formatDateTime(hw.submitted_at)}</Td>
+                              <Td>{hw.is_overdue ? <Badge variant="error">Просрочено</Badge> : <Badge variant="warning">На проверке</Badge>}</Td>
+                            </Tr>
+                          ))}
+                        </Tbody>
+                      </Table>
+                    </div>
+                  )}
+                </Card>
+
+                <Card className="space-y-4">
+                  <SectionHeader title="Последние тесты" />
+                  {analytics.homeworks_and_tests.recent_test_attempts.length === 0 ? (
+                    <p className="text-sm text-gray-500">Нет завершённых тестов</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <Thead>
+                          <Tr>
+                            <Th>Тест</Th>
+                            <Th>Ученик</Th>
+                            <Th>Балл</Th>
+                            <Th>Результат</Th>
+                            <Th>Завершено</Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {analytics.homeworks_and_tests.recent_test_attempts.map((attempt) => (
+                            <Tr key={attempt.id}>
+                              <Td>{attempt.test_title}</Td>
+                              <Td>{attempt.student_name}</Td>
+                              <Td>{attempt.score} / {attempt.max_score}</Td>
+                              <Td>{attempt.is_passed ? <Badge variant="success">Сдан</Badge> : <Badge variant="error">Не сдан</Badge>}</Td>
+                              <Td>{formatDateTime(attempt.finished_at)}</Td>
+                            </Tr>
+                          ))}
+                        </Tbody>
+                      </Table>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'teachers' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 justify-between">
+                  <input
+                    type="text"
+                    placeholder="Поиск преподавателя..."
+                    value={teacherFilter}
+                    onChange={(e) => setTeacherFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                  />
+                  <Button onClick={() => navigate('/employee-groups')}>Группы сотрудников</Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th>Преподаватель</Th>
+                        <Th>Группы</Th>
+                        <Th>Ученики</Th>
+                        <Th>Занятия</Th>
+                        <Th>Академия</Th>
+                        <Th>Прогресс в Академии</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {filteredTeachers.map((teacher) => (
+                        <Tr key={teacher.id}>
+                          <Td>
+                            <div className="font-medium text-fox-dark">{teacher.name}</div>
+                            <div className="text-xs text-gray-400">{teacher.email}</div>
+                          </Td>
+                          <Td>{teacher.groups_count}</Td>
+                          <Td>{teacher.students_count}</Td>
+                          <Td>{teacher.schedules_count}</Td>
+                          <Td>
+                            <Badge variant={teacher.academy_status === 'completed' ? 'success' : teacher.academy_status === 'in_progress' ? 'warning' : 'default'}>
+                              {ACADEMY_STATUS_LABELS[teacher.academy_status]}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <ProgressBar value={teacher.academy_progress_percent} />
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </div>
+                {filteredTeachers.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Преподаватели не найдены</p>}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function PendingHomeworkRow({ homework }: { homework: PendingHomeworkItem }) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-fox-light rounded-xl">
+      <div>
+        <div className="text-sm font-medium text-fox-dark">{homework.title}</div>
+        <div className="text-xs text-gray-400">{homework.student_name} • {homework.lesson_title}</div>
+      </div>
+      <div className="text-right">
+        <div className="text-xs text-gray-500">{formatDateTime(homework.submitted_at)}</div>
+        {homework.is_overdue && <span className="text-xs text-red-500 font-medium">Просрочено</span>}
+      </div>
+    </div>
+  )
+}
+
+function ScheduleRow({ schedule }: { schedule: UpcomingScheduleItem }) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-fox-light rounded-xl">
+      <div>
+        <div className="text-sm font-medium text-fox-dark">{schedule.title}</div>
+        <div className="text-xs text-gray-400">
+          {schedule.group_name || 'Без группы'} • {schedule.teacher_name}
+          {schedule.room && ` • ${schedule.room}`}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="space-y-3">
-            <h3 className="font-bold text-fox-dark">Быстрые действия</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => navigate('/courses')}>Курсы</Button>
-              <Button variant="secondary" onClick={() => navigate('/academy')}>
-                Академия
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/homeworks')}>
-                Проверка ДЗ
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/employee-groups')}>
-                Группы
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/students')}>
-                Ученики
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="space-y-3">
-            <h3 className="font-bold text-fox-dark">Академия педагогов</h3>
-            <p className="text-sm text-gray-500">
-              Обучение и сертификация преподавателей. Синхронизируйте материалы с Яндекс.Диска.
-            </p>
-            <Button onClick={() => navigate('/academy')}>Открыть Академию</Button>
-          </Card>
-
-          <Card className="space-y-3">
-            <h3 className="font-bold text-fox-dark">Проверка домашних заданий</h3>
-            <p className="text-sm text-gray-500">
-              {stats?.pending_homeworks_count
-                ? `${stats.pending_homeworks_count} заданий ожидают проверки`
-                : 'Нет заданий на проверке'}
-            </p>
-            <Button variant="secondary" onClick={() => navigate('/homeworks')}>
-              Перейти к ДЗ
-            </Button>
-          </Card>
-        </div>
+      </div>
+      <div className="text-xs text-gray-500 text-right">
+        <div>{formatDate(schedule.start_time)}</div>
+        <div>{new Date(schedule.start_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — {new Date(schedule.end_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     </div>
   )

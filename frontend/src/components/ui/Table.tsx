@@ -22,7 +22,7 @@ export function Th({
   sorted,
   onClick,
 }: {
-  children: React.ReactNode
+  children?: React.ReactNode
   sortable?: boolean
   sorted?: 'asc' | 'desc' | null
   onClick?: () => void

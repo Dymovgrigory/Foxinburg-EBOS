@@ -270,18 +270,39 @@ class TeacherAcademyService:
         )
         existing = list(existing_result.scalars().all())
 
+        # Сначала убираем дубли, которые могли появиться из-за race condition
+        # или старой логики синхронизации. Оставляем запись с наименьшим id.
+        existing_by_path: dict[str, LessonContent] = {}
+        existing_by_title: dict[str, LessonContent] = {}
+        dedup_delete: list[LessonContent] = []
+        for content in sorted(existing, key=lambda c: c.id):
+            if content.yandex_disk_path:
+                if content.yandex_disk_path in existing_by_path:
+                    dedup_delete.append(content)
+                    continue
+                existing_by_path[content.yandex_disk_path] = content
+            else:
+                if content.title in existing_by_title:
+                    dedup_delete.append(content)
+                    continue
+                existing_by_title[content.title] = content
+
+        for content in dedup_delete:
+            await self.uow.session.delete(content)
+
         new_by_path = {f.path: f for f in files if f.path}
         new_by_title = {f.name: f for f in files}
-        existing_by_path = {c.yandex_disk_path: c for c in existing if c.yandex_disk_path}
-        # Материалы, созданные до появления yandex_disk_path, сопоставляем по названию
-        existing_by_title = {c.title: c for c in existing if not c.yandex_disk_path}
 
         # Удаляем материалы, которых больше нет на Яндекс.Диске
-        for content in existing:
+        for content in list(existing_by_path.values()) + list(existing_by_title.values()):
             key = content.yandex_disk_path or content.title
             lookup = new_by_path if content.yandex_disk_path else new_by_title
             if key not in lookup:
                 await self.uow.session.delete(content)
+                if content.yandex_disk_path:
+                    existing_by_path.pop(content.yandex_disk_path, None)
+                else:
+                    existing_by_title.pop(content.title, None)
 
         for order, file in enumerate(files, start=1):
             content = existing_by_path.get(file.path) or existing_by_title.get(file.name)

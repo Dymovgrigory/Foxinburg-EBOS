@@ -125,7 +125,7 @@ ROLE_PERMISSIONS = {
         Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.ATTENDANCE_MANAGE,
         Permission.NOTIFICATION_READ,
-        Permission.MESSAGE_READ, Permission.MESSAGE_SEND,
+        Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
     ],
     Role.TEACHER: [
         Permission.COURSE_READ,

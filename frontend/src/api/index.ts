@@ -45,6 +45,7 @@ export const authApi = {
 
 export const usersApi = {
   list: () => api.get<ApiResponse<User[]>>('/users').then(unwrap),
+  listStudents: () => api.get<ApiResponse<User[]>>('/users/students').then(unwrap),
   create: (data: Partial<User> & { password: string }) =>
     api.post<ApiResponse<User>>('/users', data).then(unwrap),
   update: (id: number, data: Partial<User>) => api.patch<ApiResponse<User>>(`/users/${id}`, data).then(unwrap),

@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy import select
 
 from app.models.user import User
+from app.models.group import Group
 from app.models.chat import ChatRoom
 from app.core.security import get_password_hash
 from app.core.encryption import encrypt_text
@@ -98,3 +99,23 @@ class UserService(BaseService[User]):
         from datetime import datetime
         user.last_login_at = datetime.utcnow()
         await self.uow.session.flush()
+
+    async def get_students(self) -> list[User]:
+        result = await self.uow.session.execute(
+            select(User).where(User.role == "student").order_by(User.name)
+        )
+        return list(result.scalars().all())
+
+    async def get_teacher_students(self, teacher_id: int) -> list[User]:
+        group_ids_result = await self.uow.session.execute(
+            select(Group.id).where(Group.teacher_id == teacher_id)
+        )
+        group_ids = [r[0] for r in group_ids_result.all()]
+        if not group_ids:
+            return []
+        result = await self.uow.session.execute(
+            select(User)
+            .where(User.role == "student", User.group_id.in_(group_ids))
+            .order_by(User.name)
+        )
+        return list(result.scalars().all())

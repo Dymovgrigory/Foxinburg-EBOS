@@ -3,6 +3,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.user import User
+from app.core.permissions import Role
 from app.schemas.user import UserCreate, UserResponse, UserListResponse, UserTelegramLink
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
@@ -51,6 +52,29 @@ async def create_user(
         data=UserResponse.model_validate(user).model_dump(),
         message="Пользователь создан",
         status_code=201,
+    )
+
+
+@router.get("/students")
+async def list_my_students(
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = UserService(uow)
+    if current_user.role in (
+        Role.OWNER.value,
+        Role.SUPER_ADMIN.value,
+        Role.ADMIN.value,
+        Role.METHODIST.value,
+    ):
+        students = await service.get_students()
+    elif current_user.role == Role.TEACHER.value:
+        students = await service.get_teacher_students(current_user.id)
+    else:
+        return error_response("Недостаточно прав", status_code=403)
+    return success_response(
+        data=[UserListResponse.model_validate(u).model_dump() for u in students],
+        message="Список учеников",
     )
 
 

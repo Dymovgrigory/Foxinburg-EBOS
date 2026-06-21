@@ -23,7 +23,7 @@ export default function TeacherDashboardPage() {
       const [schedulesRes, homeworksRes, usersRes, countRes] = await Promise.all([
         user?.id ? schedulesApi.list({ teacher_id: user.id }) : Promise.resolve([]),
         homeworksApi.list().catch(() => []),
-        usersApi.list().catch(() => []),
+        usersApi.listStudents().catch(() => []),
         notificationsApi.unreadCount().catch(() => ({ count: 0 })),
       ])
       setSchedules(schedulesRes)

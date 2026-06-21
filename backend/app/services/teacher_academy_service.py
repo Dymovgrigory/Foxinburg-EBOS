@@ -132,6 +132,8 @@ class TeacherAcademyService:
         enrollment = await self.get_teacher_progress(student_id)
         if enrollment:
             await self._ensure_homeworks_for_enrollment(student_id, course.id)
+            progress_service = ProgressService(self.uow)
+            await progress_service.ensure_progress_records_for_enrollment(enrollment.id)
             return enrollment
         return await self.enroll_teacher(student_id, assigned_by_id)
 

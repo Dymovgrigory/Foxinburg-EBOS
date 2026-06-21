@@ -72,6 +72,57 @@ class ProgressService(BaseService[LessonProgress]):
         await self.uow.session.flush()
         return progress_records
 
+    async def ensure_progress_records_for_enrollment(self, enrollment_id: int) -> List[LessonProgress]:
+        """Создаёт недостающие записи прогресса (например, после добавления новых уроков в курс)."""
+        result = await self.uow.session.execute(
+            select(Enrollment)
+            .where(Enrollment.id == enrollment_id)
+            .options(
+                selectinload(Enrollment.course)
+                .selectinload(Course.modules)
+                .selectinload(Module.lessons)
+            )
+        )
+        enrollment = result.scalar_one_or_none()
+        if not enrollment:
+            raise ValueError("Зачисление не найдено")
+
+        course = enrollment.course
+        lessons = self._ordered_lessons(course)
+        existing_result = await self.uow.session.execute(
+            select(LessonProgress).where(LessonProgress.enrollment_id == enrollment_id)
+        )
+        existing = {p.lesson_id: p for p in existing_result.scalars().all()}
+
+        new_records: List[LessonProgress] = []
+        prev_completed = True
+        for idx, lesson in enumerate(lessons):
+            progress = existing.get(lesson.id)
+            if progress:
+                prev_completed = progress.status == "completed"
+                continue
+
+            if not course.is_sequential or idx == 0 or prev_completed:
+                status = "available"
+            else:
+                status = "locked"
+
+            new_records.append(
+                LessonProgress(
+                    student_id=enrollment.student_id,
+                    lesson_id=lesson.id,
+                    enrollment_id=enrollment.id,
+                    status=status,
+                )
+            )
+            prev_completed = False
+
+        if new_records:
+            self.uow.session.add_all(new_records)
+            await self.uow.session.flush()
+
+        return list(existing.values()) + new_records
+
     async def complete_lesson(self, student_id: int, lesson_id: int) -> LessonProgress:
         """Отмечает урок завершённым и разблокирует следующий при необходимости."""
         result = await self.uow.session.execute(

@@ -3,7 +3,9 @@ import Header from '../components/Header'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import AcademyContentViewer from '../components/AcademyContentViewer'
+import { lessonsApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
+import type { Lesson as FullLesson, TestQuestion, TestAttempt, Homework } from '../types'
 
 interface LessonContent {
   id: number
@@ -16,6 +18,9 @@ interface LessonContent {
 interface Lesson {
   id: number
   title: string
+  lesson_type: string
+  homework_title?: string
+  homework_description?: string
   contents: LessonContent[]
 }
 
@@ -56,6 +61,15 @@ const statusMeta: Record<string, { label: string; variant: Parameters<typeof Bad
   locked: { label: 'Заблокирован', variant: 'default', icon: '🔒' },
 }
 
+function parseJson(value?: string | null) {
+  if (!value) return null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
 export default function TeacherAcademyPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
@@ -68,6 +82,19 @@ export default function TeacherAcademyPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [completing, setCompleting] = useState<number | null>(null)
+
+  const [activeLessonDetail, setActiveLessonDetail] = useState<FullLesson | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  // test state
+  const [attempt, setAttempt] = useState<TestAttempt | null>(null)
+  const [answers, setAnswers] = useState<Record<number, string | string[]>>({})
+  const [testSubmitting, setTestSubmitting] = useState(false)
+
+  // homework state
+  const [homework, setHomework] = useState<Homework | null>(null)
+  const [homeworkAnswer, setHomeworkAnswer] = useState('')
+  const [homeworkSubmitting, setHomeworkSubmitting] = useState(false)
 
   const activeModule = useMemo(
     () => course?.modules.find((m) => m.id === activeModuleId),
@@ -134,6 +161,48 @@ export default function TeacherAcademyPage() {
     setActiveLessonId(activeModule.lessons[0]?.id || null)
   }, [activeModule, activeLessonId])
 
+  useEffect(() => {
+    if (!activeLesson) {
+      setActiveLessonDetail(null)
+      return
+    }
+    if (activeLesson.lesson_type !== 'test' && activeLesson.lesson_type !== 'homework') {
+      setActiveLessonDetail(null)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      setDetailLoading(true)
+      try {
+        const lesson = await lessonsApi.get(activeLesson.id)
+        if (cancelled) return
+        setActiveLessonDetail(lesson)
+        setAttempt(null)
+        setAnswers({})
+        setHomework(null)
+        setHomeworkAnswer('')
+        if (lesson.lesson_type === 'test' && lesson.test) {
+          const a = await testsApi.createAttempt(lesson.test.id, {})
+          setAttempt(a)
+        }
+        if (lesson.lesson_type === 'homework') {
+          const list = await homeworksApi.list(lesson.id)
+          const hw = list[0] || null
+          setHomework(hw)
+          if (hw?.content) setHomeworkAnswer(hw.content)
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          showToast(err.response?.data?.message || 'Не удалось загрузить урок', 'error')
+        }
+      } finally {
+        if (!cancelled) setDetailLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [activeLesson])
+
   const handleSync = async () => {
     setSyncing(true)
     try {
@@ -157,6 +226,43 @@ export default function TeacherAcademyPage() {
       showToast(err.response?.data?.message || 'Ошибка завершения модуля', 'error')
     } finally {
       setCompleting(null)
+    }
+  }
+
+  const handleAnswerChange = (questionId: number, value: string | string[]) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }))
+  }
+
+  const handleSubmitTest = async () => {
+    if (!activeLessonDetail?.test || !attempt) return
+    setTestSubmitting(true)
+    try {
+      await testsApi.updateAttempt(activeLessonDetail.test.id, attempt.id, {
+        answers: JSON.stringify(answers),
+      })
+      const scored = await testsApi.submitAttempt(activeLessonDetail.test.id, attempt.id)
+      setAttempt(scored)
+      showToast(scored.is_passed ? 'Тест пройден' : 'Тест не пройден', scored.is_passed ? 'success' : 'warning')
+      await fetchProgress()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка отправки теста', 'error')
+    } finally {
+      setTestSubmitting(false)
+    }
+  }
+
+  const handleSubmitHomework = async () => {
+    if (!homework) return
+    setHomeworkSubmitting(true)
+    try {
+      const updated = await homeworksApi.submit(homework.id, { content: homeworkAnswer })
+      setHomework(updated)
+      showToast('Ответ отправлен на проверку', 'success')
+      await fetchProgress()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка отправки задания', 'error')
+    } finally {
+      setHomeworkSubmitting(false)
     }
   }
 
@@ -360,7 +466,90 @@ export default function TeacherAcademyPage() {
                   )}
 
                   <div className="space-y-6">
-                    {activeLesson?.contents.length ? (
+                    {activeLesson?.lesson_type === 'test' || activeLesson?.lesson_type === 'homework' ? (
+                      detailLoading ? (
+                        <Loader text="Загрузка урока..." />
+                      ) : activeLessonDetail?.lesson_type === 'test' && activeLessonDetail.test ? (
+                        <div className="space-y-6">
+                          {attempt?.finished_at ? (
+                            <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                              <div className="text-lg font-bold text-fox-dark">
+                                Результат: {attempt.score} / {attempt.max_score}
+                              </div>
+                              <Badge variant={attempt.is_passed ? 'success' : 'error'} className="mt-2">
+                                {attempt.is_passed ? 'Тест пройден' : 'Тест не пройден'}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <>
+                              {activeLessonDetail.test.questions?.map((q, idx) => (
+                                <TestQuestionView
+                                  key={q.id}
+                                  index={idx}
+                                  question={q}
+                                  value={answers[q.id]}
+                                  onChange={(v) => handleAnswerChange(q.id, v)}
+                                />
+                              ))}
+                              <Button onClick={handleSubmitTest} loading={testSubmitting}>
+                                Отправить ответы
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      ) : activeLessonDetail?.lesson_type === 'homework' ? (
+                        <div className="space-y-4">
+                          <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                            <div className="font-medium text-fox-dark">
+                              {activeLessonDetail.homework_title || activeLessonDetail.title}
+                            </div>
+                            {activeLessonDetail.homework_description && (
+                              <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                                {activeLessonDetail.homework_description}
+                              </p>
+                            )}
+                          </div>
+                          {homework ? (
+                            <>
+                              <textarea
+                                value={homeworkAnswer}
+                                onChange={(e) => setHomeworkAnswer(e.target.value)}
+                                disabled={homework.status !== 'assigned'}
+                                placeholder="Ваш ответ..."
+                                rows={6}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-gray-50"
+                              />
+                              <div className="flex items-center gap-3">
+                                <Button
+                                  onClick={handleSubmitHomework}
+                                  loading={homeworkSubmitting}
+                                  disabled={homework.status !== 'assigned'}
+                                >
+                                  {homework.status === 'assigned' ? 'Отправить на проверку' : 'Ответ отправлен'}
+                                </Button>
+                                <Badge
+                                  variant={
+                                    homework.status === 'reviewed'
+                                      ? 'success'
+                                      : homework.status === 'submitted'
+                                      ? 'warning'
+                                      : 'default'
+                                  }
+                                >
+                                  {homework.status}
+                                </Badge>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-500">Домашнее задание не назначено.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-gray-400 bg-fox-light rounded-xl">
+                          В уроке пока нет материалов.
+                        </div>
+                      )
+                    ) : activeLesson?.contents.length ? (
                       activeLesson.contents.map((content) => (
                         <div key={content.id}>
                           <div className="flex items-center gap-2 mb-3">
@@ -389,6 +578,73 @@ export default function TeacherAcademyPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function TestQuestionView({
+  index,
+  question,
+  value,
+  onChange,
+}: {
+  index: number
+  question: TestQuestion
+  value?: string | string[]
+  onChange: (v: string | string[]) => void
+}) {
+  const options = parseJson(question.options) as string[] | null
+  const isMulti = question.question_type === 'multiple'
+
+  return (
+    <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+      <div className="font-medium text-fox-dark mb-3">
+        {index + 1}. {question.question_text}
+      </div>
+      {options ? (
+        <div className="space-y-2">
+          {options.map((opt) => {
+            const selected = isMulti
+              ? Array.isArray(value) && value.includes(String(opt))
+              : String(value) === String(opt)
+            return (
+              <label
+                key={String(opt)}
+                className={[
+                  'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
+                  selected ? 'border-fox-gold bg-fox-gold/10' : 'border-gray-200 bg-white hover:bg-gray-50',
+                ].join(' ')}
+              >
+                <input
+                  type={isMulti ? 'checkbox' : 'radio'}
+                  name={`q-${question.id}`}
+                  value={String(opt)}
+                  checked={selected}
+                  onChange={() => {
+                    if (isMulti) {
+                      const current = Array.isArray(value) ? [...value] : []
+                      const s = String(opt)
+                      onChange(current.includes(s) ? current.filter((x) => x !== s) : [...current, s])
+                    } else {
+                      onChange(String(opt))
+                    }
+                  }}
+                  className="accent-fox-gold"
+                />
+                <span className="text-sm text-gray-700">{opt}</span>
+              </label>
+            )
+          })}
+        </div>
+      ) : (
+        <input
+          type="text"
+          value={typeof value === 'string' ? value : ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Ваш ответ"
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+        />
+      )}
     </div>
   )
 }

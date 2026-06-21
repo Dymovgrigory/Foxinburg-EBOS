@@ -251,6 +251,21 @@ export default function TeacherAcademyPage() {
     }
   }
 
+  const handleRetryTest = async () => {
+    if (!activeLessonDetail?.test) return
+    setTestSubmitting(true)
+    try {
+      const a = await testsApi.createAttempt(activeLessonDetail.test.id, {})
+      setAttempt(a)
+      setAnswers({})
+      showToast('Новая попытка начата', 'info')
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Не удалось начать новую попытку', 'error')
+    } finally {
+      setTestSubmitting(false)
+    }
+  }
+
   const handleSubmitHomework = async () => {
     if (!homework) return
     setHomeworkSubmitting(true)
@@ -472,13 +487,20 @@ export default function TeacherAcademyPage() {
                       ) : activeLessonDetail?.lesson_type === 'test' && activeLessonDetail.test ? (
                         <div className="space-y-6">
                           {attempt?.finished_at ? (
-                            <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
-                              <div className="text-lg font-bold text-fox-dark">
-                                Результат: {attempt.score} / {attempt.max_score}
+                            <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30 space-y-3">
+                              <div>
+                                <div className="text-lg font-bold text-fox-dark">
+                                  Результат: {attempt.score} / {attempt.max_score}
+                                </div>
+                                <Badge variant={attempt.is_passed ? 'success' : 'error'} className="mt-2">
+                                  {attempt.is_passed ? 'Тест пройден' : 'Тест не пройден'}
+                                </Badge>
                               </div>
-                              <Badge variant={attempt.is_passed ? 'success' : 'error'} className="mt-2">
-                                {attempt.is_passed ? 'Тест пройден' : 'Тест не пройден'}
-                              </Badge>
+                              {!attempt.is_passed && (
+                                <Button onClick={handleRetryTest} loading={testSubmitting}>
+                                  ↻ Повторить попытку
+                                </Button>
+                              )}
                             </div>
                           ) : (
                             <>

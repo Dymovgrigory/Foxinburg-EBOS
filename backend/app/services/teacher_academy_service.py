@@ -91,6 +91,7 @@ class TeacherAcademyService:
 
         progress_service = ProgressService(self.uow)
         await progress_service.create_progress_for_enrollment(enrollment.id)
+        await self._ensure_homeworks_for_enrollment(student_id, course.id)
 
         await EventBus.publish(
             self.uow,
@@ -131,6 +132,7 @@ class TeacherAcademyService:
             raise ValueError("Курс Академии педагогов не найден. Сначала выполните синхронизацию.")
         enrollment = await self.get_teacher_progress(student_id)
         if enrollment:
+            await self._ensure_homeworks_for_enrollment(student_id, course.id)
             return enrollment
         return await self.enroll_teacher(student_id, assigned_by_id)
 
@@ -172,6 +174,34 @@ class TeacherAcademyService:
         await self.uow.commit()
         await self.uow.session.refresh(progress)
         return progress
+
+    async def _ensure_homeworks_for_enrollment(self, student_id: int, course_id: int) -> None:
+        result = await self.uow.session.execute(
+            select(Course)
+            .where(Course.id == course_id)
+            .options(selectinload(Course.modules).selectinload(Module.lessons))
+        )
+        course = result.scalar_one_or_none()
+        if not course:
+            return
+
+        existing_result = await self.uow.session.execute(
+            select(Homework).where(Homework.student_id == student_id)
+        )
+        existing_lesson_ids = {hw.lesson_id for hw in existing_result.scalars().all()}
+
+        for module in course.modules:
+            for lesson in module.lessons:
+                if lesson.lesson_type == "homework" and lesson.id not in existing_lesson_ids:
+                    self.uow.session.add(
+                        Homework(
+                            lesson_id=lesson.id,
+                            student_id=student_id,
+                            title=lesson.homework_title or lesson.title,
+                            description=lesson.homework_description,
+                            status="assigned",
+                        )
+                    )
 
     async def _ensure_tests_passed(self, student_id: int, lesson_id: int) -> None:
         result = await self.uow.session.execute(

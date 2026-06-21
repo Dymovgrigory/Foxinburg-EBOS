@@ -67,7 +67,7 @@ class TeacherAcademyService:
         )
         return result.scalar_one_or_none()
 
-    async def enroll_teacher(self, student_id: int, assigned_by: User) -> Enrollment:
+    async def enroll_teacher(self, student_id: int, assigned_by_id: int) -> Enrollment:
         course = await self.get_academy_course()
         if not course:
             raise ValueError("Курс Академии педагогов не найден. Сначала выполните синхронизацию.")
@@ -82,7 +82,7 @@ class TeacherAcademyService:
             course_id=course.id,
             status="active",
             progress_percent=0,
-            assigned_by_id=assigned_by.id,
+            assigned_by_id=assigned_by_id,
             assigned_at=datetime.datetime.utcnow(),
             enrolled_at=datetime.datetime.utcnow(),
         )
@@ -100,7 +100,7 @@ class TeacherAcademyService:
                 "student_id": student_id,
                 "course_id": course.id,
             },
-            user_id=assigned_by.id,
+            user_id=assigned_by_id,
         )
 
         await self.uow.commit()
@@ -124,6 +124,15 @@ class TeacherAcademyService:
             .order_by(Enrollment.enrolled_at.desc())
         )
         return result.scalar_one_or_none()
+
+    async def ensure_teacher_enrolled(self, student_id: int, assigned_by_id: int) -> Enrollment:
+        course = await self.get_academy_course()
+        if not course:
+            raise ValueError("Курс Академии педагогов не найден. Сначала выполните синхронизацию.")
+        enrollment = await self.get_teacher_progress(student_id)
+        if enrollment:
+            return enrollment
+        return await self.enroll_teacher(student_id, assigned_by_id)
 
     async def complete_module(self, student_id: int, module_id: int) -> LessonProgress:
         result = await self.uow.session.execute(

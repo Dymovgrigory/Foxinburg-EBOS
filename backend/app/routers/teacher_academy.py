@@ -58,12 +58,18 @@ async def get_academy_course(
 @router.post("/enroll")
 async def enroll_teacher(
     data: AcademyEnrollmentRequest,
-    current_user: User = Depends(require_permission(Permission.ENROLLMENT_MANAGE)),
+    current_user: User = Depends(require_active_user),
     uow: UnitOfWork = Depends(get_uow),
 ):
+    if current_user.role not in ("teacher", "methodist", "admin", "owner", "super_admin"):
+        return error_response("Недостаточно прав доступа", status_code=403)
+    # Методисты/админы могут зачислять других; учителя — только себя
+    if current_user.role == "teacher" and data.student_id != current_user.id:
+        return error_response("Учитель может зачислить только себя", status_code=403)
+
     service = TeacherAcademyService(uow)
     try:
-        enrollment = await service.enroll_teacher(data.student_id, current_user)
+        enrollment = await service.enroll_teacher(data.student_id, current_user.id)
     except ValueError as e:
         return error_response(str(e), status_code=400)
     return success_response(
@@ -79,9 +85,10 @@ async def get_my_progress(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = TeacherAcademyService(uow)
-    enrollment = await service.get_teacher_progress(current_user.id)
-    if not enrollment:
-        return error_response("Вы не зачислены на Академию педагогов", status_code=404)
+    try:
+        enrollment = await service.ensure_teacher_enrolled(current_user.id, current_user.id)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
 
     modules_data = []
     for module in sorted(enrollment.course.modules, key=lambda m: m.order_index):
@@ -126,6 +133,7 @@ async def complete_module(
 ):
     service = TeacherAcademyService(uow)
     try:
+        await service.ensure_teacher_enrolled(current_user.id, current_user.id)
         progress = await service.complete_module(current_user.id, module_id)
     except ValueError as e:
         return error_response(str(e), status_code=400)

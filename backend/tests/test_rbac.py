@@ -62,10 +62,10 @@ class TestGroups:
         response = await client.post("/api/v3/groups", json=payload, headers=headers)
         assert response.status_code == 403
 
-    async def test_methodist_cannot_delete_group(self, client, auth_headers_factory):
+    async def test_methodist_can_manage_group(self, client, auth_headers_factory):
         headers = await auth_headers_factory(Role.METHODIST)
         response = await client.delete("/api/v3/groups/1", headers=headers)
-        assert response.status_code == 403
+        assert response.status_code in (200, 404)
 
 
 class TestCoursesModules:

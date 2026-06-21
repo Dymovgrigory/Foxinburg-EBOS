@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { useToast, Button, Card, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 
 interface Organization {
   id: number
@@ -17,16 +18,16 @@ interface Branch {
 }
 
 export default function BranchesPage() {
+  const { showToast } = useToast()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ organization_id: '', name: '', address: '', phone: '', email: '' })
 
   const fetchData = async () => {
     setLoading(true)
-    setError('')
     try {
       const orgsRes = await api.get('/organizations')
       const orgList: Organization[] = orgsRes.data.data || []
@@ -36,7 +37,7 @@ export default function BranchesPage() {
         setBranches(branchesRes.data.data || [])
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка загрузки')
+      showToast(err.response?.data?.message || 'Ошибка загрузки', 'error')
     } finally {
       setLoading(false)
     }
@@ -49,6 +50,7 @@ export default function BranchesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.organization_id) return
+    setSubmitting(true)
     try {
       await api.post(`/organizations/${form.organization_id}/branches`, {
         name: form.name,
@@ -59,68 +61,94 @@ export default function BranchesPage() {
       })
       setShowForm(false)
       setForm({ organization_id: '', name: '', address: '', phone: '', email: '' })
+      showToast('Филиал создан', 'success')
       await fetchData()
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка создания филиала')
+      showToast(err.response?.data?.message || 'Ошибка создания филиала', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div className="min-h-screen bg-fox-light">
       <Header title="Филиалы" subtitle="Организации и филиалы" icon="🏢" />
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
-
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Филиалы</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-[#E85D4C] hover:bg-[#D14F40] text-white text-sm font-medium rounded-xl transition">
-            {showForm ? 'Отмена' : '+ Новый филиал'}
-          </button>
-        </div>
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        <Card>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-fox-dark">Филиалы</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{branches.length} филиалов</p>
+            </div>
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+              {showForm ? 'Отмена' : 'Новый филиал'}
+            </Button>
+          </div>
+        </Card>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 grid md:grid-cols-3 gap-4">
-            <select required value={form.organization_id} onChange={(e) => setForm({ ...form, organization_id: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]">
-              <option value="">Организация</option>
-              {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-            <input required placeholder="Название филиала" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <input placeholder="Адрес" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <input placeholder="Телефон" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <input type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-[#E85D4C]" />
-            <button type="submit" className="px-4 py-2 bg-[#7C5CFC] hover:bg-[#6B4FD6] text-white rounded-xl font-medium">Создать</button>
-          </form>
+          <Card>
+            <h3 className="text-base font-bold text-fox-dark mb-4">Новый филиал</h3>
+            <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-4">
+              <select
+                required
+                value={form.organization_id}
+                onChange={(e) => setForm({ ...form, organization_id: e.target.value })}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              >
+                <option value="">Организация</option>
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              <Input required placeholder="Название филиала" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input placeholder="Адрес" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <Input placeholder="Телефон" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <Input type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <div className="flex items-end">
+                <Button type="submit" loading={submitting} className="w-full">Создать</Button>
+              </div>
+            </form>
+          </Card>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Название</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Адрес</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Телефон</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">Загрузка...</td></tr>
-              ) : branches.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">Нет филиалов</td></tr>
-              ) : branches.map((b) => (
-                <tr key={b.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-700">{b.id}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{b.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{b.address || '—'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{b.phone || '—'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{b.email || '—'}</td>
+        {loading ? (
+          <Loader text="Загрузка филиалов..." />
+        ) : branches.length === 0 ? (
+          <EmptyState
+            icon="🏢"
+            title="Нет филиалов"
+            description="Создай первый филиал организации."
+            actionLabel="Новый филиал"
+            onAction={() => setShowForm(true)}
+          />
+        ) : (
+          <Card padding="none">
+            <Table>
+              <Thead>
+                <tr>
+                  <Th>ID</Th>
+                  <Th>Название</Th>
+                  <Th>Адрес</Th>
+                  <Th>Телефон</Th>
+                  <Th>Email</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </Thead>
+              <Tbody>
+                {branches.map((b) => (
+                  <Tr key={b.id}>
+                    <Td>#{b.id}</Td>
+                    <Td className="font-medium text-fox-dark">{b.name}</Td>
+                    <Td>{b.address || '—'}</Td>
+                    <Td>{b.phone || '—'}</Td>
+                    <Td>{b.email || '—'}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Card>
+        )}
       </div>
     </div>
   )

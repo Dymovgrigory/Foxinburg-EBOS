@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import AcademyContentViewer from '../components/AcademyContentViewer'
+import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
 
 interface LessonContent {
   id: number
@@ -48,15 +49,16 @@ interface Progress {
   modules: ProgressModule[]
 }
 
-const statusMeta: Record<string, { label: string; icon: string; color: string }> = {
-  completed: { label: 'Завершён', icon: '✅', color: 'bg-green-100 text-green-700' },
-  available: { label: 'Доступен', icon: '🔓', color: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: 'В процессе', icon: '📖', color: 'bg-amber-100 text-amber-700' },
-  locked: { label: 'Заблокирован', icon: '🔒', color: 'bg-gray-100 text-gray-500' },
+const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant']; icon: string }> = {
+  completed: { label: 'Завершён', variant: 'success', icon: '✅' },
+  available: { label: 'Доступен', variant: 'info', icon: '🔓' },
+  in_progress: { label: 'В процессе', variant: 'warning', icon: '📖' },
+  locked: { label: 'Заблокирован', variant: 'default', icon: '🔒' },
 }
 
 export default function TeacherAcademyPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const isMethodist = ['methodist', 'admin', 'owner', 'super_admin'].includes(user?.role || '')
 
   const [course, setCourse] = useState<Course | null>(null)
@@ -65,15 +67,13 @@ export default function TeacherAcademyPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [completing, setCompleting] = useState<number | null>(null)
-  const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
 
   const fetchCourse = async () => {
     try {
       const res = await api.get('/teacher-academy/course')
       setCourse(res.data.data)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Не удалось загрузить курс')
+      showToast(err.response?.data?.message || 'Не удалось загрузить курс', 'error')
     }
   }
 
@@ -83,14 +83,13 @@ export default function TeacherAcademyPage() {
       setProgress(res.data.data)
     } catch (err: any) {
       if (err.response?.status !== 404) {
-        setError(err.response?.data?.message || 'Не удалось загрузить прогресс')
+        showToast(err.response?.data?.message || 'Не удалось загрузить прогресс', 'error')
       }
     }
   }
 
   const loadAll = async () => {
     setLoading(true)
-    setError('')
     await Promise.all([fetchCourse(), fetchProgress()])
     setLoading(false)
   }
@@ -99,7 +98,6 @@ export default function TeacherAcademyPage() {
     loadAll()
   }, [])
 
-  // Автовыбор активного модуля
   useEffect(() => {
     if (!course) return
     if (activeModuleId && course.modules.some((m) => m.id === activeModuleId)) return
@@ -118,14 +116,12 @@ export default function TeacherAcademyPage() {
 
   const handleSync = async () => {
     setSyncing(true)
-    setError('')
-    setMessage('')
     try {
       const res = await api.post('/teacher-academy/sync')
       setCourse(res.data.data)
-      setMessage(res.data.message)
+      showToast(res.data.message, 'success')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка синхронизации')
+      showToast(err.response?.data?.message || 'Ошибка синхронизации', 'error')
     } finally {
       setSyncing(false)
     }
@@ -133,14 +129,12 @@ export default function TeacherAcademyPage() {
 
   const handleComplete = async (moduleId: number) => {
     setCompleting(moduleId)
-    setError('')
-    setMessage('')
     try {
       const res = await api.post(`/teacher-academy/modules/${moduleId}/complete`)
-      setMessage(res.data.message)
+      showToast(res.data.message, 'success')
       await fetchProgress()
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка завершения модуля')
+      showToast(err.response?.data?.message || 'Ошибка завершения модуля', 'error')
     } finally {
       setCompleting(null)
     }
@@ -152,9 +146,7 @@ export default function TeacherAcademyPage() {
     return pm?.status || 'locked'
   }
 
-  const canOpenModule = (moduleId: number) => {
-    return isMethodist || moduleStatus(moduleId) !== 'locked'
-  }
+  const canOpenModule = (moduleId: number) => isMethodist || moduleStatus(moduleId) !== 'locked'
 
   const activeModule = useMemo(
     () => course?.modules.find((m) => m.id === activeModuleId),
@@ -169,10 +161,10 @@ export default function TeacherAcademyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB]">
+      <div className="min-h-screen bg-fox-light">
         <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
         <div className="p-6 max-w-6xl mx-auto">
-          <div className="p-12 text-center text-gray-400">Загрузка курса...</div>
+          <Loader text="Загрузка курса..." />
         </div>
       </div>
     )
@@ -180,23 +172,16 @@ export default function TeacherAcademyPage() {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB]">
+      <div className="min-h-screen bg-fox-light">
         <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
         <div className="p-6 max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
-            <div className="text-4xl mb-4">📭</div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Курс не найден</h3>
-            <p className="mb-6">Материалы Академии педагогов ещё не импортированы.</p>
-            {isMethodist && (
-              <button
-                onClick={handleSync}
-                disabled={syncing}
-                className="px-6 py-2.5 bg-[#7C5CFC] hover:bg-[#6B4FD6] disabled:opacity-60 text-white text-sm font-medium rounded-xl transition"
-              >
-                {syncing ? 'Синхронизация...' : 'Синхронизировать с Яндекс.Диском'}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon="🎓"
+            title="Курс не найден"
+            description="Материалы Академии педагогов ещё не импортированы."
+            actionLabel={isMethodist ? 'Синхронизировать' : undefined}
+            onAction={isMethodist ? handleSync : undefined}
+          />
         </div>
       </div>
     )
@@ -205,23 +190,18 @@ export default function TeacherAcademyPage() {
   const notEnrolled = !progress && !isMethodist
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div className="min-h-screen bg-fox-light">
       <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        {error && (
-          <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">{error}</div>
-        )}
-        {message && (
-          <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-100">{message}</div>
-        )}
-
         {/* Hero card */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7C5CFC] to-[#E85D4C] text-white p-6 md:p-8 shadow-lg">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-fox-purple to-fox-purple-light text-white p-6 md:p-8 shadow-lg">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold">{course.title}</h2>
-              <p className="text-white/80 mt-1 max-w-2xl">{course.description || 'Курс повышения квалификации преподавателей FOXINBURG'}</p>
+              <p className="text-white/80 mt-1 max-w-2xl">
+                {course.description || 'Курс повышения квалификации преподавателей FOXINBURG'}
+              </p>
               {course.last_sync_at && (
                 <p className="text-xs text-white/60 mt-3">
                   Последняя синхронизация: {new Date(course.last_sync_at).toLocaleString('ru-RU')}
@@ -229,25 +209,26 @@ export default function TeacherAcademyPage() {
               )}
             </div>
             {isMethodist && (
-              <button
+              <Button
                 onClick={handleSync}
-                disabled={syncing}
-                className="self-start md:self-center px-5 py-2.5 bg-white/20 hover:bg-white/30 disabled:opacity-60 text-white text-sm font-semibold rounded-xl backdrop-blur transition"
+                loading={syncing}
+                variant="secondary"
+                className="self-start md:self-center border-white/30 text-white hover:bg-white/10"
               >
-                {syncing ? 'Синхронизация...' : '↻ Синхронизировать'}
-              </button>
+                ↻ Синхронизировать
+              </Button>
             )}
           </div>
           <div className="absolute -right-10 -bottom-16 w-64 h-64 bg-white/10 rounded-full blur-2xl" />
         </div>
 
         {progress && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-5">
+          <Card className="flex items-center gap-5">
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
                 <path
-                  className="text-[#E85D4C]"
+                  className="text-fox-gold"
                   strokeDasharray={`${progress.progress_percent}, 100`}
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
@@ -256,29 +237,27 @@ export default function TeacherAcademyPage() {
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">{progress.progress_percent}%</span>
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-fox-dark">{progress.progress_percent}%</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700">Общий прогресс</p>
-              <p className="text-xs text-gray-400">
-                {completedCount} из {totalCount} модулей завершено
-              </p>
+              <p className="text-sm font-medium text-fox-dark">Общий прогресс</p>
+              <p className="text-xs text-gray-400">{completedCount} из {totalCount} модулей завершено</p>
             </div>
-          </div>
+          </Card>
         )}
 
         {notEnrolled ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
-            <div className="text-4xl mb-4">🔒</div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Вы не зачислены на курс</h3>
-            <p>Обратитесь к методисту, чтобы получить доступ к материалам Академии педагогов.</p>
-          </div>
+          <EmptyState
+            icon="🔒"
+            title="Вы не зачислены на курс"
+            description="Обратитесь к методисту, чтобы получить доступ к материалам Академии педагогов."
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Sidebar modules */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:sticky lg:top-6">
+            <Card padding="none" className="lg:sticky lg:top-6 overflow-hidden">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="font-bold text-gray-900">Модули курса</h3>
+                <h3 className="font-bold text-fox-dark">Модули курса</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Открываются по порядку</p>
               </div>
               <div className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
@@ -297,7 +276,7 @@ export default function TeacherAcademyPage() {
                       disabled={disabled}
                       className={[
                         'w-full text-left p-4 transition flex items-center gap-3',
-                        isActive ? 'bg-[#7C5CFC]/5' : 'hover:bg-gray-50',
+                        isActive ? 'bg-fox-purple/5' : 'hover:bg-gray-50',
                         disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
                       ].join(' ')}
                     >
@@ -305,42 +284,44 @@ export default function TeacherAcademyPage() {
                         {idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-medium truncate ${isActive ? 'text-[#7C5CFC]' : 'text-gray-800'}`}>
+                        <p className={`text-sm font-medium truncate ${isActive ? 'text-fox-purple' : 'text-fox-dark'}`}>
                           {module.title}
                         </p>
-                        <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${meta.color}`}>
-                          <span>{meta.icon}</span>
-                          {meta.label}
-                        </span>
+                        <Badge variant={meta.variant} className="mt-1">
+                          {meta.icon} {meta.label}
+                        </Badge>
                       </div>
                     </button>
                   )
                 })}
               </div>
-            </div>
+            </Card>
 
             {/* Content */}
             <div className="lg:col-span-2 space-y-6">
               {activeModule ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+                <Card>
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
                     <div>
-                      <span className="inline-block px-2.5 py-0.5 mb-2 text-[10px] font-semibold uppercase tracking-wide text-[#7C5CFC] bg-[#7C5CFC]/10 rounded-md">
+                      <span className="inline-block px-2.5 py-0.5 mb-2 text-[10px] font-semibold uppercase tracking-wide text-fox-purple bg-fox-purple/10 rounded-md">
                         Модуль {activeModule.order_index + 1}
                       </span>
-                      <h3 className="text-xl font-bold text-gray-900">{activeModule.title}</h3>
+                      <h3 className="text-xl font-bold text-fox-dark">{activeModule.title}</h3>
                     </div>
                     {progress && moduleStatus(activeModule.id) !== 'locked' && moduleStatus(activeModule.id) !== 'completed' && (
-                      <button
+                      <Button
                         onClick={() => handleComplete(activeModule.id)}
-                        disabled={completing === activeModule.id}
-                        className="self-start px-5 py-2.5 bg-[#4CAF7E] hover:bg-[#3D9A6A] disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+                        loading={completing === activeModule.id}
+                        leftIcon="✓"
+                        className="self-start"
                       >
-                        {completing === activeModule.id ? 'Завершение...' : '✓ Завершить модуль'}
-                      </button>
+                        Завершить модуль
+                      </Button>
                     )}
                     {progress && moduleStatus(activeModule.id) === 'completed' && (
-                      <span className="self-start px-4 py-2 text-sm font-semibold text-green-700 bg-green-50 rounded-xl">✅ Модуль завершён</span>
+                      <span className="self-start px-4 py-2 text-sm font-semibold text-green-700 bg-green-50 rounded-xl">
+                        ✅ Модуль завершён
+                      </span>
                     )}
                   </div>
 
@@ -349,8 +330,8 @@ export default function TeacherAcademyPage() {
                       activeModule.lessons[0].contents.map((content) => (
                         <div key={content.id}>
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="w-2 h-2 rounded-full bg-[#7C5CFC]" />
-                            <h4 className="text-sm font-semibold text-gray-800">{content.title || 'Материал'}</h4>
+                            <span className="w-2 h-2 rounded-full bg-fox-purple" />
+                            <h4 className="text-sm font-semibold text-fox-dark">{content.title || 'Материал'}</h4>
                             <span className="ml-auto text-[10px] uppercase tracking-wide text-gray-400 font-medium">
                               {content.content_type}
                             </span>
@@ -359,16 +340,16 @@ export default function TeacherAcademyPage() {
                         </div>
                       ))
                     ) : (
-                      <div className="p-8 text-center text-gray-400 bg-gray-50 rounded-xl">
+                      <div className="p-8 text-center text-gray-400 bg-fox-light rounded-xl">
                         В модуле пока нет материалов.
                       </div>
                     )}
                   </div>
-                </div>
+                </Card>
               ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center text-gray-400">
+                <Card className="p-12 text-center text-gray-400">
                   Выберите модуль из списка слева
-                </div>
+                </Card>
               )}
             </div>
           </div>

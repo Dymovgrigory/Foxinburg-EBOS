@@ -7,6 +7,7 @@ import type {
   Lesson,
   Schedule,
   Group,
+  EmployeeGroup,
   Homework,
   HomeworkReview,
   Test,
@@ -65,6 +66,25 @@ export const coursesApi = {
   delete: (id: number) => api.delete<ApiResponse<void>>(`/courses/${id}`).then(unwrap),
   modules: (courseId: number) =>
     api.get<ApiResponse<Course['modules']>>(`/courses/${courseId}/modules`).then(unwrap),
+}
+
+export const employeeGroupsApi = {
+  list: (groupType?: string) =>
+    api
+      .get<ApiResponse<EmployeeGroup[]>>(`/employee-groups${groupType ? `?group_type=${groupType}` : ''}`)
+      .then(unwrap),
+  get: (id: number) => api.get<ApiResponse<EmployeeGroup>>(`/employee-groups/${id}`).then(unwrap),
+  create: (data: Partial<EmployeeGroup>) =>
+    api.post<ApiResponse<EmployeeGroup>>('/employee-groups', data).then(unwrap),
+  update: (id: number, data: Partial<EmployeeGroup>) =>
+    api.patch<ApiResponse<EmployeeGroup>>(`/employee-groups/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/employee-groups/${id}`).then(unwrap),
+  addMember: (id: number, userId: number) =>
+    api.post<ApiResponse<EmployeeGroup>>(`/employee-groups/${id}/members`, { user_id: userId }).then(unwrap),
+  removeMember: (id: number, userId: number) =>
+    api.delete<ApiResponse<EmployeeGroup>>(`/employee-groups/${id}/members/${userId}`).then(unwrap),
+  enrollToCourse: (id: number, courseId: number) =>
+    api.post<ApiResponse<{ enrolled_count: number }>>(`/employee-groups/${id}/enroll`, { course_id: courseId }).then(unwrap),
 }
 
 export const groupsApi = {
@@ -152,6 +172,7 @@ export const homeworksApi = {
     api.get<ApiResponse<HomeworkReview[]>>(`/homeworks/${homeworkId}/reviews`).then(unwrap),
   createReview: (homeworkId: number, data: Partial<HomeworkReview>) =>
     api.post<ApiResponse<HomeworkReview>>(`/homeworks/${homeworkId}/reviews`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/homeworks/${id}`).then(unwrap),
   submit: (homeworkId: number, data: { content?: string; file_urls?: string }) =>
     api.post<ApiResponse<Homework>>(`/homeworks/${homeworkId}/submit`, data).then(unwrap),
 }

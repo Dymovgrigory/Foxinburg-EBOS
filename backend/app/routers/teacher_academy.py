@@ -19,11 +19,14 @@ from app.models.user import User
 from app.schemas.academy import (
     AcademyCourseResponse,
     AcademyEnrollmentRequest,
+    AcademyGroupEnrollRequest,
     AcademyModuleCompleteResponse,
     AcademyProgressResponse,
 )
 from app.schemas.enrollment import EnrollmentResponse
 from app.services.teacher_academy_service import TeacherAcademyService
+from app.services.employee_group_service import EmployeeGroupService
+from app.services.enrollment_service import EnrollmentService
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.office_converter import convert_office_to_pdf
 from app.services.yandex_disk_service import YandexDiskService
@@ -85,6 +88,40 @@ async def enroll_teacher(
     return success_response(
         data=EnrollmentResponse.model_validate(enrollment).model_dump(),
         message="Педагог зачислен на Академию",
+        status_code=201,
+    )
+
+
+@router.post("/enroll-group")
+async def enroll_teacher_group(
+    data: AcademyGroupEnrollRequest,
+    current_user: User = Depends(require_permission(Permission.ENROLLMENT_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    academy_service = TeacherAcademyService(uow)
+    course = await academy_service.get_academy_course()
+    if not course:
+        return error_response("Курс Академии педагогов не найден", status_code=404)
+
+    group_service = EmployeeGroupService(uow)
+    group = await group_service.get_by_id(data.group_id)
+    if not group:
+        return error_response("Группа не найдена", status_code=404)
+
+    enrollment_service = EnrollmentService(uow)
+    try:
+        enrollments = await enrollment_service.enroll_employee_group(
+            group=group,
+            course_id=course.id,
+            current_user=current_user,
+        )
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+    await uow.commit()
+    return success_response(
+        data={"enrolled_count": len(enrollments)},
+        message=f"Зачислено {len(enrollments)} участников группы на Академию",
         status_code=201,
     )
 

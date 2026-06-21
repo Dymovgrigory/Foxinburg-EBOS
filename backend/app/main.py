@@ -13,13 +13,13 @@ from app.database import engine, Base
 from app.models import (
     User, Organization, Branch, Course, Module, Lesson, LessonContent,
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
-    Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
+    EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
 )
 
 from app.routers import (
-    auth, users, seed, courses, modules, lessons, groups, enrollments,
+    auth, users, seed, courses, modules, lessons, groups, employee_groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, methodists, system,
@@ -98,6 +98,7 @@ app.include_router(courses.router, prefix="/api/v3")
 app.include_router(modules.router, prefix="/api/v3")
 app.include_router(lessons.router, prefix="/api/v3")
 app.include_router(groups.router, prefix="/api/v3")
+app.include_router(employee_groups.router, prefix="/api/v3")
 app.include_router(enrollments.router, prefix="/api/v3")
 app.include_router(leads.router, prefix="/api/v3")
 app.include_router(deals.router, prefix="/api/v3")

@@ -100,6 +100,17 @@ export interface Group {
   created_at?: string
 }
 
+export interface EmployeeGroup {
+  id: number
+  name: string
+  description?: string
+  group_type: string
+  member_count?: number
+  members: User[]
+  created_at: string
+  updated_at: string
+}
+
 export interface Homework {
   id: number
   student_id: number

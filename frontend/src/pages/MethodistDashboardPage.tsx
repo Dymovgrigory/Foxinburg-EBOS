@@ -14,7 +14,7 @@ interface DashboardStats {
 
 const widgets = [
   { key: 'courses_count', label: 'Курсы', icon: '📚', path: '/courses', color: 'bg-fox-purple/10 text-fox-purple' },
-  { key: 'groups_count', label: 'Группы', icon: '👥', path: '/students', color: 'bg-fox-gold/20 text-fox-dark' },
+  { key: 'groups_count', label: 'Группы', icon: '👥', path: '/employee-groups', color: 'bg-fox-gold/20 text-fox-dark' },
   { key: 'students_count', label: 'Ученики', icon: '🎓', path: '/students', color: 'bg-green-100 text-green-700' },
   { key: 'pending_homeworks_count', label: 'ДЗ на проверку', icon: '📝', path: '/homeworks', color: 'bg-orange-100 text-orange-700' },
 ]
@@ -79,6 +79,9 @@ export default function MethodistDashboardPage() {
               </Button>
               <Button variant="secondary" onClick={() => navigate('/homeworks')}>
                 Проверка ДЗ
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/employee-groups')}>
+                Группы
               </Button>
               <Button variant="secondary" onClick={() => navigate('/students')}>
                 Ученики

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.chat import ChatRoom
 from app.models.course import Course, Module, Lesson
 from app.models.homework import Homework
+from app.models.employee_group import EmployeeGroup
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.services.progress_service import ProgressService
@@ -108,6 +109,28 @@ class EnrollmentService(BaseService[Enrollment]):
             user_id=current_user.id if current_user else None,
         )
         return enrollment
+
+    async def enroll_employee_group(
+        self,
+        *,
+        group: EmployeeGroup,
+        course_id: int,
+        current_user: Optional[User] = None,
+    ) -> List[Enrollment]:
+        """Зачисляет всех участников группы сотрудников на курс."""
+        results = []
+        for member in group.members:
+            existing = await self.get_by_student_and_course(member.id, course_id)
+            if existing:
+                continue
+            enrollment = await self.enroll_student(
+                student_id=member.id,
+                course_id=course_id,
+                group_id=None,
+                current_user=current_user,
+            )
+            results.append(enrollment)
+        return results
 
     async def _create_homeworks_for_enrollment(self, student_id: int, course_id: int) -> None:
         result = await self.uow.session.execute(

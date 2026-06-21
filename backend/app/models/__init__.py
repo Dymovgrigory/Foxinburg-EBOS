@@ -6,6 +6,7 @@ from .course import Course, Module, Lesson, LessonContent
 from .test import Test, TestQuestion, TestAttempt
 from .homework import Homework, HomeworkReview
 from .group import Group
+from .employee_group import EmployeeGroup, employee_group_members
 from .enrollment import Enrollment, LessonProgress
 from .crm import Lead, Deal
 from .finance import Payment, Transaction
@@ -31,6 +32,8 @@ __all__ = [
     "Homework",
     "HomeworkReview",
     "Group",
+    "EmployeeGroup",
+    "employee_group_members",
     "Enrollment",
     "LessonProgress",
     "Lead",

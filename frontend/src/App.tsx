@@ -24,6 +24,7 @@ import ChatPage from './pages/ChatPage'
 import TeacherAcademyPage from './pages/TeacherAcademyPage'
 import CourseBuilderPage from './pages/CourseBuilderPage'
 import CoursePlayerPage from './pages/CoursePlayerPage'
+import EmployeeGroupsPage from './pages/EmployeeGroupsPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -61,6 +62,7 @@ function App() {
         <Route path="notifications" element={<Protected><NotificationsPage /></Protected>} />
         <Route path="academy" element={<RoleProtected path="/academy"><TeacherAcademyPage /></RoleProtected>} />
         <Route path="course-builder" element={<RoleProtected path="/course-builder"><CourseBuilderPage /></RoleProtected>} />
+        <Route path="employee-groups" element={<RoleProtected path="/employee-groups"><EmployeeGroupsPage /></RoleProtected>} />
         <Route path="courses/:id/learn" element={<Protected><CoursePlayerPage /></Protected>} />
 
         {/* Placeholder routes */}

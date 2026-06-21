@@ -118,6 +118,7 @@ ROLE_PERMISSIONS = {
         Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
     ],
     Role.METHODIST: [
+        Permission.USER_READ,
         Permission.COURSE_CREATE, Permission.COURSE_READ, Permission.COURSE_UPDATE, Permission.COURSE_DELETE, Permission.COURSE_PUBLISH,
         Permission.MODULE_CREATE, Permission.MODULE_READ, Permission.MODULE_UPDATE, Permission.MODULE_DELETE,
         Permission.LESSON_CREATE, Permission.LESSON_READ, Permission.LESSON_UPDATE, Permission.LESSON_DELETE,

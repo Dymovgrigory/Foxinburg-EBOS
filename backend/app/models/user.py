@@ -53,6 +53,11 @@ class User(Base):
     leads = relationship("Lead", back_populates="manager")
     participations = relationship("ChatParticipant", back_populates="user", cascade="all, delete-orphan")
     messages = relationship("ChatMessage", back_populates="sender", cascade="all, delete-orphan")
+    employee_groups = relationship(
+        "EmployeeGroup",
+        secondary="employee_group_members",
+        back_populates="members",
+    )
 
     @property
     def plain_password(self) -> str:

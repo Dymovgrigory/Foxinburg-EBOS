@@ -100,15 +100,34 @@ const managerGroups: MenuGroup[] = [
 
 const methodistGroups: MenuGroup[] = [
   {
+    items: [{ to: '/methodist-dashboard', label: 'Дашборд', icon: '📊' }],
+  },
+  {
+    title: 'Академия',
     items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
+      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
+      { to: '/knowledge', label: 'База знаний', icon: '🧠' },
+    ],
+  },
+  {
+    title: 'Курсы',
+    items: [
       { to: '/courses', label: 'Курсы', icon: '📚' },
       { to: '/course-builder', label: 'Конструктор курсов', icon: '🛠️' },
-      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
-      { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝' },
-      { to: '/knowledge', label: 'База знаний', icon: '🧠' },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
     ],
+  },
+  {
+    title: 'Учебный процесс',
+    items: [
+      { to: '/employee-groups', label: 'Группы сотрудников', icon: '👥' },
+      { to: '/students', label: 'Ученики', icon: '🎓' },
+      { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝' },
+      { to: '/calendar', label: 'Расписание', icon: '📅' },
+    ],
+  },
+  {
+    title: 'Администрирование',
+    items: [{ to: '/settings', label: 'Настройки', icon: '🔧' }],
   },
 ]
 

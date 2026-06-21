@@ -46,6 +46,7 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   '/homeworks': ['owner', 'super_admin', 'admin', 'methodist', 'teacher', 'student'],
   '/academy': ['owner', 'super_admin', 'admin', 'methodist', 'teacher'],
   '/course-builder': ['owner', 'super_admin', 'admin', 'methodist'],
+  '/employee-groups': ['owner', 'super_admin', 'admin', 'methodist'],
   '/teacher-dashboard': ['teacher'],
   '/student-dashboard': ['student'],
   '/methodist-dashboard': ['methodist'],

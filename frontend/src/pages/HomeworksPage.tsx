@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { homeworksApi } from '../api'
 import { useAuth } from '../contexts/AuthContext'
 import {
   useToast,
@@ -59,6 +60,9 @@ export default function HomeworksPage() {
   const [review, setReview] = useState({ status: 'approved', score: '', comment: '' })
   const [studentAnswer, setStudentAnswer] = useState('')
   const [studentFiles, setStudentFiles] = useState('')
+  const [editHomework, setEditHomework] = useState<Homework | null>(null)
+  const [editForm, setEditForm] = useState<Partial<Homework>>({})
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const isReviewer = ['owner', 'super_admin', 'admin', 'methodist', 'teacher'].includes(user?.role || '')
 
@@ -127,6 +131,43 @@ export default function HomeworksPage() {
       showToast(err.response?.data?.message || 'Ошибка проверки', 'error')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const startEdit = (h: Homework) => {
+    setEditHomework(h)
+    setEditForm({
+      lesson_id: h.lesson_id,
+      student_id: h.student_id,
+      content: h.content,
+      status: h.status,
+    })
+  }
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editHomework) return
+    setSavingEdit(true)
+    try {
+      await homeworksApi.update(editHomework.id, editForm)
+      showToast('Задание обновлено', 'success')
+      setEditHomework(null)
+      await fetchHomeworks()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка обновления', 'error')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const deleteHomework = async (id: number) => {
+    if (!confirm('Удалить домашнее задание? Это также удалит историю проверок.')) return
+    try {
+      await homeworksApi.delete(id)
+      showToast('Задание удалено', 'success')
+      await fetchHomeworks()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка удаления', 'error')
     }
   }
 
@@ -232,15 +273,23 @@ export default function HomeworksPage() {
                   <Td>{h.submitted_at ? new Date(h.submitted_at).toLocaleDateString('ru-RU') : '—'}</Td>
                   <Td>{(reviews[h.id] || []).length}</Td>
                   <Td>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelected(h)
-                        setReview({ status: 'approved', score: '', comment: '' })
-                      }}
-                    >
-                      Проверить
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelected(h)
+                          setReview({ status: 'approved', score: '', comment: '' })
+                        }}
+                      >
+                        Проверить
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(h)}>
+                        ✎
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => deleteHomework(h.id)}>
+                        🗑
+                      </Button>
+                    </div>
                   </Td>
                 </Tr>
               )
@@ -248,6 +297,58 @@ export default function HomeworksPage() {
           </Tbody>
         </Table>
       </Card>
+
+      <Modal
+        isOpen={!!editHomework}
+        onClose={() => setEditHomework(null)}
+        title={editHomework ? `Редактирование задания #${editHomework.id}` : ''}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditHomework(null)}>Отмена</Button>
+            <Button type="submit" form="edit-form" loading={savingEdit}>Сохранить</Button>
+          </>
+        }
+      >
+        {editHomework && (
+          <form id="edit-form" onSubmit={saveEdit} className="space-y-4">
+            <Input
+              label="ID урока"
+              type="number"
+              value={editForm.lesson_id ?? ''}
+              onChange={(e) => setEditForm({ ...editForm, lesson_id: Number(e.target.value) })}
+            />
+            <Input
+              label="ID ученика"
+              type="number"
+              value={editForm.student_id ?? ''}
+              onChange={(e) => setEditForm({ ...editForm, student_id: Number(e.target.value) })}
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Содержание</label>
+              <textarea
+                value={editForm.content || ''}
+                onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                rows={4}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус</label>
+              <select
+                value={editForm.status || ''}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              >
+                <option value="assigned">Назначено</option>
+                <option value="submitted">Сдано</option>
+                <option value="reviewed">Проверено</option>
+                <option value="revision">Доработка</option>
+                <option value="rejected">Отклонено</option>
+              </select>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       <Modal
         isOpen={!!selected}

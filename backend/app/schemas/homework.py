@@ -18,6 +18,10 @@ class HomeworkCreate(HomeworkBase):
 
 
 class HomeworkUpdate(BaseModel):
+    lesson_id: Optional[int] = None
+    student_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
     content: Optional[str] = None
     file_urls: Optional[str] = None
     status: Optional[str] = None

@@ -167,6 +167,20 @@ async def update_homework(
     )
 
 
+@router.delete("/{homework_id}")
+async def delete_homework(
+    homework_id: int,
+    current_user=Depends(require_permission(Permission.HOMEWORK_REVIEW)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    homework = await uow.session.get(Homework, homework_id)
+    if not homework:
+        return error_response("Домашнее задание не найдено", status_code=404)
+    await uow.session.delete(homework)
+    await uow.commit()
+    return success_response(message="Домашнее задание удалено")
+
+
 @router.post("/{homework_id}/submit")
 async def submit_homework(
     homework_id: int,

@@ -60,6 +60,10 @@ class AcademyEnrollmentRequest(BaseModel):
     student_id: int
 
 
+class AcademyGroupEnrollRequest(BaseModel):
+    group_id: int
+
+
 class AcademyProgressResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

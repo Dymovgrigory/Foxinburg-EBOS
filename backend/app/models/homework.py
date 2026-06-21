@@ -26,7 +26,7 @@ class Homework(Base):
     student = relationship("User", back_populates="submitted_homeworks")
     reviews = relationship(
         "HomeworkReview", back_populates="homework",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

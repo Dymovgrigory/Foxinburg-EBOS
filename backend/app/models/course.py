@@ -36,11 +36,11 @@ class Course(Base):
     author = relationship("User", foreign_keys=[author_id])
     modules = relationship(
         "Module", back_populates="course", order_by="Module.order_index",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
     enrollments = relationship(
         "Enrollment", back_populates="course",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):
@@ -63,7 +63,7 @@ class Module(Base):
     course = relationship("Course", back_populates="modules")
     lessons = relationship(
         "Lesson", back_populates="module", order_by="Lesson.order_index",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):
@@ -91,15 +91,15 @@ class Lesson(Base):
     module = relationship("Module", back_populates="lessons")
     contents = relationship(
         "LessonContent", back_populates="lesson",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
     tests = relationship(
         "Test", back_populates="lesson",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
     homeworks = relationship(
         "Homework", back_populates="lesson",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

@@ -28,7 +28,7 @@ class Enrollment(Base):
     group = relationship("Group")
     lesson_progress = relationship(
         "LessonProgress", back_populates="enrollment",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

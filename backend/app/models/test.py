@@ -24,11 +24,11 @@ class Test(Base):
     lesson = relationship("Lesson", back_populates="tests")
     questions = relationship(
         "TestQuestion", back_populates="test", order_by="TestQuestion.order_index",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
     attempts = relationship(
         "TestAttempt", back_populates="test",
-        cascade="all, delete-orphan", passive_deletes=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

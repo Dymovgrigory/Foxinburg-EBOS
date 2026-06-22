@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Foreign
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class KnowledgeArticle(Base):
@@ -16,7 +17,7 @@ class KnowledgeArticle(Base):
     is_published = Column(Boolean, default=True, nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     author = relationship("User")

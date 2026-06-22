@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Payment(Base):
@@ -17,7 +18,7 @@ class Payment(Base):
     status = Column(String, default="completed")  # pending, completed, cancelled
 
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     student = relationship("User", back_populates="payments")
 
@@ -36,7 +37,7 @@ class Transaction(Base):
     balance_after = Column(Integer, nullable=False)
 
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", foreign_keys=[user_id])
 

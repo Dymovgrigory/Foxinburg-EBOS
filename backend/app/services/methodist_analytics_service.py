@@ -16,6 +16,7 @@ from app.models.test import Test, TestAttempt
 from app.models.user import User
 from app.services.teacher_academy_service import TeacherAcademyService
 from app.services.unit_of_work import UnitOfWork
+from app.utils import utc_now
 
 
 # Пороги для определения риска отчисления
@@ -92,7 +93,7 @@ class MethodistAnalyticsService:
             )
         ).scalar() or 0
 
-        overdue_threshold = datetime.datetime.utcnow() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
+        overdue_threshold = utc_now() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
         overdue_homeworks_count = (
             await self.uow.session.execute(
                 select(func.count(Homework.id)).where(
@@ -256,7 +257,7 @@ class MethodistAnalyticsService:
                     for h in student_homeworks
                     if h.status == "submitted"
                     and h.submitted_at
-                    and h.submitted_at < datetime.datetime.utcnow() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
+                    and h.submitted_at < utc_now() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
                 ]
             )
 
@@ -317,7 +318,7 @@ class MethodistAnalyticsService:
             if status in status_counts:
                 status_counts[status] = count
 
-        overdue_threshold = datetime.datetime.utcnow() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
+        overdue_threshold = utc_now() - datetime.timedelta(days=HOMEWORK_OVERDUE_DAYS)
         recent_pending_result = await self.uow.session.execute(
             select(Homework, User.name.label("student_name"), Lesson.title.label("lesson_title"))
             .join(User, Homework.student_id == User.id)
@@ -458,7 +459,7 @@ class MethodistAnalyticsService:
     # Upcoming schedule
     # ------------------------------------------------------------------
     async def _get_upcoming_schedule(self, branch_id: Optional[int]) -> List[Dict[str, Any]]:
-        now = datetime.datetime.utcnow()
+        now = utc_now()
         query = (
             select(Schedule, Course.title.label("course_title"), Group.name.label("group_name"), User.name.label("teacher_name"))
             .outerjoin(Course, Schedule.course_id == Course.id)

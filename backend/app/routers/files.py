@@ -12,6 +12,7 @@ from app.schemas.file import FileResponse
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_active_user, require_permission
 from app.core.permissions import Permission
+from app.utils import utc_now
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -48,7 +49,7 @@ async def upload_file(
 ):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     ext = os.path.splitext(file.filename or "")[1]
-    filename = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{ext}"
+    filename = f"{utc_now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{ext}"
     storage_path = os.path.join(UPLOAD_DIR, filename)
 
     content = await file.read()

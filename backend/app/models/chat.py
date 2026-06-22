@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Bool
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class ChatRoom(Base):
@@ -13,7 +14,7 @@ class ChatRoom(Base):
     type = Column(String, default="group")  # group (direct out of scope)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True, unique=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     group = relationship("Group", back_populates="chat_room")
     participants = relationship("ChatParticipant", back_populates="room", cascade="all, delete-orphan")
@@ -31,7 +32,7 @@ class ChatParticipant(Base):
     room_id = Column(Integer, ForeignKey("chat_rooms.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     role = Column(String, default="member")  # admin, member
-    joined_at = Column(DateTime, default=datetime.datetime.utcnow)
+    joined_at = Column(DateTime, default=utc_now)
 
     room = relationship("ChatRoom", back_populates="participants")
     user = relationship("User", back_populates="participations")
@@ -47,7 +48,7 @@ class ChatMessage(Base):
     room_id = Column(Integer, ForeignKey("chat_rooms.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, nullable=True)
     is_deleted = Column(Boolean, default=False)
 

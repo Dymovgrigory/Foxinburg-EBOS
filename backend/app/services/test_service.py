@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.models.test import Test, TestQuestion, TestAttempt
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
+from app.utils import utc_now
 
 
 class TestService(BaseService[Test]):
@@ -48,7 +49,7 @@ class TestService(BaseService[Test]):
 
         attempt.score = score
         attempt.max_score = max_score
-        attempt.finished_at = datetime.datetime.utcnow()
+        attempt.finished_at = utc_now()
 
         passing_score = test.passing_score or 70
         attempt.is_passed = (score / max_score * 100) >= passing_score if max_score > 0 else False

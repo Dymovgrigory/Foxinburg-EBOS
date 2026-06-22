@@ -12,6 +12,7 @@ from app.models.homework import Homework, HomeworkReview
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.core.events import EventBus, SystemEventType
+from app.utils import utc_now
 
 
 class ProgressService(BaseService[LessonProgress]):
@@ -152,7 +153,7 @@ class ProgressService(BaseService[LessonProgress]):
             await self._ensure_homework_approved(progress.student_id, progress.lesson_id)
 
         progress.status = "completed"
-        progress.completed_at = datetime.utcnow()
+        progress.completed_at = utc_now()
         await self.uow.session.flush()
 
         course = progress.lesson.module.course
@@ -289,6 +290,6 @@ class ProgressService(BaseService[LessonProgress]):
 
         if enrollment.progress_percent >= 100:
             enrollment.status = "completed"
-            enrollment.completed_at = datetime.utcnow()
+            enrollment.completed_at = utc_now()
 
         await self.uow.session.flush()

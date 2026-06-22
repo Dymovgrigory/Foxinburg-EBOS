@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Foreign
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Course(Base):
@@ -29,8 +30,8 @@ class Course(Base):
     yandex_disk_public_key = Column(String, nullable=True)
     last_sync_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     organization = relationship("Organization", back_populates="courses")
     author = relationship("User", foreign_keys=[author_id])
@@ -61,7 +62,7 @@ class Module(Base):
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     course = relationship("Course", back_populates="modules")
     lessons = relationship(
@@ -92,8 +93,8 @@ class Lesson(Base):
     homework_title = Column(String, nullable=True)
     homework_description = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     module = relationship("Module", back_populates="lessons")
     contents = relationship(

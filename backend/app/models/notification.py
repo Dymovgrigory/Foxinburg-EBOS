@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Bool
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Notification(Base):
@@ -23,7 +24,7 @@ class Notification(Base):
     is_read = Column(Boolean, default=False)
     read_at = Column(DateTime, nullable=True)
     is_deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="notifications")
 

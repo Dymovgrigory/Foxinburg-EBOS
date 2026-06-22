@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Achievement(Base):
@@ -20,7 +21,7 @@ class Achievement(Base):
     xp_reward = Column(Integer, default=0)
     coins_reward = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     users = relationship("UserAchievement", back_populates="achievement")
 
@@ -35,7 +36,7 @@ class UserAchievement(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     achievement_id = Column(Integer, ForeignKey("achievements.id"), nullable=False)
 
-    earned_at = Column(DateTime, default=datetime.datetime.utcnow)
+    earned_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement", back_populates="users")

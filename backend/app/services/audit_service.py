@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Optional
 from app.services.unit_of_work import UnitOfWork
+from app.utils import utc_now
 
 
 class AuditService:
@@ -36,6 +37,6 @@ class AuditService:
             old_values=cls._serialize(old_values),
             new_values=cls._serialize(new_values),
             ip_address=ip_address,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         uow.session.add(audit)

@@ -24,6 +24,7 @@ from app.core.permissions import Permission, has_permission
 from app.core.events import EventBus, SystemEventType
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.progress_service import ProgressService
+from app.utils import utc_now
 
 router = APIRouter(prefix="/homeworks", tags=["homeworks"])
 
@@ -200,7 +201,7 @@ async def submit_homework(
     if data.file_urls is not None:
         homework.file_urls = data.file_urls
     homework.status = "submitted"
-    homework.submitted_at = datetime.datetime.utcnow()
+    homework.submitted_at = utc_now()
 
     await uow.commit()
     await uow.session.refresh(homework)

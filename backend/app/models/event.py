@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Bool
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class SystemEvent(Base):
@@ -14,7 +15,7 @@ class SystemEvent(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     is_processed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", foreign_keys=[user_id])
 
@@ -33,7 +34,7 @@ class AuditLog(Base):
     old_values = Column(Text, nullable=True)  # JSON
     new_values = Column(Text, nullable=True)  # JSON
     ip_address = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", foreign_keys=[user_id])
 

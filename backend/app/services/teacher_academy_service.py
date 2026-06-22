@@ -14,6 +14,7 @@ from app.services.progress_service import ProgressService
 from app.services.unit_of_work import UnitOfWork
 from app.services.yandex_disk_service import YandexDiskService
 from app.core.events import EventBus, SystemEventType
+from app.utils import utc_now
 
 
 ACADEMY_COURSE_TITLE = "Академия педагогов"
@@ -38,7 +39,7 @@ class TeacherAcademyService:
             files = await self.disk.list_module_files(module_data["path"])
             await self._sync_lesson_contents(lesson, files)
 
-        course.last_sync_at = datetime.datetime.utcnow()
+        course.last_sync_at = utc_now()
         await self.uow.commit()
         return await self._load_course_with_contents(course.id)
 
@@ -82,8 +83,8 @@ class TeacherAcademyService:
             status="active",
             progress_percent=0,
             assigned_by_id=assigned_by_id,
-            assigned_at=datetime.datetime.utcnow(),
-            enrolled_at=datetime.datetime.utcnow(),
+            assigned_at=utc_now(),
+            enrolled_at=utc_now(),
         )
         await enrollment_service.add(enrollment)
         await self.uow.session.flush()

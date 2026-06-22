@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Group(Base):
@@ -19,8 +20,8 @@ class Group(Base):
     max_students = Column(Integer, default=12)
     schedule = Column(Text, nullable=True)  # JSON schedule
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     branch = relationship("Branch", back_populates="groups")
     teacher = relationship("User", foreign_keys=[teacher_id])

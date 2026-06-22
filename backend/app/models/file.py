@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class File(Base):
@@ -21,7 +22,7 @@ class File(Base):
     entity_type = Column(String, nullable=True)  # lesson, homework, user_avatar
     entity_id = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
 

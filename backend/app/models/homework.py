@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Homework(Base):
@@ -20,7 +21,7 @@ class Homework(Base):
 
     status = Column(String, default="assigned")  # assigned, submitted, reviewed, revision, rejected
     submitted_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     lesson = relationship("Lesson", back_populates="homeworks")
     student = relationship("User", back_populates="submitted_homeworks")
@@ -43,7 +44,7 @@ class HomeworkReview(Base):
     status = Column(String, default="approved")  # approved, rejected, revision
     score = Column(Integer, nullable=True)
     comment = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     homework = relationship("Homework", back_populates="reviews")
     reviewer = relationship("User", foreign_keys=[reviewed_by_id], back_populates="created_homework_reviews")

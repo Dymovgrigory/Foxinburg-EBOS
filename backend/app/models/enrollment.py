@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Enrollment(Base):
@@ -19,7 +20,7 @@ class Enrollment(Base):
     assigned_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     assigned_at = Column(DateTime, nullable=True)
 
-    enrolled_at = Column(DateTime, default=datetime.datetime.utcnow)
+    enrolled_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
 
     student = relationship("User", foreign_keys=[student_id], back_populates="enrollments")

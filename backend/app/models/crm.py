@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Lead(Base):
@@ -19,8 +20,8 @@ class Lead(Base):
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     comment = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     manager = relationship("User", back_populates="leads")
     deals = relationship("Deal", back_populates="lead")
@@ -39,8 +40,8 @@ class Deal(Base):
     amount = Column(Integer, default=0)  # в копейках
     status = Column(String, default="in_progress")  # in_progress, won, lost
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     lead = relationship("Lead", back_populates="deals")
 

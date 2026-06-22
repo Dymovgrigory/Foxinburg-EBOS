@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy import select
 from app.core.permissions import Role
+from app.utils import utc_now
 
 
 @pytest.fixture
@@ -56,8 +57,8 @@ async def sample_schedule(db_session, sample_group, user_factory):
         title=f"Test Lesson {unique}",
         group_id=sample_group.id,
         teacher_id=teacher.id,
-        start_time=datetime.utcnow() + timedelta(days=1),
-        end_time=datetime.utcnow() + timedelta(days=1, hours=1),
+        start_time=utc_now() + timedelta(days=1),
+        end_time=utc_now() + timedelta(days=1, hours=1),
     )
     db_session.add(schedule)
     await db_session.commit()
@@ -90,8 +91,8 @@ class TestSchedules:
             "title": "New Schedule",
             "group_id": sample_group.id,
             "teacher_id": teacher_user_id,
-            "start_time": (datetime.utcnow() + timedelta(days=2)).isoformat(),
-            "end_time": (datetime.utcnow() + timedelta(days=2, hours=1)).isoformat(),
+            "start_time": (utc_now() + timedelta(days=2)).isoformat(),
+            "end_time": (utc_now() + timedelta(days=2, hours=1)).isoformat(),
         }
         response = await client.post("/api/v3/schedules", json=payload, headers=headers)
         assert response.status_code == 201
@@ -105,8 +106,8 @@ class TestSchedules:
             "title": "Hack",
             "group_id": sample_group.id,
             "teacher_id": 1,
-            "start_time": (datetime.utcnow() + timedelta(days=2)).isoformat(),
-            "end_time": (datetime.utcnow() + timedelta(days=2, hours=1)).isoformat(),
+            "start_time": (utc_now() + timedelta(days=2)).isoformat(),
+            "end_time": (utc_now() + timedelta(days=2, hours=1)).isoformat(),
         }
         response = await client.post("/api/v3/schedules", json=payload, headers=headers)
         assert response.status_code == 403

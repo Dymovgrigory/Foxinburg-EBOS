@@ -1,7 +1,7 @@
 import os
 
 from pydantic import model_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 _ENV_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".env.development")
@@ -113,9 +113,10 @@ class Settings(BaseSettings):
 
         return self
 
-    class Config:
-        env_file = _ENV_PATH
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=_ENV_PATH,
+        env_file_encoding="utf-8",
+    )
 
 
 settings = Settings()

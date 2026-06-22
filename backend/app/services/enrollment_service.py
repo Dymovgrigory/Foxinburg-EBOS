@@ -15,6 +15,7 @@ from app.services.progress_service import ProgressService
 from app.services.audit_service import AuditService
 from app.services.chat_service import ChatService
 from app.core.events import EventBus, SystemEventType
+from app.utils import utc_now
 
 
 class EnrollmentService(BaseService[Enrollment]):
@@ -52,7 +53,7 @@ class EnrollmentService(BaseService[Enrollment]):
             group_id=group_id,
             status="active",
             progress_percent=0,
-            enrolled_at=datetime.utcnow(),
+            enrolled_at=utc_now(),
         )
         await self.add(enrollment)
 

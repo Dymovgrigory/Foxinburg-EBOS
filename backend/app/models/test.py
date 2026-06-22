@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Foreign
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Test(Base):
@@ -18,8 +19,8 @@ class Test(Base):
     max_attempts = Column(Integer, default=3)
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     lesson = relationship("Lesson", back_populates="tests")
     questions = relationship(
@@ -68,7 +69,7 @@ class TestAttempt(Base):
     max_score = Column(Integer, default=0)
     is_passed = Column(Boolean, default=False)
 
-    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    started_at = Column(DateTime, default=utc_now)
     finished_at = Column(DateTime, nullable=True)
 
     test = relationship("Test", back_populates="attempts")

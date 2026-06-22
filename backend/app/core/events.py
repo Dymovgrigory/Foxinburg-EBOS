@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List
 
 from app.services.unit_of_work import UnitOfWork
+from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class EventBus:
             payload=payload_str,
             user_id=user_id,
             is_processed=False,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         uow.session.add(event)
 

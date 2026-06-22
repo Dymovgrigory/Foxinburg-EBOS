@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Organization(Base):
@@ -18,8 +19,8 @@ class Organization(Base):
     currency = Column(String, default="RUB")
 
     is_active = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     branches = relationship("Branch", back_populates="organization")
     users = relationship("User", back_populates="organization")
@@ -40,7 +41,7 @@ class Branch(Base):
 
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
     is_active = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     organization = relationship("Organization", back_populates="branches")
     users = relationship("User", back_populates="branch")

@@ -12,6 +12,7 @@ from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
 from app.services.audit_service import AuditService
 from app.services.chat_service import ChatService
+from app.utils import utc_now
 
 
 class UserService(BaseService[User]):
@@ -97,7 +98,7 @@ class UserService(BaseService[User]):
 
     async def update_last_login(self, user: User) -> None:
         from datetime import datetime
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = utc_now()
         await self.uow.session.flush()
 
     async def get_students(self) -> list[User]:

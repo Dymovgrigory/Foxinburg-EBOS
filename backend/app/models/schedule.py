@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils import utc_now
 
 
 class Schedule(Base):
@@ -29,8 +30,8 @@ class Schedule(Base):
     # scheduled, cancelled, completed
     status = Column(String, default="scheduled", nullable=False)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     group = relationship("Group", back_populates="schedules")
     teacher = relationship("User", foreign_keys=[teacher_id])
@@ -54,7 +55,7 @@ class Attendance(Base):
     # present, absent, late, excused
     status = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
-    marked_at = Column(DateTime, default=datetime.datetime.utcnow)
+    marked_at = Column(DateTime, default=utc_now)
 
     schedule = relationship("Schedule", back_populates="attendances")
     student = relationship("User", foreign_keys=[student_id])

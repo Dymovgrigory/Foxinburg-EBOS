@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 
 from app.services.unit_of_work import UnitOfWork
 from app.models.notification import Notification
+from app.utils import utc_now
 
 
 class NotificationService:
@@ -33,7 +34,7 @@ class NotificationService:
             entity_id=entity_id,
             is_read=False,
             is_deleted=False,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         self.uow.session.add(notification)
         await self.uow.session.flush()
@@ -62,7 +63,7 @@ class NotificationService:
                 entity_id=entity_id,
                 is_read=False,
                 is_deleted=False,
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
             for user_id in set(user_ids)
         ]
@@ -103,7 +104,7 @@ class NotificationService:
         if not notification:
             return None
         notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = utc_now()
         await self.uow.session.flush()
         await self.uow.session.refresh(notification)
         return notification
@@ -117,7 +118,7 @@ class NotificationService:
             )
         )
         notifications = result.scalars().all()
-        now = datetime.utcnow()
+        now = utc_now()
         for n in notifications:
             n.is_read = True
             n.read_at = now

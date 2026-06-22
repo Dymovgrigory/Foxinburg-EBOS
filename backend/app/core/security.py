@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.user import User
 from sqlalchemy import select
+from app.utils import utc_now
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v3/auth/login", auto_error=False)
@@ -26,7 +27,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(hours=24))
+    expire = utc_now() + (expires_delta or timedelta(hours=24))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm="HS256")
 

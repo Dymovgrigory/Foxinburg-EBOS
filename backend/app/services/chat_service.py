@@ -5,6 +5,7 @@ from sqlalchemy import select, and_
 from app.services.unit_of_work import UnitOfWork
 from app.models.chat import ChatRoom, ChatParticipant, ChatMessage
 from app.models.user import User
+from app.utils import utc_now
 
 
 class ChatService:
@@ -109,7 +110,7 @@ class ChatService:
             room_id=room_id,
             sender_id=sender_id,
             content=content,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         self.uow.session.add(message)
         await self.uow.session.flush()
@@ -125,7 +126,7 @@ class ChatService:
         if not message or message.sender_id != sender_id or message.is_deleted:
             return None
         message.content = content
-        message.updated_at = datetime.utcnow()
+        message.updated_at = utc_now()
         await self.uow.session.flush()
         await self.uow.session.refresh(message)
         return message

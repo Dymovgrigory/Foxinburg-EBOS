@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
 import { coursesApi, lessonsApi, progressApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
 import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview } from '../types'
+import { LuBookOpen, LuCircleCheck, LuLock, LuPlay, LuFileText, LuVideo, LuFileQuestion, LuClipboardList } from 'react-icons/lu'
 
 interface LessonItem {
   lesson: Lesson
@@ -12,18 +13,18 @@ interface LessonItem {
   progress?: LessonProgress
 }
 
-const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant']; icon: string }> = {
-  completed: { label: 'Завершён', variant: 'success', icon: '✅' },
-  available: { label: 'Доступен', variant: 'info', icon: '🔓' },
-  in_progress: { label: 'В процессе', variant: 'warning', icon: '📖' },
-  locked: { label: 'Заблокирован', variant: 'default', icon: '🔒' },
+const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant']; icon: React.ReactNode }> = {
+  completed: { label: 'Завершён', variant: 'success', icon: <LuCircleCheck /> },
+  available: { label: 'Доступен', variant: 'info', icon: <LuPlay /> },
+  in_progress: { label: 'В процессе', variant: 'warning', icon: <LuBookOpen /> },
+  locked: { label: 'Заблокирован', variant: 'default', icon: <LuLock /> },
 }
 
-const typeMeta: Record<string, string> = {
-  text: '📄',
-  video: '🎥',
-  test: '📝',
-  homework: '📚',
+const typeMeta: Record<string, React.ReactNode> = {
+  text: <LuFileText />,
+  video: <LuVideo />,
+  test: <LuFileQuestion />,
+  homework: <LuClipboardList />,
 }
 
 function parseJson(value?: string | null) {
@@ -265,7 +266,7 @@ export default function CoursePlayerPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Курс" icon="📚" />
+        <Header title="Курс" icon={<LuBookOpen />} />
         <div className="p-6 max-w-6xl mx-auto">
           <Loader text="Загрузка курса..." />
         </div>
@@ -276,9 +277,9 @@ export default function CoursePlayerPage() {
   if (!course) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Курс" icon="📚" />
+        <Header title="Курс" icon={<LuBookOpen />} />
         <div className="p-6 max-w-6xl mx-auto">
-          <EmptyState icon="📚" title="Курс не найден" description="Проверьте ссылку или выберите курс в дашборде." />
+          <EmptyState icon={<LuBookOpen />} title="Курс не найден" description="Проверьте ссылку или выберите курс в дашборде." />
         </div>
       </div>
     )
@@ -286,7 +287,7 @@ export default function CoursePlayerPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title={course.title} subtitle="Прохождение курса" icon="📚" />
+      <Header title={course.title} subtitle="Прохождение курса" icon={<LuBookOpen />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sidebar */}
@@ -295,7 +296,7 @@ export default function CoursePlayerPage() {
           <div className="space-y-4">
             {course.modules.map((m) => (
               <div key={m.id}>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">{m.title}</div>
+                <div className="text-xs font-semibold text-fox-gray uppercase mb-2">{m.title}</div>
                 <div className="space-y-1">
                   {m.lessons.map((l) => {
                     const item = allLessons.find((x) => x.lesson.id === l.id)
@@ -308,13 +309,13 @@ export default function CoursePlayerPage() {
                         onClick={() => item && handleSelectLesson(item)}
                         className={[
                           'w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-2',
-                          isActive ? 'bg-fox-purple/10 text-fox-purple font-medium' : 'hover:bg-fox-light text-gray-700',
+                          isActive ? 'bg-fox-purple/10 text-fox-purple font-medium' : 'hover:bg-fox-light text-fox-graphite',
                           status === 'locked' && 'opacity-60 cursor-not-allowed',
                         ].join(' ')}
                       >
                         <span>{meta.icon}</span>
                         <span className="flex-1 truncate">{l.title}</span>
-                        <span className="text-xs">{typeMeta[l.lesson_type] || '📄'}</span>
+                        <span className="text-xs">{typeMeta[l.lesson_type] || <LuFileText />}</span>
                       </button>
                     )
                   })}
@@ -329,7 +330,7 @@ export default function CoursePlayerPage() {
           {activeLoading ? (
             <Loader text="Загрузка урока..." />
           ) : !activeLesson ? (
-            <EmptyState icon="📖" title="Выберите урок" description="Начните с первого доступного урока в боковом меню." />
+            <EmptyState icon={<LuBookOpen />} title="Выберите урок" description="Начните с первого доступного урока в боковом меню." />
           ) : (
             <Card>
               <div className="flex items-start justify-between gap-4 mb-4">
@@ -338,11 +339,11 @@ export default function CoursePlayerPage() {
                     <Badge variant={statusMeta[activeProgress?.status || 'locked'].variant}>
                       {statusMeta[activeProgress?.status || 'locked'].label}
                     </Badge>
-                    <Badge variant="purple">{typeMeta[activeLesson.lesson_type] || '📄'} {activeLesson.lesson_type}</Badge>
+                    <Badge variant="purple">{typeMeta[activeLesson.lesson_type] || <LuFileText />} {activeLesson.lesson_type}</Badge>
                   </div>
                   <h2 className="text-xl font-bold text-fox-dark">{activeLesson.title}</h2>
                 </div>
-                <div className="text-sm text-gray-500">{activeLesson.duration_minutes} мин</div>
+                <div className="text-sm text-fox-gray">{activeLesson.duration_minutes} мин</div>
               </div>
 
               {activeLesson.description && (
@@ -365,7 +366,7 @@ export default function CoursePlayerPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="bg-fox-light rounded-xl p-8 text-center text-gray-500 text-sm border border-fox-border/30">
+                    <div className="bg-fox-light rounded-xl p-8 text-center text-fox-gray text-sm border border-fox-border/30">
                       {activeLesson.lesson_type === 'video' ? 'Видеоматериал к этому уроку ещё не загружен.' : 'Текстовый материал к этому уроку ещё не добавлен.'}
                     </div>
                   )}
@@ -461,14 +462,14 @@ export default function CoursePlayerPage() {
                               {homeworkReview.comment}
                             </p>
                           )}
-                          <p className="text-xs text-gray-400 mt-2">
+                          <p className="text-xs text-fox-gray/70 mt-2">
                             {new Date(homeworkReview.created_at).toLocaleString('ru-RU')}
                           </p>
                         </div>
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-gray-500">Домашнее задание не назначено.</p>
+                    <p className="text-sm text-fox-gray">Домашнее задание не назначено.</p>
                   )}
                 </div>
               )}
@@ -529,7 +530,7 @@ function TestQuestionView({
                   }}
                   className="accent-fox-gold"
                 />
-                <span className="text-sm text-gray-700">{opt}</span>
+                <span className="text-sm text-fox-graphite">{opt}</span>
               </label>
             )
           })}

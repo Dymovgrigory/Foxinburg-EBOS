@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, progressApi, coursesApi, notificationsApi } from '../api'
 import type { Schedule, Homework, LessonProgress, Course } from '../types'
 import { LuBookOpen, LuNotebookPen, LuCircleCheck, LuBell, LuHouse } from 'react-icons/lu'
+import StudentHero from '../components/student/StudentHero'
+import StudentStatCard from '../components/student/StudentStatCard'
 
 export default function StudentDashboardPage() {
   const { user } = useAuth()
@@ -63,15 +65,13 @@ export default function StudentDashboardPage() {
     [progress]
   )
 
-  const widgets = [
-    { title: 'Доступно курсов', value: courses.length, icon: <LuBookOpen />, color: 'bg-blue-500' },
-    { title: 'Домашних заданий', value: homeworks.length, icon: <LuNotebookPen />, color: 'bg-amber-500' },
-    { title: 'Пройдено уроков', value: completedLessons, icon: <LuCircleCheck />, color: 'bg-green-500' },
-    { title: 'Уведомлений', value: unreadCount, icon: <LuBell />, color: 'bg-red-500' },
-  ]
+  const totalLessons = useMemo(
+    () => courses.reduce((sum, c) => sum + c.modules.reduce((mSum, m) => mSum + m.lessons.length, 0), 0),
+    [courses]
+  )
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <div className="student-world min-h-screen">
       <Header title="Главная" icon={<LuHouse />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -79,26 +79,43 @@ export default function StudentDashboardPage() {
           <Loader text="Загрузка дашборда..." />
         ) : (
           <>
-            <div className="bg-gradient-to-r from-fox-purple to-fox-purple-light rounded-card p-8 text-white shadow-fox">
-              <h2 className="text-2xl font-bold mb-2">Привет, {user?.name}!</h2>
-              <p className="opacity-90">
-                Продолжай обучение — у тебя {upcomingLessons.length} ближайших занятий и{' '}
-                {pendingHomeworks.length} заданий на проверку.
-              </p>
-            </div>
+            <StudentHero
+              name={user?.name}
+              completedLessons={completedLessons}
+              totalLessons={totalLessons}
+              pendingHomeworks={pendingHomeworks.length}
+              upcomingLessons={upcomingLessons.length}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {widgets.map((w) => (
-                <Card key={w.title} className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${w.color}`}>
-                    {w.icon}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-fox-dark">{w.value}</div>
-                    <div className="text-xs text-fox-gray">{w.title}</div>
-                  </div>
-                </Card>
-              ))}
+              <StudentStatCard
+                icon={<LuBookOpen />}
+                value={courses.length}
+                label="Доступно курсов"
+                color="purple"
+                onClick={() => navigate('/my-courses')}
+              />
+              <StudentStatCard
+                icon={<LuNotebookPen />}
+                value={homeworks.length}
+                label="Домашних заданий"
+                color="gold"
+                onClick={() => navigate('/homeworks')}
+              />
+              <StudentStatCard
+                icon={<LuCircleCheck />}
+                value={completedLessons}
+                label="Уроков завершено"
+                color="green"
+                onClick={() => navigate('/progress')}
+              />
+              <StudentStatCard
+                icon={<LuBell />}
+                value={unreadCount}
+                label="Уведомлений"
+                color="red"
+                onClick={() => navigate('/notifications')}
+              />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

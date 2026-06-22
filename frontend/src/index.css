@@ -146,6 +146,23 @@
     @apply text-xs mt-1;
     color: var(--fox-error);
   }
+
+  /* Student World — игровой стиль ученика */
+  .student-world {
+    background-color: #FDF8F0;
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(249, 228, 166, 0.25) 0%, transparent 25%),
+      radial-gradient(circle at 90% 90%, rgba(28, 14, 54, 0.04) 0%, transparent 30%);
+  }
+  .dark .student-world {
+    background-color: #12121a;
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(249, 228, 166, 0.08) 0%, transparent 25%),
+      radial-gradient(circle at 90% 90%, rgba(249, 228, 166, 0.03) 0%, transparent 30%);
+  }
+  .student-world .fox-card {
+    border-radius: 20px;
+  }
 }
 
 @layer utilities {

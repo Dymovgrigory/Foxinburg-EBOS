@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { teacherAcademyApi } from '../api'
+import PDFViewer from './PDFViewer'
+import {
+  blockContextMenu,
+  setupAntiCopyListeners,
+  setupKeyboardBlocker,
+} from '../services/contentSecurity'
 
 export interface LessonContent {
   id: number
   content_type: string
   title?: string
-  file_url?: string
-  external_url?: string
+  stream_url?: string
+  pdf_url?: string
 }
 
 interface AcademyContentViewerProps {
@@ -18,65 +25,85 @@ const ext = (name = '') => {
   return parts[parts.length - 1]?.toLowerCase() || ''
 }
 
-const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '')
-
-const streamUrl = (contentId: number) => {
-  const token = getToken()
-  return `/api/v3/teacher-academy/contents/${contentId}/stream${token ? `?access_token=${encodeURIComponent(token)}` : ''}`
-}
-const pdfUrl = (contentId: number) => {
-  const token = getToken()
-  return `/api/v3/teacher-academy/contents/${contentId}/pdf${token ? `?access_token=${encodeURIComponent(token)}` : ''}`
-}
-
-const VIDEO_TYPES: Record<string, string> = {
-  mp4: 'video/mp4',
-  m4v: 'video/mp4',
-  webm: 'video/webm',
-  ogg: 'video/ogg',
-  ogv: 'video/ogg',
-  mov: 'video/mp4',
-  mkv: 'video/x-matroska',
-  avi: 'video/x-msvideo',
-}
-
-const videoMime = (fileExt: string) => VIDEO_TYPES[fileExt] || 'video/mp4'
-
 export default function AcademyContentViewer({ content, watermark }: AcademyContentViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [tokenError, setTokenError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [windowBlurred, setWindowBlurred] = useState(false)
   const fileExt = ext(content.title)
   const label = content.title || 'Материал'
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        ['p', 's', 'c', 'v', 'a'].includes(e.key.toLowerCase())
-      ) {
-        e.preventDefault()
-      }
-      if (e.key === 'PrintScreen') {
-        e.preventDefault()
-      }
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false)
+    let cancelled = false
+    const fetchToken = async () => {
+      try {
+        const res = await teacherAcademyApi.getContentToken(content.id)
+        if (!cancelled) setToken(res.token)
+      } catch (err: unknown) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : 'Ошибка доступа к материалу'
+          setTokenError(message)
+        }
       }
     }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isFullscreen])
+    fetchToken()
+    return () => {
+      cancelled = true
+    }
+  }, [content.id])
+
+  useEffect(() => {
+    const cleanupContainer = setupAntiCopyListeners(containerRef.current)
+    const cleanupKeyboard = setupKeyboardBlocker()
+
+    return () => {
+      cleanupContainer()
+      cleanupKeyboard()
+    }
+  }, [])
+
+  useEffect(() => {
+    const onBlur = () => setWindowBlurred(true)
+    const onFocus = () => setWindowBlurred(false)
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [])
+
+  const streamUrlWithToken = useMemo(() => {
+    if (!token) return ''
+    return `${content.stream_url || `/api/v3/teacher-academy/contents/${content.id}/stream`}?content_token=${encodeURIComponent(token)}`
+  }, [token, content.stream_url, content.id])
+
+  const pdfUrlWithToken = useMemo(() => {
+    if (!token) return ''
+    return `${content.pdf_url || `/api/v3/teacher-academy/contents/${content.id}/pdf`}?content_token=${encodeURIComponent(token)}`
+  }, [token, content.pdf_url, content.id])
 
   const isVideo = content.content_type === 'video' || fileExt.match(/^(mp4|webm|ogg|ogv|mov|mkv|avi)$/)
   const isPdf = content.content_type === 'pdf' || fileExt === 'pdf'
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
   const isOffice = content.content_type === 'office' || ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)
 
-  const viewerUrl = useMemo(() => {
-    if (isPdf || isImage || isVideo) return streamUrl(content.id)
-    if (isOffice) return pdfUrl(content.id)
-    return streamUrl(content.id)
-  }, [isPdf, isImage, isVideo, isOffice, content.id])
+  if (tokenError) {
+    return (
+      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-600">
+        {tokenError}
+      </div>
+    )
+  }
+
+  if (!token) {
+    return (
+      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-500">
+        Загрузка защищённого материала…
+      </div>
+    )
+  }
 
   const viewer = useMemo(() => {
     if (isVideo) {
@@ -85,70 +112,43 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           controls
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={blockContextMenu}
           className="w-full max-h-[70vh] rounded-xl bg-black"
           preload="metadata"
           playsInline
+          src={streamUrlWithToken}
         >
-          <source src={streamUrl(content.id)} type={videoMime(fileExt)} />
           Ваш браузер не поддерживает воспроизведение видео.
         </video>
       )
     }
 
-    if (isPdf) {
-      return (
-        <embed
-          src={`${streamUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
-          type="application/pdf"
-          title={label}
-          className="w-full h-[70vh] rounded-xl bg-white"
-        />
-      )
+    if (isPdf || isOffice) {
+      return <PDFViewer url={isPdf ? streamUrlWithToken : pdfUrlWithToken} watermark={watermark} />
     }
 
     if (isImage) {
       return (
         <img
-          src={streamUrl(content.id)}
+          src={streamUrlWithToken}
           alt={label}
           draggable={false}
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={blockContextMenu}
           className="max-w-full max-h-[70vh] rounded-xl mx-auto object-contain"
+          style={{ userSelect: 'none' }}
         />
       )
     }
 
-    // Office-документы — конвертируем в PDF для встроенного просмотра
-    if (isOffice) {
-      return (
-        <embed
-          src={`${pdfUrl(content.id)}#toolbar=0&navpanes=0&scrollbar=0`}
-          type="application/pdf"
-          title={label}
-          className="w-full h-[70vh] rounded-xl bg-white"
-        />
-      )
-    }
-
-    // Прочие документы — открываем через защищённый поток
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 bg-gray-50 rounded-xl text-center">
         <p className="text-sm text-gray-600">{label}</p>
         <p className="text-xs text-gray-400">
-          Файл открывается в защищённом просмотре. Скачивание и копирование ограничены.
+          Файл доступен только для просмотра внутри платформы. Скачивание ограничено.
         </p>
-        <a
-          href={streamUrl(content.id)}
-          target="_blank"
-          rel="noreferrer"
-          className="px-4 py-2 text-sm font-medium text-white bg-fox-purple rounded-lg hover:bg-fox-purple-light transition"
-        >
-          Открыть материал
-        </a>
       </div>
     )
-  }, [content.id, content.content_type, fileExt, label, isVideo, isPdf, isImage, isOffice])
+  }, [content.id, content.content_type, fileExt, label, isVideo, isPdf, isImage, isOffice, streamUrlWithToken, pdfUrlWithToken, watermark])
 
   const fullscreenViewer = useMemo(() => {
     if (isVideo) {
@@ -158,35 +158,28 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           autoPlay
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={blockContextMenu}
           className="w-full h-full max-h-full rounded-xl bg-black object-contain"
           preload="metadata"
           playsInline
-        >
-          <source src={streamUrl(content.id)} type={videoMime(fileExt)} />
-        </video>
+          src={streamUrlWithToken}
+        />
       )
     }
 
     if (isPdf || isOffice) {
-      return (
-        <embed
-          src={`${viewerUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-          type="application/pdf"
-          title={label}
-          className="w-full h-full rounded-xl bg-white"
-        />
-      )
+      return <PDFViewer url={isPdf ? streamUrlWithToken : pdfUrlWithToken} watermark={watermark} />
     }
 
     if (isImage) {
       return (
         <img
-          src={viewerUrl}
+          src={streamUrlWithToken}
           alt={label}
           draggable={false}
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={blockContextMenu}
           className="max-w-full max-h-full rounded-xl object-contain"
+          style={{ userSelect: 'none' }}
         />
       )
     }
@@ -194,24 +187,18 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     return (
       <div className="flex flex-col items-center justify-center h-full text-white text-center">
         <p className="text-lg">{label}</p>
-        <a
-          href={viewerUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-4 px-6 py-3 font-medium bg-fox-purple rounded-lg hover:bg-fox-purple-light transition"
-        >
-          Открыть материал
-        </a>
       </div>
     )
-  }, [content.id, viewerUrl, fileExt, label, isVideo, isPdf, isImage, isOffice])
+  }, [content.id, content.content_type, fileExt, label, isVideo, isPdf, isImage, isOffice, streamUrlWithToken, pdfUrlWithToken, watermark])
+
+  const blocked = windowBlurred
 
   return (
     <>
       <div
         ref={containerRef}
         className="relative group rounded-xl overflow-hidden bg-black/5 select-none"
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={blockContextMenu}
         onCopy={(e) => e.preventDefault()}
         onCut={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
@@ -219,16 +206,8 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         onDrop={(e) => e.preventDefault()}
         style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
-        {viewer}
-        <button
-          type="button"
-          onClick={() => setIsFullscreen(true)}
-          className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity px-3 py-1.5 text-xs font-medium text-white bg-fox-purple/80 hover:bg-fox-purple rounded-lg shadow"
-          aria-label="Открыть на весь экран"
-        >
-          ⛶ Весь экран
-        </button>
-        {watermark && (
+        <div className={blocked ? 'blur-lg' : ''}>{viewer}</div>
+        {watermark && !blocked && (
           <div
             className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-16 overflow-hidden opacity-[0.12] rotate-[-25deg] text-gray-900 font-bold text-xl whitespace-nowrap"
             aria-hidden="true"
@@ -238,6 +217,22 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
                 {watermark}
               </span>
             ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsFullscreen(true)}
+          className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity px-3 py-1.5 text-xs font-medium text-white bg-fox-purple/80 hover:bg-fox-purple rounded-lg shadow"
+          aria-label="Открыть на весь экран"
+        >
+          ⛶ Весь экран
+        </button>
+        {blocked && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-white text-center p-6">
+            <div>
+              <p className="text-lg font-semibold mb-2">Вернутесь к окну</p>
+              <p className="text-sm opacity-80">Для продолжения вернитесь в это окно.</p>
+            </div>
           </div>
         )}
       </div>
@@ -260,8 +255,8 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
             className="relative w-[95vw] h-[95vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {fullscreenViewer}
-            {watermark && (
+            <div className={blocked ? 'blur-lg h-full' : 'h-full'}>{fullscreenViewer}</div>
+            {watermark && !blocked && (
               <div
                 className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-24 overflow-hidden opacity-[0.08] rotate-[-25deg] text-white font-bold text-3xl whitespace-nowrap"
                 aria-hidden="true"

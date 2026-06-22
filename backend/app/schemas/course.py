@@ -139,7 +139,6 @@ class LessonContentResponse(BaseModel):
     body: Optional[str] = None
     file_url: Optional[str] = None
     external_url: Optional[str] = None
-    yandex_disk_path: Optional[str] = None
     order_index: int = 0
 
 

@@ -11,8 +11,8 @@ interface LessonContent {
   id: number
   content_type: string
   title?: string
-  file_url?: string
-  external_url?: string
+  stream_url?: string
+  pdf_url?: string
 }
 
 interface Lesson {

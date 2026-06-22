@@ -281,4 +281,6 @@ export const teacherAcademyApi = {
     api.post<ApiResponse<void>>(`/teacher-academy/modules/${moduleId}/complete`).then(unwrap),
   sync: () => api.post<ApiResponse<Course>>('/teacher-academy/sync').then(unwrap),
   certificateRaw: () => api.get('/teacher-academy/certificate', { responseType: 'text' }),
+  getContentToken: (contentId: number) =>
+    api.post<ApiResponse<{ token: string; expires_in: number }>>(`/teacher-academy/contents/${contentId}/token`).then(unwrap),
 }

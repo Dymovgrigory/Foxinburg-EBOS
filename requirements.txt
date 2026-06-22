@@ -36,6 +36,7 @@ itsdangerous==2.2.0
 # Teacher Academy / notifications
 python-telegram-bot==21.10
 APScheduler==3.11.0
+pymupdf==1.27.2
 
 # Password encryption for admin visibility
 cryptography==49.0.0

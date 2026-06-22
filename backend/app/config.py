@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     YANDEXGPT_API_KEY: str = ""
     YANDEXGPT_FOLDER_ID: str = ""
 
+    # Content protection (Teacher Academy)
+    CONTENT_TOKEN_SECRET: str = ""
+    CONTENT_TOKEN_MAX_AGE: int = 600  # 10 минут
+    CONTENT_TOKEN_MAX_USES: int = 100
+
     # Telegram notifications
     TELEGRAM_BOT_TOKEN: str = ""
 

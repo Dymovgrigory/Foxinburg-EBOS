@@ -9,14 +9,19 @@ class AcademyContentResponse(BaseModel):
     id: int
     content_type: str
     title: Optional[str]
-    external_url: Optional[str]
     order_index: int
 
     @computed_field
     @property
-    def file_url(self) -> Optional[str]:
-        """Защищённая ссылка для просмотра/стриминга через бэкенд."""
+    def stream_url(self) -> Optional[str]:
+        """Базовый URL потока. Для доступа требуется content-токен."""
         return f"/api/v3/teacher-academy/contents/{self.id}/stream"
+
+    @computed_field
+    @property
+    def pdf_url(self) -> Optional[str]:
+        """Базовый URL PDF-версии. Для доступа требуется content-токен."""
+        return f"/api/v3/teacher-academy/contents/{self.id}/pdf"
 
 
 class AcademyLessonResponse(BaseModel):

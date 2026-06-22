@@ -1,8 +1,8 @@
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, Header
-from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
+from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -30,8 +30,91 @@ from app.services.enrollment_service import EnrollmentService
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.office_converter import convert_office_to_pdf
 from app.services.yandex_disk_service import YandexDiskService
+from app.services.audit_service import AuditService
+from app.services.content_token_service import (
+    create_content_token,
+    validate_content_token,
+    ContentTokenError,
+)
+from app.services.rate_limit_service import (
+    check_content_token_rate_limit,
+    check_content_stream_rate_limit,
+    check_content_id_enumeration_rate_limit,
+    RateLimitExceeded,
+)
+from app.services.watermark_service import (
+    apply_text_watermark_to_pdf,
+    get_watermark_text,
+)
 
 router = APIRouter(prefix="/teacher-academy", tags=["teacher-academy"])
+
+_PREVIEW_ROLES = ("methodist", "admin", "owner", "super_admin")
+_ALLOWED_ENROLLMENT_STATUSES = ("active", "completed")
+
+
+async def _load_content(uow: UnitOfWork, content_id: int) -> Optional[LessonContent]:
+    result = await uow.session.execute(
+        select(LessonContent)
+        .where(LessonContent.id == content_id)
+        .options(selectinload(LessonContent.lesson).selectinload(Lesson.module).selectinload(Module.course))
+    )
+    return result.scalar_one_or_none()
+
+
+async def _resolve_disk_path(content: LessonContent) -> Optional[str]:
+    disk_path = content.yandex_disk_path
+    if disk_path:
+        return disk_path
+    if content.title and content.lesson and content.lesson.module:
+        try:
+            disk = YandexDiskService()
+            disk_path = await disk.find_file_path(content.lesson.module.title, content.title)
+            if disk_path:
+                content.yandex_disk_path = disk_path
+                return disk_path
+        except Exception:
+            pass
+    return None
+
+
+async def _check_content_access(user: User, content: LessonContent, uow: UnitOfWork) -> bool:
+    if not content.lesson or not content.lesson.module or not content.lesson.module.course:
+        return False
+    if user.role in _PREVIEW_ROLES:
+        return True
+    enrollment_result = await uow.session.execute(
+        select(Enrollment).where(
+            Enrollment.student_id == user.id,
+            Enrollment.course_id == content.lesson.module.course.id,
+            Enrollment.status.in_(_ALLOWED_ENROLLMENT_STATUSES),
+        )
+    )
+    return enrollment_result.scalar_one_or_none() is not None
+
+
+async def _require_content_token_user(
+    content_id: int,
+    content_token: str = Query(..., alias="content_token"),
+    uow: UnitOfWork = Depends(get_uow),
+) -> User:
+    try:
+        token_content_id, user_id = await validate_content_token(content_token)
+    except ContentTokenError as exc:
+        return error_response(str(exc), status_code=403)
+    if token_content_id != content_id:
+        return error_response("Токен не соответствует материалу", status_code=403)
+    user = await uow.session.get(User, user_id)
+    if not user or not user.is_active:
+        return error_response("Пользователь не найден или неактивен", status_code=403)
+    return user
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @router.post("/sync")
@@ -270,55 +353,119 @@ async def get_certificate(
     return HTMLResponse(content=html)
 
 
+@router.post("/contents/{content_id}/token")
+async def create_content_token_endpoint(
+    content_id: int,
+    request: Request,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Выдаёт короткоживущий токен для доступа к материалу Академии."""
+    ip_address = _get_client_ip(request)
+
+    content = await _load_content(uow, content_id)
+    if not content:
+        try:
+            await check_content_id_enumeration_rate_limit(ip_address)
+        except RateLimitExceeded as exc:
+            return error_response(str(exc), status_code=429)
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_TOKEN_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "content_not_found"},
+        )
+        await uow.commit()
+        return error_response("Материал не найден", status_code=404)
+
+    if not await _check_content_access(current_user, content, uow):
+        try:
+            await check_content_id_enumeration_rate_limit(ip_address)
+        except RateLimitExceeded as exc:
+            return error_response(str(exc), status_code=429)
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_TOKEN_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "access_denied"},
+        )
+        await uow.commit()
+        return error_response("Доступ к материалу запрещён", status_code=403)
+
+    try:
+        await check_content_token_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        return error_response(str(exc), status_code=429)
+
+    token = await create_content_token(content_id=content_id, user_id=current_user.id)
+
+    await AuditService.log_action(
+        uow,
+        action="CONTENT_TOKEN_CREATED",
+        entity_type="lesson_content",
+        entity_id=content_id,
+        user_id=current_user.id,
+        ip_address=ip_address,
+    )
+    await uow.commit()
+
+    return success_response(
+        data={"token": token, "expires_in": 600},
+        message="Токен доступа к материалу выдан",
+    )
+
+
 @router.get("/contents/{content_id}/stream")
 async def stream_content(
     content_id: int,
-    current_user: User = Depends(require_active_user_from_header_or_query),
+    request: Request,
+    current_user: User = Depends(_require_content_token_user),
     uow: UnitOfWork = Depends(get_uow),
     range: Optional[str] = Header(None),
 ):
     """Защищённая прокси-отдача файла материала Академии педагогов.
 
-    Проверяет права пользователя, получает свежую прямую ссылку с Яндекс.Диска
-    и проксирует поток через бэкенд, чтобы не раскрывать внешние URL.
+    Доступ возможен только по короткоживущему content-токену, выданному
+    на материал и пользователя. Прямые ссылки Яндекс.Диска не раскрываются.
     """
-    content_result = await uow.session.execute(
-        select(LessonContent)
-        .where(LessonContent.id == content_id)
-        .options(selectinload(LessonContent.lesson).selectinload(Lesson.module).selectinload(Module.course))
-    )
-    content = content_result.scalar_one_or_none()
+    ip_address = _get_client_ip(request)
+
+    content = await _load_content(uow, content_id)
     if not content:
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_STREAM_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "content_not_found"},
+        )
+        await uow.commit()
         return error_response("Материал не найден", status_code=404)
 
-    disk_path = content.yandex_disk_path
-    if not disk_path and content.title and content.lesson and content.lesson.module:
-        # Fallback: ищем файл по названию модуля и названию файла
-        try:
-            disk = YandexDiskService()
-            disk_path = await disk.find_file_path(content.lesson.module.title, content.title)
-            if disk_path:
-                content.yandex_disk_path = disk_path
-        except Exception:
-            pass
+    if not await _check_content_access(current_user, content, uow):
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_STREAM_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "access_denied"},
+        )
+        await uow.commit()
+        return error_response("Доступ к материалу запрещён", status_code=403)
 
+    disk_path = await _resolve_disk_path(content)
     if not disk_path:
         return error_response("Файл недоступен для потоковой передачи", status_code=404)
-
-    course = content.lesson.module.course
-
-    # Методисты и администраторы могут просматривать без зачисления
-    can_preview = current_user.role in ("methodist", "admin", "owner", "super_admin")
-    if not can_preview:
-        enrollment_result = await uow.session.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == current_user.id,
-                Enrollment.course_id == course.id,
-                Enrollment.status == "active",
-            )
-        )
-        if not enrollment_result.scalar_one_or_none():
-            return error_response("Доступ к материалу запрещён", status_code=403)
 
     try:
         disk = YandexDiskService()
@@ -329,15 +476,22 @@ async def stream_content(
     if not download_url:
         return error_response("Файл не найден на Яндекс.Диске", status_code=404)
 
+    try:
+        await check_content_stream_rate_limit(
+            current_user.id,
+            content_id,
+            content_length=content.file_size,
+        )
+    except RateLimitExceeded as exc:
+        return error_response(str(exc), status_code=429)
+
     request_headers = {}
     if range:
         request_headers["Range"] = range
 
-    # Открываем upstream-поток заранее, чтобы получить реальные статус и заголовки
-    # (Content-Range, Content-Length partial и т.д.) и корректно проксировать их клиенту.
     client = httpx.AsyncClient(timeout=120.0, follow_redirects=True)
-    request = client.build_request("GET", download_url, headers=request_headers)
-    response = await client.send(request, stream=True)
+    upstream = client.build_request("GET", download_url, headers=request_headers)
+    response = await client.send(upstream, stream=True)
 
     pass_through_headers = ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"]
     response_headers = {
@@ -347,7 +501,19 @@ async def stream_content(
     }
     response_headers["Content-Disposition"] = "inline"
     response_headers["X-Content-Type-Options"] = "nosniff"
-    response_headers["X-Frame-Options"] = "SAMEORIGIN"
+    response_headers["X-Frame-Options"] = "DENY"
+    response_headers["Referrer-Policy"] = "no-referrer"
+
+    await AuditService.log_action(
+        uow,
+        action="CONTENT_STREAMED",
+        entity_type="lesson_content",
+        entity_id=content_id,
+        user_id=current_user.id,
+        ip_address=ip_address,
+        new_values={"range": range, "content_type": content.content_type},
+    )
+    await uow.commit()
 
     async def stream():
         try:
@@ -368,48 +534,46 @@ async def stream_content(
 @router.get("/contents/{content_id}/pdf")
 async def stream_content_pdf(
     content_id: int,
-    current_user: User = Depends(require_active_user_from_header_or_query),
+    request: Request,
+    current_user: User = Depends(_require_content_token_user),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    """Конвертирует Office-файл материала в PDF и отдаёт его защищённым потоком.
+    """Конвертирует Office-файл материала в PDF и отдаёт его с персональным watermark.
 
-    Требует тех же прав, что и оригинальный stream-endpoint.
+    Доступ возможен только по короткоживущему content-токену.
     """
-    content_result = await uow.session.execute(
-        select(LessonContent)
-        .where(LessonContent.id == content_id)
-        .options(selectinload(LessonContent.lesson).selectinload(Lesson.module).selectinload(Module.course))
-    )
-    content = content_result.scalar_one_or_none()
+    ip_address = _get_client_ip(request)
+
+    content = await _load_content(uow, content_id)
     if not content:
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_PDF_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "content_not_found"},
+        )
+        await uow.commit()
         return error_response("Материал не найден", status_code=404)
 
-    disk_path = content.yandex_disk_path
-    if not disk_path and content.title and content.lesson and content.lesson.module:
-        try:
-            disk = YandexDiskService()
-            disk_path = await disk.find_file_path(content.lesson.module.title, content.title)
-            if disk_path:
-                content.yandex_disk_path = disk_path
-        except Exception:
-            pass
+    if not await _check_content_access(current_user, content, uow):
+        await AuditService.log_action(
+            uow,
+            action="CONTENT_PDF_DENIED",
+            entity_type="lesson_content",
+            entity_id=content_id,
+            user_id=current_user.id,
+            ip_address=ip_address,
+            new_values={"reason": "access_denied"},
+        )
+        await uow.commit()
+        return error_response("Доступ к материалу запрещён", status_code=403)
 
+    disk_path = await _resolve_disk_path(content)
     if not disk_path:
         return error_response("Файл недоступен для конвертации", status_code=404)
-
-    course = content.lesson.module.course
-
-    can_preview = current_user.role in ("methodist", "admin", "owner", "super_admin")
-    if not can_preview:
-        enrollment_result = await uow.session.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == current_user.id,
-                Enrollment.course_id == course.id,
-                Enrollment.status == "active",
-            )
-        )
-        if not enrollment_result.scalar_one_or_none():
-            return error_response("Доступ к материалу запрещён", status_code=403)
 
     try:
         disk = YandexDiskService()
@@ -421,24 +585,101 @@ async def stream_content_pdf(
         return error_response("Файл не найден на Яндекс.Диске", status_code=404)
 
     try:
+        await check_content_stream_rate_limit(
+            current_user.id,
+            content_id,
+            content_length=content.file_size,
+        )
+    except RateLimitExceeded as exc:
+        return error_response(str(exc), status_code=429)
+
+    try:
         pdf_path = await convert_office_to_pdf(
             content_id=content.id,
             source_url=download_url,
             source_md5=content.yandex_disk_md5,
             source_name=content.title,
         )
+        pdf_bytes = pdf_path.read_bytes()
     except RuntimeError as e:
         return error_response(str(e), status_code=503)
     except Exception as e:
         return error_response(f"Ошибка конвертации в PDF: {e}", status_code=502)
 
-    return FileResponse(
-        path=str(pdf_path),
+    watermark_text = get_watermark_text(
+        user_email=current_user.email,
+        user_id=current_user.id,
+        user_name=current_user.name,
+    )
+    watermarked_bytes = apply_text_watermark_to_pdf(
+        pdf_bytes,
+        watermark_text,
+        content_id=content.id,
+        user_id=current_user.id,
+        file_md5=content.yandex_disk_md5 or "",
+    )
+
+    await AuditService.log_action(
+        uow,
+        action="CONTENT_PDF_VIEWED",
+        entity_type="lesson_content",
+        entity_id=content_id,
+        user_id=current_user.id,
+        ip_address=ip_address,
+        new_values={"watermarked": True},
+    )
+    await uow.commit()
+
+    return Response(
+        content=watermarked_bytes,
         media_type="application/pdf",
-        filename=f"{content.title}.pdf",
         headers={
-            "Content-Disposition": "inline",
+            "Content-Disposition": f'inline; filename="{content.title}.pdf"',
             "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "SAMEORIGIN",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "no-referrer",
         },
+    )
+
+
+@router.get("/access-log")
+async def access_log(
+    limit: int = 100,
+    offset: int = 0,
+    current_user: User = Depends(require_permission(Permission.USER_READ)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """История обращений к защищённым материалам Академии (admin/methodist/owner)."""
+    from app.models.event import AuditLog
+
+    result = await uow.session.execute(
+        select(AuditLog)
+        .where(AuditLog.entity_type == "lesson_content")
+        .where(AuditLog.action.in_([
+            "CONTENT_TOKEN_CREATED",
+            "CONTENT_STREAMED",
+            "CONTENT_PDF_VIEWED",
+            "CONTENT_TOKEN_DENIED",
+            "CONTENT_STREAM_DENIED",
+            "CONTENT_PDF_DENIED",
+        ]))
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    logs = result.scalars().all()
+    return success_response(
+        data=[
+            {
+                "id": log.id,
+                "user_id": log.user_id,
+                "action": log.action,
+                "content_id": log.entity_id,
+                "ip_address": log.ip_address,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+                "details": log.new_values,
+            }
+            for log in logs
+        ],
+        message="История доступа к материалам",
     )

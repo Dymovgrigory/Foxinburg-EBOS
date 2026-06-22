@@ -78,12 +78,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS: в production ограничиваем методы и заголовки, в development оставляем гибкие настройки.
+_cors_origins = [settings.FRONTEND_URL]
+if settings.NODE_ENV == "development":
+    _cors_origins.append("http://localhost:5173")
+
+_cors_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+_cors_headers = ["Authorization", "Content-Type", "X-Requested-With"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=_cors_methods,
+    allow_headers=_cors_headers,
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET)

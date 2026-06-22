@@ -20,14 +20,23 @@ export default function PDFViewer({ url, watermark }: PDFViewerProps) {
     let cancelled = false
     const load = async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument({ url })
+        const res = await fetch(url, { credentials: 'same-origin' })
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText}`)
+        }
+        const data = await res.arrayBuffer()
+        if (cancelled) return
+        const loadingTask = pdfjsLib.getDocument({ data })
         const doc = await loadingTask.promise
         if (cancelled) return
         setPdf(doc)
         setNumPages(doc.numPages)
         setPageNum(1)
-      } catch {
-        setError('Не удалось загрузить PDF')
+      } catch (err) {
+        console.error('[PDFViewer] failed to load PDF', err)
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Не удалось загрузить PDF')
+        }
       }
     }
     load()

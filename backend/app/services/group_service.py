@@ -1,5 +1,6 @@
 from typing import List, Optional
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.group import Group
 from app.models.user import User
@@ -15,11 +16,23 @@ class GroupService(BaseService[Group]):
         super().__init__(uow)
 
     async def get_by_id(self, group_id: int) -> Optional[Group]:
-        result = await self.uow.session.execute(select(Group).where(Group.id == group_id))
+        result = await self.uow.session.execute(
+            select(Group)
+            .where(Group.id == group_id)
+            .options(selectinload(Group.students), selectinload(Group.course))
+        )
         return result.scalar_one_or_none()
 
     async def list_groups(self, *, limit: int = 100, offset: int = 0) -> List[Group]:
         result = await self.uow.session.execute(select(Group).limit(limit).offset(offset))
+        return list(result.scalars().all())
+
+    async def list_groups_by_teacher(self, teacher_id: int) -> List[Group]:
+        result = await self.uow.session.execute(
+            select(Group)
+            .where(Group.teacher_id == teacher_id)
+            .options(selectinload(Group.students), selectinload(Group.course))
+        )
         return list(result.scalars().all())
 
     async def create_group(

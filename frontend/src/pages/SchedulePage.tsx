@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useAuth } from '../contexts/AuthContext'
 
 interface Group {
   id: number
@@ -54,7 +55,11 @@ function formatDateTime(iso?: string) {
 }
 
 export default function SchedulePage() {
+  const { user } = useAuth()
   const { showToast } = useToast()
+  const isTeacher = user?.role === 'teacher'
+  const isStudent = user?.role === 'student'
+  const canManage = !isTeacher && !isStudent
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
@@ -79,7 +84,11 @@ export default function SchedulePage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [schedulesRes, groupsRes] = await Promise.all([api.get('/schedules'), api.get('/groups')])
+      const params = isTeacher || isStudent ? { teacher_id: user?.id } : {}
+      const [schedulesRes, groupsRes] = await Promise.all([
+        api.get('/schedules', { params }),
+        api.get('/groups/my'),
+      ])
       setSchedules(schedulesRes.data.data || [])
       setGroups(groupsRes.data.data || [])
     } catch (err: any) {
@@ -88,12 +97,14 @@ export default function SchedulePage() {
       setLoading(false)
     }
 
-    try {
-      const usersRes = await api.get('/users')
-      const allUsers: Teacher[] = usersRes.data.data || []
-      setTeachers(allUsers.filter((u) => u.role === 'teacher'))
-    } catch {
-      setTeachers([])
+    if (canManage) {
+      try {
+        const usersRes = await api.get('/users')
+        const allUsers: Teacher[] = usersRes.data.data || []
+        setTeachers(allUsers.filter((u) => u.role === 'teacher'))
+      } catch {
+        setTeachers([])
+      }
     }
   }
 
@@ -161,9 +172,11 @@ export default function SchedulePage() {
               <h2 className="text-lg font-bold text-fox-dark">Список занятий</h2>
               <p className="text-xs text-gray-500 mt-0.5">{filtered.length} из {schedules.length}</p>
             </div>
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
-              {showForm ? 'Отмена' : 'Новое занятие'}
-            </Button>
+            {canManage && (
+              <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+                {showForm ? 'Отмена' : 'Новое занятие'}
+              </Button>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-5">
@@ -285,9 +298,9 @@ export default function SchedulePage() {
           <EmptyState
             icon="📅"
             title="Нет занятий"
-            description={search || groupFilter ? 'Попробуй сбросить фильтры.' : 'Создай первое занятие в расписании.'}
-            actionLabel={!search && !groupFilter ? 'Новое занятие' : undefined}
-            onAction={!search && !groupFilter ? () => setShowForm(true) : undefined}
+            description={search || groupFilter ? 'Попробуй сбросить фильтры.' : canManage ? 'Создай первое занятие в расписании.' : 'Занятия пока не запланированы.'}
+            actionLabel={canManage && !search && !groupFilter ? 'Новое занятие' : undefined}
+            onAction={canManage && !search && !groupFilter ? () => setShowForm(true) : undefined}
           />
         ) : (
           <Card padding="none">

@@ -22,6 +22,12 @@ import SchedulePage from './pages/SchedulePage'
 import NotificationsPage from './pages/NotificationsPage'
 import ChatPage from './pages/ChatPage'
 import TeacherAcademyPage from './pages/TeacherAcademyPage'
+import TeacherCoursesPage from './pages/TeacherCoursesPage'
+import TeacherProgressPage from './pages/TeacherProgressPage'
+import CertificationPage from './pages/CertificationPage'
+import LibraryPage from './pages/LibraryPage'
+import KnowledgeBasePage from './pages/KnowledgeBasePage'
+import AIAssistantPage from './pages/AIAssistantPage'
 import CourseBuilderPage from './pages/CourseBuilderPage'
 import CoursePlayerPage from './pages/CoursePlayerPage'
 import EmployeeGroupsPage from './pages/EmployeeGroupsPage'
@@ -67,14 +73,14 @@ function App() {
 
         {/* Placeholder routes */}
         <Route path="marketing" element={<Protected><PlaceholderPage title="Маркетинг" icon="📣" /></Protected>} />
-        <Route path="ai" element={<Protected><PlaceholderPage title="AI Помощник" icon="🤖" /></Protected>} />
+        <Route path="ai" element={<Protected><AIAssistantPage /></Protected>} />
         <Route path="roles" element={<Protected><PlaceholderPage title="Role Ecosystem" icon="🛡️" /></Protected>} />
         <Route path="builder" element={<Protected><PlaceholderPage title="Конструктор" subtitle="NEW" icon="🛠️" /></Protected>} />
-        <Route path="my-courses" element={<Protected><PlaceholderPage title="Мои курсы" icon="📚" /></Protected>} />
-        <Route path="knowledge" element={<Protected><PlaceholderPage title="База знаний" icon="🧠" /></Protected>} />
-        <Route path="certification" element={<Protected><PlaceholderPage title="Сертификация" icon="🎓" /></Protected>} />
-        <Route path="progress" element={<Protected><PlaceholderPage title="Мой прогресс" icon="📈" /></Protected>} />
-        <Route path="library" element={<Protected><PlaceholderPage title="Библиотека" icon="📖" /></Protected>} />
+        <Route path="my-courses" element={<RoleProtected path="/my-courses"><TeacherCoursesPage /></RoleProtected>} />
+        <Route path="knowledge" element={<RoleProtected path="/knowledge"><KnowledgeBasePage /></RoleProtected>} />
+        <Route path="certification" element={<RoleProtected path="/certification"><CertificationPage /></RoleProtected>} />
+        <Route path="progress" element={<RoleProtected path="/progress"><TeacherProgressPage /></RoleProtected>} />
+        <Route path="library" element={<RoleProtected path="/library"><LibraryPage /></RoleProtected>} />
         <Route path="community" element={<Protected><PlaceholderPage title="Сообщество" icon="💬" /></Protected>} />
         <Route path="payments" element={<Protected><PlaceholderPage title="Оплата" icon="💳" /></Protected>} />
       </Route>

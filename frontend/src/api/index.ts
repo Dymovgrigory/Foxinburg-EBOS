@@ -264,6 +264,11 @@ export const systemApi = {
   permissions: () => api.get<ApiResponse<SystemPermissionsResponse>>('/system/permissions').then(unwrap),
 }
 
+export const aiApi = {
+  ask: (data: { message: string; context?: string }) =>
+    api.post<ApiResponse<{ reply: string; provider: string }>>('/ai/ask', data).then(unwrap),
+}
+
 export const methodistsApi = {
   dashboard: () => api.get<ApiResponse<{ courses_count: number; groups_count: number; students_count: number; pending_homeworks_count: number }>>('/methodists/dashboard').then(unwrap),
   analytics: () => api.get<ApiResponse<MethodistAnalytics>>('/methodists/analytics').then(unwrap),
@@ -271,8 +276,9 @@ export const methodistsApi = {
 
 export const teacherAcademyApi = {
   course: () => api.get<ApiResponse<Course>>('/teacher-academy/course').then(unwrap),
-  progress: () => api.get<ApiResponse<{ completed_modules: number[]; total_modules: number }>>('/teacher-academy/progress').then(unwrap),
+  progress: () => api.get<ApiResponse<{ enrollment_id: number; status: string; progress_percent: number; is_certified: boolean; completed_at?: string }>>('/teacher-academy/progress').then(unwrap),
   completeModule: (moduleId: number) =>
     api.post<ApiResponse<void>>(`/teacher-academy/modules/${moduleId}/complete`).then(unwrap),
   sync: () => api.post<ApiResponse<Course>>('/teacher-academy/sync').then(unwrap),
+  certificateRaw: () => api.get('/teacher-academy/certificate', { responseType: 'text' }),
 }

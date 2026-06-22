@@ -49,14 +49,14 @@ export default function TeacherDashboardPage() {
       .slice(0, 5)
   }, [schedules])
 
-  const pendingHomeworks = useMemo(
-    () => homeworks.filter((h) => h.status === 'submitted' || h.status === 'in_progress').slice(0, 5),
+  const myHomeworks = useMemo(
+    () => homeworks.filter((h) => ['assigned', 'in_progress', 'submitted'].includes(h.status)).slice(0, 5),
     [homeworks]
   )
 
   const widgets = [
     { title: 'Ближайших занятий', value: upcomingLessons.length, icon: '📅', color: 'bg-blue-500' },
-    { title: 'ДЗ на проверку', value: pendingHomeworks.length, icon: '📝', color: 'bg-amber-500' },
+    { title: 'Мои задания', value: myHomeworks.length, icon: '📝', color: 'bg-amber-500' },
     { title: 'Учеников', value: students.length, icon: '🎓', color: 'bg-green-500' },
     { title: 'Уведомлений', value: unreadCount, icon: '🔔', color: 'bg-red-500' },
   ]
@@ -74,7 +74,7 @@ export default function TeacherDashboardPage() {
               <h2 className="text-2xl font-bold mb-2">Добро пожаловать, {user?.name}!</h2>
               <p className="opacity-90">
                 Ваша роль: <span className="text-fox-gold font-semibold">{roleLabel(user?.role)}</span>.
-                У вас {pendingHomeworks.length} домашних заданий на проверку и {upcomingLessons.length} ближайших занятий.
+                У вас {myHomeworks.length} активных домашних заданий и {upcomingLessons.length} ближайших занятий.
               </p>
             </div>
 
@@ -125,16 +125,16 @@ export default function TeacherDashboardPage() {
 
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-fox-dark">Проверка ДЗ</h3>
+                  <h3 className="text-lg font-bold text-fox-dark">Мои домашние задания</h3>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/homeworks')}>
                     Все задания →
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {pendingHomeworks.length === 0 ? (
-                    <p className="text-sm text-gray-400">Нет заданий на проверку</p>
+                  {myHomeworks.length === 0 ? (
+                    <p className="text-sm text-gray-400">Нет активных заданий</p>
                   ) : (
-                    pendingHomeworks.map((h) => (
+                    myHomeworks.map((h) => (
                       <div
                         key={h.id}
                         className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30"
@@ -158,7 +158,7 @@ export default function TeacherDashboardPage() {
                 <h3 className="text-lg font-bold text-fox-dark">Быстрые действия</h3>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => navigate('/homeworks')}>Проверить ДЗ</Button>
+                <Button onClick={() => navigate('/homeworks')}>Мои ДЗ</Button>
                 <Button variant="secondary" onClick={() => navigate('/calendar')}>
                   Расписание
                 </Button>

@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     YANDEX_DISK_TOKEN: str = ""
     YANDEX_DISK_PUBLIC_FOLDER: str = ""
 
+    # AI Assistant / YandexGPT
+    YANDEXGPT_API_KEY: str = ""
+    YANDEXGPT_FOLDER_ID: str = ""
+
     # Telegram notifications
     TELEGRAM_BOT_TOKEN: str = ""
 

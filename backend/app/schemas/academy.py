@@ -73,6 +73,7 @@ class AcademyProgressResponse(BaseModel):
     assigned_at: Optional[datetime]
     enrolled_at: datetime
     completed_at: Optional[datetime]
+    is_certified: bool = False
     modules: List[dict] = []
 
 

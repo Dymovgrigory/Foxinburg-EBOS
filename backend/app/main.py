@@ -22,7 +22,7 @@ from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, employee_groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
-    chats, chat_ws, teacher_academy, methodists, system,
+    chats, chat_ws, teacher_academy, knowledge, methodists, system, ai,
 )
 from app.admin import setup_admin
 
@@ -116,9 +116,11 @@ app.include_router(attendance.router, prefix="/api/v3")
 app.include_router(chats.router, prefix="/api/v3")
 app.include_router(chat_ws.router, prefix="/api/v3")
 app.include_router(teacher_academy.router, prefix="/api/v3")
+app.include_router(knowledge.router, prefix="/api/v3")
 app.include_router(methodists.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 app.include_router(system.router, prefix="/api/v3")
+app.include_router(ai.router, prefix="/api/v3")
 
 setup_admin(app)
 

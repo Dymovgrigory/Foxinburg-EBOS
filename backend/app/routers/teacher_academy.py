@@ -2,7 +2,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, Header
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -184,6 +184,7 @@ async def get_my_progress(
         assigned_at=enrollment.assigned_at,
         enrolled_at=enrollment.enrolled_at,
         completed_at=enrollment.completed_at,
+        is_certified=enrollment.status == "completed",
         modules=modules_data,
     )
     return success_response(data=data.model_dump(), message="Прогресс по Академии")
@@ -220,6 +221,53 @@ async def complete_module(
         ).model_dump(),
         message="Модуль завершён",
     )
+
+
+@router.get("/certificate", response_class=HTMLResponse)
+async def get_certificate(
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Возвращает HTML-сертификат об окончании Академии педагогов."""
+    service = TeacherAcademyService(uow)
+    try:
+        enrollment = await service.ensure_teacher_enrolled(current_user.id, current_user.id)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+    if enrollment.status != "completed":
+        return error_response("Сертификат доступен только после завершения Академии", status_code=403)
+
+    completed_at = enrollment.completed_at.isoformat() if enrollment.completed_at else ""
+    html = f"""<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Сертификат — {current_user.name or current_user.email}</title>
+  <style>
+    body {{ margin: 0; padding: 0; font-family: Georgia, serif; background: #f8f9fb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }}
+    .certificate {{ width: 800px; background: #fff; border: 12px solid #5b4cff; padding: 60px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }}
+    h1 {{ color: #5b4cff; font-size: 42px; margin-bottom: 10px; }}
+    h2 {{ color: #333; font-size: 28px; margin: 30px 0 10px; }}
+    p {{ color: #555; font-size: 18px; line-height: 1.6; }}
+    .date {{ margin-top: 40px; color: #777; font-size: 16px; }}
+    .print {{ margin-top: 30px; }}
+    button {{ background: #5b4cff; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }}
+    @media print {{ .print {{ display: none; }} body {{ background: #fff; }} .certificate {{ box-shadow: none; border: 6px solid #5b4cff; }} }}
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <h1>FOXINBURG EBOS</h1>
+    <p>Сертификат подтверждает, что</p>
+    <h2>{current_user.name or current_user.email}</h2>
+    <p>успешно завершил(а) обучение в<br><strong>Академии педагогов FOXINBURG</strong>.</p>
+    <div class="date">Дата выдачи: {completed_at[:10] if completed_at else '—'}</div>
+    <div class="print"><button onclick="window.print()">Печать / Сохранить как PDF</button></div>
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
 
 
 @router.get("/contents/{content_id}/stream")

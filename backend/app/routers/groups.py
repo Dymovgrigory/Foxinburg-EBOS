@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.core.dependencies import require_permission
+from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
 from app.schemas.group import GroupCreate, GroupUpdate, GroupResponse
@@ -21,6 +21,31 @@ async def list_groups(
         data=[GroupResponse.model_validate(g).model_dump() for g in groups],
         message="Список групп",
         meta={"total": len(groups)},
+    )
+
+
+@router.get("/my")
+async def list_my_groups(
+    current_user=Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Группы текущего пользователя (teacher — где преподаватель, student — своя группа)."""
+    service = GroupService(uow)
+    if current_user.role == "student" and current_user.group_id:
+        group = await service.get_by_id(current_user.group_id)
+        groups = [group] if group else []
+    else:
+        groups = await service.list_groups_by_teacher(current_user.id)
+    data = []
+    for g in groups:
+        item = GroupResponse.model_validate(g).model_dump()
+        item["students_count"] = len(g.students)
+        item["course_title"] = g.course.title if g.course else None
+        data.append(item)
+    return success_response(
+        data=data,
+        message="Мои группы",
+        meta={"total": len(data)},
     )
 
 

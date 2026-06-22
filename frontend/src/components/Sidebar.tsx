@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationBadge from '../components/NotificationBadge'
+import HomeworkBadge from '../components/HomeworkBadge'
 import BrandLogo from './BrandLogo'
 
 interface MenuItem {
@@ -52,10 +53,10 @@ const adminGroups: MenuGroup[] = [
 const teacherGroups: MenuGroup[] = [
   {
     items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
+      { to: '/teacher-dashboard', label: 'Главная', icon: '🏠' },
       { to: '/my-courses', label: 'Мои курсы', icon: '📚' },
       { to: '/knowledge', label: 'База знаний', icon: '🧠' },
-      { to: '/homeworks', label: 'Домашние задания', icon: '📝', badge: 5 },
+      { to: '/homeworks', label: 'Домашние задания', icon: '📝', badge: <HomeworkBadge /> },
       { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
       { to: '/certification', label: 'Сертификация', icon: '🏅' },
       { to: '/progress', label: 'Мой прогресс', icon: '📈' },
@@ -121,7 +122,7 @@ const methodistGroups: MenuGroup[] = [
     items: [
       { to: '/employee-groups', label: 'Группы сотрудников', icon: '👥' },
       { to: '/students', label: 'Ученики', icon: '🎓' },
-      { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝' },
+      { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝', badge: <HomeworkBadge /> },
       { to: '/calendar', label: 'Расписание', icon: '📅' },
     ],
   },

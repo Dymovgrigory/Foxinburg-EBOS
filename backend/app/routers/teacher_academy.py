@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
@@ -632,11 +633,16 @@ async def stream_content_pdf(
     )
     await uow.commit()
 
+    # HTTP-заголовки должны быть latin-1, поэтому unicode-имя файла кодируем
+    # через RFC 5987 (filename*=UTF-8'')
+    safe_filename = quote(f"{content.title or 'document'}.pdf", safe="")
+    content_disposition = f"inline; filename=\"document.pdf\"; filename*=UTF-8''{safe_filename}"
+
     return Response(
         content=watermarked_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'inline; filename="{content.title}.pdf"',
+            "Content-Disposition": content_disposition,
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": "DENY",
             "Referrer-Policy": "no-referrer",

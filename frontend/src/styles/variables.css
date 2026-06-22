@@ -1,15 +1,17 @@
 :root {
   /* Brand colors */
-  --fox-purple: #3A2953;
-  --fox-purple-light: #4A3568;
-  --fox-purple-dark: #2A1E3D;
-  --fox-gold: #F5ED75;
-  --fox-gold-light: #FFF5A0;
-  --fox-gold-dark: #E5DD65;
+  --fox-purple: #1c0e36;
+  --fox-purple-light: #2d1b4e;
+  --fox-purple-dark: #130827;
+  --fox-gold: #F9E4A6;
+  --fox-gold-light: #FFF3D6;
+  --fox-gold-dark: #E8CF8A;
   --fox-white: #FFFFFF;
-  --fox-dark: #2A2A2A;
-  --fox-light: #FAF8FD;
-  --fox-border: #E8E0F0;
+  --fox-dark: #2D2D3A;
+  --fox-light: #F5F3FA;
+  --fox-border: #E8E4F0;
+  --fox-gray: #6B6B7B;
+  --fox-graphite: #2D2D3A;
 
   /* Semantic colors */
   --fox-success: #22C55E;
@@ -18,15 +20,36 @@
   --fox-info: #3B82F6;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Manrope', 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Spacing */
-  --radius-sm: 6px;
+  /* Spacing & Radius */
+  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+  --radius-button: 14px;
   --radius-pill: 9999px;
 
   /* Shadows */
-  --shadow-fox: 0 4px 20px rgba(58, 41, 83, 0.15);
-  --shadow-fox-lg: 0 8px 30px rgba(58, 41, 83, 0.2);
+  --shadow-card: 0 1px 3px rgba(28, 14, 54, 0.06), 0 4px 16px rgba(28, 14, 54, 0.06);
+  --shadow-fox: 0 4px 20px rgba(28, 14, 54, 0.10);
+  --shadow-fox-md: 0 8px 30px rgba(28, 14, 54, 0.12);
+  --shadow-fox-lg: 0 12px 40px rgba(28, 14, 54, 0.14);
+}
+
+.dark {
+  --fox-purple: #130827;
+  --fox-purple-light: #1c0e36;
+  --fox-purple-dark: #0a0416;
+  --fox-white: #1c1c24;
+  --fox-dark: #F5F3FA;
+  --fox-light: #12121a;
+  --fox-border: #2d2b3a;
+  --fox-gray: #9b9baa;
+  --fox-graphite: #F5F3FA;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.20), 0 4px 16px rgba(0, 0, 0, 0.20);
+  --shadow-fox: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-fox-md: 0 8px 30px rgba(0, 0, 0, 0.30);
+  --shadow-fox-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
 }

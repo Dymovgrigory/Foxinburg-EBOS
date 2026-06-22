@@ -6,6 +6,12 @@ os.environ["DATABASE_URL"] = "postgresql+asyncpg://foxinburg:foxinburg_dev_pass@
 # Тестовый ключ для шифрования паролей в админке
 os.environ["PASSWORD_ENCRYPTION_KEY"] = "xKGm1ySf1VtWfrOwu6uv1p6E0F-wpCObX7fxo_AhmvU="
 
+import logging
+
+# В тестах SQL-эхо приложения замедляет прогон и захламляет вывод.
+# Отключаем INFO/DEBUG глобально, оставляя WARNING и выше.
+logging.disable(logging.INFO)
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -41,23 +47,52 @@ def pytest_collection_modifyitems(config, items):
 @pytest_asyncio.fixture(scope="session")
 async def db_engine():
     """Единый async-движок на всю тестовую сессию."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True, pool_size=20, max_overflow=10)
     yield engine
     await engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database(db_engine):
-    """Создаём и удаляем таблицы перед/после сессии тестов."""
+    """Полностью пересоздаём схему БД перед сессией тестов.
+
+    Teardown не дропает схему: следующий прогон всё равно пересоздаст её,
+    а отсутствие DROP здесь убирает deadlock'и с соединениями последнего теста.
+    """
     async with db_engine.begin() as conn:
         await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
         await conn.execute(text("CREATE SCHEMA public"))
         await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
         await conn.run_sync(Base.metadata.create_all)
     yield
-    async with db_engine.begin() as conn:
-        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-        await conn.execute(text("CREATE SCHEMA public"))
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def patch_app_database_engine(db_engine):
+    """Переключаем глобальный движок БД приложения на тестовый.
+
+    UnitOfWork из app.services.unit_of_work использует AsyncSessionLocal,
+    импортированный из app.database. Перепривязываем его к sessionmaker'у
+    на базе единого тестового движка, чтобы все соединения закрывались
+    через db_engine.dispose() в конце сессии.
+    """
+    import app.database as db_module
+    import app.services.unit_of_work as uow_module
+
+    original_engine = db_module.engine
+    original_db_session_local = db_module.AsyncSessionLocal
+    original_uow_session_local = uow_module.AsyncSessionLocal
+
+    test_session_local = async_sessionmaker(db_engine, expire_on_commit=False)
+    db_module.engine = db_engine
+    db_module.AsyncSessionLocal = test_session_local
+    uow_module.AsyncSessionLocal = test_session_local
+
+    yield
+
+    db_module.engine = original_engine
+    db_module.AsyncSessionLocal = original_db_session_local
+    uow_module.AsyncSessionLocal = original_uow_session_local
 
 
 @pytest_asyncio.fixture
@@ -105,37 +140,43 @@ async def user_factory(db_session):
 
     yield _create
 
-    # cleanup: удаляем связанные записи и затем самих пользователей по id
-    for uid in created_ids:
-        await db_session.execute(
-            text("""
-                DELETE FROM chat_messages
-                WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
-            """).bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("""
-                DELETE FROM chat_participants
-                WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
-            """).bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("DELETE FROM chat_rooms WHERE created_by_id = :uid").bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("DELETE FROM chat_messages WHERE sender_id = :uid").bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("DELETE FROM chat_participants WHERE user_id = :uid").bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("DELETE FROM notifications WHERE user_id = :uid").bindparams(uid=uid)
-        )
-        await db_session.execute(
-            text("DELETE FROM system_events WHERE user_id = :uid").bindparams(uid=uid)
-        )
-        await db_session.execute(text("DELETE FROM users WHERE id = :uid").bindparams(uid=uid))
-    await db_session.commit()
+    # cleanup: удаляем связанные записи и затем самих пользователей по id.
+    # Если сессия оказалась в rollback-only состоянии, сначала откатываем.
+    try:
+        await db_session.rollback()
+        for uid in created_ids:
+            await db_session.execute(
+                text("""
+                    DELETE FROM chat_messages
+                    WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
+                """).bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("""
+                    DELETE FROM chat_participants
+                    WHERE room_id IN (SELECT id FROM chat_rooms WHERE created_by_id = :uid)
+                """).bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("DELETE FROM chat_rooms WHERE created_by_id = :uid").bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("DELETE FROM chat_messages WHERE sender_id = :uid").bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("DELETE FROM chat_participants WHERE user_id = :uid").bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("DELETE FROM notifications WHERE user_id = :uid").bindparams(uid=uid)
+            )
+            await db_session.execute(
+                text("DELETE FROM system_events WHERE user_id = :uid").bindparams(uid=uid)
+            )
+            await db_session.execute(text("DELETE FROM users WHERE id = :uid").bindparams(uid=uid))
+        await db_session.commit()
+    except Exception:
+        await db_session.rollback()
+        raise
 
 
 @pytest_asyncio.fixture

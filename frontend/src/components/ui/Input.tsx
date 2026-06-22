@@ -20,25 +20,25 @@ export default function Input({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-semibold text-fox-graphite mb-1.5">
           {label}
         </label>
       )}
       <div className="relative">
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fox-gray-light pointer-events-none">
             {leftIcon}
           </div>
         )}
         <input
           className={[
-            'w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold',
+            'w-full rounded-button border bg-white px-4 py-3 text-sm text-fox-graphite',
+            'placeholder:text-fox-gray-light',
+            'focus:outline-none focus:ring-2 focus:ring-fox-purple/20 focus:border-fox-purple',
             'transition-all duration-200',
             error
-              ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
-              : 'border-gray-200 hover:border-gray-300',
+              ? 'border-fox-error focus:ring-fox-error/20 focus:border-fox-error'
+              : 'border-fox-border hover:border-fox-gray-light/60',
             leftIcon ? 'pl-10' : '',
             rightIcon ? 'pr-10' : '',
             className,
@@ -46,13 +46,13 @@ export default function Input({
           {...props}
         />
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-fox-gray-light pointer-events-none">
             {rightIcon}
           </div>
         )}
       </div>
-      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
-      {!error && helper && <p className="mt-1.5 text-xs text-gray-500">{helper}</p>}
+      {error && <p className="mt-1.5 text-xs text-fox-error font-medium">{error}</p>}
+      {!error && helper && <p className="mt-1.5 text-xs text-fox-gray">{helper}</p>}
     </div>
   )
 }

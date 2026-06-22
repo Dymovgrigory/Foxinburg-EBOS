@@ -201,7 +201,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     <>
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-white/10 flex-shrink-0">
-        <BrandLogo collapsed={collapsed} />
+        <BrandLogo collapsed={collapsed} variant="dark" />
       </div>
 
       {/* Profile */}

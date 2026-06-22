@@ -129,7 +129,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="hover:opacity-90 transition">
-            <BrandLogo darkText />
+            <BrandLogo variant="light" />
           </button>
           <nav className="hidden md:flex items-center gap-8 text-sm text-slate-600">
             <a href="#systems" className="hover:text-[#3A2953] transition">Системы</a>

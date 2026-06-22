@@ -117,7 +117,6 @@ async def update_me(
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(current_user, field, value)
     await db.commit()
-    await db.refresh(current_user)
     return success_response(
         data=UserResponse.model_validate(current_user).model_dump(),
         message="Профиль обновлён",
@@ -139,5 +138,4 @@ async def change_password(
         return error_response("Неверный текущий пароль", status_code=status.HTTP_400_BAD_REQUEST)
     current_user.password_hash = get_password_hash(data.new_password)
     await db.commit()
-    await db.refresh(current_user)
     return success_response(data=None, message="Пароль изменён")

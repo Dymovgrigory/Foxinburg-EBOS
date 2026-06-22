@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs'
 
 interface PDFViewerProps {
   url: string
@@ -26,7 +26,7 @@ export default function PDFViewer({ url, watermark }: PDFViewerProps) {
         setPdf(doc)
         setNumPages(doc.numPages)
         setPageNum(1)
-      } catch (err) {
+      } catch {
         setError('Не удалось загрузить PDF')
       }
     }

@@ -55,7 +55,7 @@ export function setupKeyboardBlocker() {
 }
 
 export function detectDevTools(callback: (open: boolean) => void) {
-  let threshold = 160
+  const threshold = 160
   const check = () => {
     const widthThreshold = window.outerWidth - window.innerWidth > threshold
     const heightThreshold = window.outerHeight - window.innerHeight > threshold

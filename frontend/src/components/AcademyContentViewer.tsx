@@ -31,7 +31,6 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [windowBlurred, setWindowBlurred] = useState(false)
-  const fileExt = ext(content.title)
   const label = content.title || 'Материал'
 
   useEffect(() => {
@@ -84,28 +83,16 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     return `${content.pdf_url || `/api/v3/teacher-academy/contents/${content.id}/pdf`}?content_token=${encodeURIComponent(token)}`
   }, [token, content.pdf_url, content.id])
 
-  const isVideo = content.content_type === 'video' || fileExt.match(/^(mp4|webm|ogg|ogv|mov|mkv|avi)$/)
-  const isPdf = content.content_type === 'pdf' || fileExt === 'pdf'
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
-  const isOffice = content.content_type === 'office' || ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)
-
-  if (tokenError) {
-    return (
-      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-600">
-        {tokenError}
-      </div>
-    )
-  }
-
-  if (!token) {
-    return (
-      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-500">
-        Загрузка защищённого материала…
-      </div>
-    )
-  }
-
   const viewer = useMemo(() => {
+    const fileExt = ext(content.title)
+    const isVideo =
+      content.content_type === 'video' || /^(mp4|webm|ogg|ogv|mov|mkv|avi)$/.test(fileExt)
+    const isPdf = content.content_type === 'pdf' || fileExt === 'pdf'
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
+    const isOffice =
+      content.content_type === 'office' ||
+      ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)
+
     if (isVideo) {
       return (
         <video
@@ -148,9 +135,18 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         </p>
       </div>
     )
-  }, [content.id, content.content_type, fileExt, label, isVideo, isPdf, isImage, isOffice, streamUrlWithToken, pdfUrlWithToken, watermark])
+  }, [content.content_type, content.title, label, streamUrlWithToken, pdfUrlWithToken, watermark])
 
   const fullscreenViewer = useMemo(() => {
+    const fileExt = ext(content.title)
+    const isVideo =
+      content.content_type === 'video' || /^(mp4|webm|ogg|ogv|mov|mkv|avi)$/.test(fileExt)
+    const isPdf = content.content_type === 'pdf' || fileExt === 'pdf'
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
+    const isOffice =
+      content.content_type === 'office' ||
+      ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt)
+
     if (isVideo) {
       return (
         <video
@@ -189,7 +185,23 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         <p className="text-lg">{label}</p>
       </div>
     )
-  }, [content.id, content.content_type, fileExt, label, isVideo, isPdf, isImage, isOffice, streamUrlWithToken, pdfUrlWithToken, watermark])
+  }, [content.content_type, content.title, label, streamUrlWithToken, pdfUrlWithToken, watermark])
+
+  if (tokenError) {
+    return (
+      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-600">
+        {tokenError}
+      </div>
+    )
+  }
+
+  if (!token) {
+    return (
+      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-500">
+        Загрузка защищённого материала…
+      </div>
+    )
+  }
 
   const blocked = windowBlurred
 
@@ -231,7 +243,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-white text-center p-6">
             <div>
               <p className="text-lg font-semibold mb-2">Вернутесь к окну</p>
-              <p className="text-sm opacity-80">Для продолжения вернитесь в это окно.</p>
+              <p className="text-sm opacity-80">Для продолжения верните в это окно.</p>
             </div>
           </div>
         )}

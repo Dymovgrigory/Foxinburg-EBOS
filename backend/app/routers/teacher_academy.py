@@ -1,7 +1,7 @@
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -99,16 +99,16 @@ async def _require_content_token_user(
     uow: UnitOfWork = Depends(get_uow),
 ) -> User:
     if not content_token:
-        return error_response("Отсутствует токен доступа к материалу", status_code=403)
+        raise HTTPException(status_code=403, detail="Отсутствует токен доступа к материалу")
     try:
         token_content_id, user_id = await validate_content_token(content_token)
     except ContentTokenError as exc:
-        return error_response(str(exc), status_code=403)
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if token_content_id != content_id:
-        return error_response("Токен не соответствует материалу", status_code=403)
+        raise HTTPException(status_code=403, detail="Токен не соответствует материалу")
     user = await uow.session.get(User, user_id)
     if not user or not user.is_active:
-        return error_response("Пользователь не найден или неактивен", status_code=403)
+        raise HTTPException(status_code=403, detail="Пользователь не найден или неактивен")
     return user
 
 

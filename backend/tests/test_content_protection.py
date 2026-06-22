@@ -54,7 +54,7 @@ async def test_revoke_content_token(redis_available):
 @pytest.mark.asyncio
 async def test_content_token_rate_limit(redis_available):
     user_id = int(uuid.uuid4().int % 1_000_000_000)
-    for _ in range(10):
+    for _ in range(120):
         await check_content_token_rate_limit(user_id)
     with pytest.raises(RateLimitExceeded):
         await check_content_token_rate_limit(user_id)

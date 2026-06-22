@@ -43,15 +43,19 @@ async def check_burst_rate_limit(
 
 
 async def check_content_token_rate_limit(user_id: int) -> None:
-    """Лимит на создание content-токенов: 10/мин, 30/час."""
+    """Лимит на создание content-токенов: 120/мин, 600/час.
+
+    На одном уроке может быть десяток материалов, поэтому лимит должен
+    позволять одновременную выдачу токенов на весь открытый урок.
+    """
     await check_rate_limit(
         f"content_token:create:min:{user_id}",
-        max_requests=10,
+        max_requests=120,
         window_seconds=60,
     )
     await check_rate_limit(
         f"content_token:create:hour:{user_id}",
-        max_requests=30,
+        max_requests=600,
         window_seconds=3600,
     )
 

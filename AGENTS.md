@@ -86,7 +86,14 @@ URL БД берётся из `.env.development` (`DATABASE_URL`) через `app
 - Локальный backend: http://localhost:8000
 - Локальный frontend: http://localhost:5173
 - API docs: http://localhost:8000/docs
+- Health check: `GET /api/v3/health` (проверяет БД и Redis)
 - Продакшн: https://foxinburg.ru
+
+## Заметки по текущему состоянию
+
+- Все пункты sidebar ведут на рабочие страницы: `/marketing`, `/roles`, `/payments` реализованы, `/builder` и `/community` перенаправляют на `/course-builder` и `/chats`.
+- В production backend валидирует сильные значения `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CONTENT_TOKEN_SECRET` и `PASSWORD_ENCRYPTION_KEY` при старте.
+- Добавлен набор негативных RBAC-тестов в `backend/tests/test_rbac_write.py`.
 
 ## Контакты и контекст
 

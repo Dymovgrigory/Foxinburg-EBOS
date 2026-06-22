@@ -180,12 +180,15 @@ export const homeworksApi = {
 
 export const financeApi = {
   payments: () => api.get<ApiResponse<Payment[]>>('/finance/payments').then(unwrap),
+  myPayments: () => api.get<ApiResponse<Payment[]>>('/finance/payments/me').then(unwrap),
   createPayment: (data: Partial<Payment>) =>
     api.post<ApiResponse<Payment>>('/finance/payments', data).then(unwrap),
   updatePayment: (id: number, data: Partial<Payment>) =>
     api.patch<ApiResponse<Payment>>(`/finance/payments/${id}`, data).then(unwrap),
   deletePayment: (id: number) => api.delete<ApiResponse<void>>(`/finance/payments/${id}`).then(unwrap),
   transactions: () => api.get<ApiResponse<Transaction[]>>('/finance/transactions').then(unwrap),
+  myTransactions: () => api.get<ApiResponse<Transaction[]>>('/finance/transactions/me').then(unwrap),
+  balance: () => api.get<ApiResponse<{ balance: number; total_paid: number }>>('/finance/balance').then(unwrap),
   analytics: () => api.get<ApiResponse<FinanceAnalytics>>('/analytics/finance').then(unwrap),
 }
 

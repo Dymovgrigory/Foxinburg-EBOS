@@ -45,7 +45,7 @@ const adminGroups: MenuGroup[] = [
       { to: '/system-center', label: 'OS Center', icon: '⚙️' },
       { to: '/roles', label: 'Role Ecosystem', icon: '🛡️' },
       { to: '/settings', label: 'Настройки', icon: '🔧' },
-      { to: '/builder', label: 'Конструктор', icon: '🛠️' },
+      { to: '/course-builder', label: 'Конструктор', icon: '🛠️' },
     ],
   },
 ]

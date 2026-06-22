@@ -46,6 +46,13 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-change_me_in_env}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET:-change_me_in_env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_in_env}
+      CONTENT_TOKEN_SECRET: ${CONTENT_TOKEN_SECRET:-change_me_in_env}
+      PASSWORD_ENCRYPTION_KEY: ${PASSWORD_ENCRYPTION_KEY:-change_me_in_env}
+      YANDEXGPT_API_KEY: ${YANDEXGPT_API_KEY:-}
+      YANDEXGPT_FOLDER_ID: ${YANDEXGPT_FOLDER_ID:-}
+      YANDEX_DISK_TOKEN: ${YANDEX_DISK_TOKEN:-}
+      YANDEX_DISK_PUBLIC_FOLDER: ${YANDEX_DISK_PUBLIC_FOLDER:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       FRONTEND_URL: https://foxinburg.ru
     depends_on:
       postgres:

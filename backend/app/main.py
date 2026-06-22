@@ -7,7 +7,10 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
+from sqlalchemy import text
+
 from app.database import engine, Base
+from app.services.redis_client import get_redis
 
 # Импорт всех моделей для создания таблиц
 from app.models import (
@@ -136,3 +139,32 @@ setup_admin(app)
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "foxinburg-api", "version": "3.0.0"}
+
+
+@app.get("/api/v3/health")
+async def api_health_check():
+    """Проверка работоспособности API, базы данных и Redis."""
+    health = {
+        "status": "ok",
+        "service": "foxinburg-api",
+        "version": "3.0.0",
+        "checks": {},
+    }
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        health["checks"]["database"] = {"status": "ok"}
+    except Exception as exc:
+        health["checks"]["database"] = {"status": "error", "detail": str(exc)}
+        health["status"] = "error"
+
+    try:
+        redis = await get_redis()
+        await redis.ping()
+        health["checks"]["redis"] = {"status": "ok"}
+    except Exception as exc:
+        health["checks"]["redis"] = {"status": "error", "detail": str(exc)}
+        health["status"] = "error"
+
+    return health

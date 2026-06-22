@@ -61,6 +61,24 @@ async def create_payment(
     )
 
 
+@router.get("/payments/me")
+async def list_my_payments(
+    current_user: User = Depends(require_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Платежи текущего пользователя (для учеников и родителей)."""
+    result = await db.execute(
+        select(Payment)
+        .where(Payment.student_id == current_user.id)
+        .order_by(Payment.created_at.desc())
+    )
+    payments = result.scalars().all()
+    return success_response(
+        data=[PaymentResponse.model_validate(p).model_dump() for p in payments],
+        message="Мои платежи",
+    )
+
+
 @router.get("/payments/{payment_id}")
 async def get_payment(
     payment_id: int,
@@ -102,6 +120,24 @@ async def delete_payment(
     await db.delete(payment)
     await db.commit()
     return success_response(message="Платёж удалён")
+
+
+@router.get("/transactions/me")
+async def list_my_transactions(
+    current_user: User = Depends(require_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Транзакции текущего пользователя."""
+    result = await db.execute(
+        select(Transaction)
+        .where(Transaction.user_id == current_user.id)
+        .order_by(Transaction.created_at.desc())
+    )
+    transactions = result.scalars().all()
+    return success_response(
+        data=[TransactionResponse.model_validate(t).model_dump() for t in transactions],
+        message="Мои транзакции",
+    )
 
 
 @router.get("/transactions")

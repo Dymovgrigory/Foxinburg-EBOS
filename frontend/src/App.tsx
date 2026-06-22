@@ -11,8 +11,10 @@ import SettingsPage from './pages/SettingsPage'
 import TeacherDashboardPage from './pages/TeacherDashboardPage'
 import StudentDashboardPage from './pages/StudentDashboardPage'
 import MethodistDashboardPage from './pages/MethodistDashboardPage'
-import PlaceholderPage from './components/PlaceholderPage'
 import CrmPage from './pages/CrmPage'
+import MarketingPage from './pages/MarketingPage'
+import RolesPage from './pages/RolesPage'
+import PaymentsPage from './pages/PaymentsPage'
 import HomeworksPage from './pages/HomeworksPage'
 import CoursesPage from './pages/CoursesPage'
 import BranchesPage from './pages/BranchesPage'
@@ -71,18 +73,17 @@ function App() {
         <Route path="employee-groups" element={<RoleProtected path="/employee-groups"><EmployeeGroupsPage /></RoleProtected>} />
         <Route path="courses/:id/learn" element={<Protected><CoursePlayerPage /></Protected>} />
 
-        {/* Placeholder routes */}
-        <Route path="marketing" element={<Protected><PlaceholderPage title="Маркетинг" icon="📣" /></Protected>} />
+        <Route path="marketing" element={<RoleProtected path="/marketing"><MarketingPage /></RoleProtected>} />
         <Route path="ai" element={<Protected><AIAssistantPage /></Protected>} />
-        <Route path="roles" element={<Protected><PlaceholderPage title="Role Ecosystem" icon="🛡️" /></Protected>} />
-        <Route path="builder" element={<Protected><PlaceholderPage title="Конструктор" subtitle="NEW" icon="🛠️" /></Protected>} />
+        <Route path="roles" element={<RoleProtected path="/roles"><RolesPage /></RoleProtected>} />
+        <Route path="builder" element={<Navigate to="/course-builder" replace />} />
         <Route path="my-courses" element={<RoleProtected path="/my-courses"><TeacherCoursesPage /></RoleProtected>} />
         <Route path="knowledge" element={<RoleProtected path="/knowledge"><KnowledgeBasePage /></RoleProtected>} />
         <Route path="certification" element={<RoleProtected path="/certification"><CertificationPage /></RoleProtected>} />
         <Route path="progress" element={<RoleProtected path="/progress"><TeacherProgressPage /></RoleProtected>} />
         <Route path="library" element={<RoleProtected path="/library"><LibraryPage /></RoleProtected>} />
-        <Route path="community" element={<Protected><PlaceholderPage title="Сообщество" icon="💬" /></Protected>} />
-        <Route path="payments" element={<Protected><PlaceholderPage title="Оплата" icon="💳" /></Protected>} />
+        <Route path="community" element={<Navigate to="/chats" replace />} />
+        <Route path="payments" element={<RoleProtected path="/payments"><PaymentsPage /></RoleProtected>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -94,6 +94,8 @@ URL БД берётся из `.env.development` (`DATABASE_URL`) через `app
 - Все пункты sidebar ведут на рабочие страницы: `/marketing`, `/roles`, `/payments` реализованы, `/builder` и `/community` перенаправляют на `/course-builder` и `/chats`.
 - В production backend валидирует сильные значения `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CONTENT_TOKEN_SECRET` и `PASSWORD_ENCRYPTION_KEY` при старте.
 - Добавлен набор негативных RBAC-тестов в `backend/tests/test_rbac_write.py`.
+- Для текущего UTC-времени в backend используется `from app.utils import utc_now` (naive datetime для совместимости с SQLAlchemy `DateTime`). `datetime.utcnow()` запрещён.
+- Тесты backend: `pytest -q` в папке `backend/` → 246 passed, 0 warnings. Фикстуры используют session-scoped event loop и единый `db_engine`.
 
 ## Контакты и контекст
 

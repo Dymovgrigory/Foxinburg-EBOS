@@ -131,7 +131,6 @@ ROLE_PERMISSIONS = {
     Role.TEACHER: [
         Permission.COURSE_READ,
         Permission.MODULE_READ, Permission.LESSON_READ,
-        Permission.HOMEWORK_REVIEW,
         Permission.GROUP_READ, Permission.PROGRESS_READ,
         Permission.ATTENDANCE_MANAGE,
         Permission.NOTIFICATION_READ,

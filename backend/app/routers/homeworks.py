@@ -274,6 +274,13 @@ async def list_reviews(
     current_user: User = Depends(require_active_user),
     uow: UnitOfWork = Depends(get_uow),
 ):
+    homework = await uow.session.get(Homework, homework_id)
+    if not homework:
+        return error_response("Домашнее задание не найдено", status_code=404)
+    if not has_permission(current_user.role, Permission.HOMEWORK_REVIEW):
+        if homework.student_id != current_user.id:
+            return error_response("Доступ запрещён", status_code=403)
+
     result = await uow.session.execute(
         select(HomeworkReview).where(HomeworkReview.homework_id == homework_id).order_by(HomeworkReview.created_at.desc())
     )

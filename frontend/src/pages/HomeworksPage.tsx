@@ -24,6 +24,8 @@ interface Homework {
   id: number
   lesson_id: number
   student_id: number
+  title?: string
+  description?: string
   content?: string
   file_urls?: string
   status: string
@@ -64,7 +66,7 @@ export default function HomeworksPage() {
   const [editForm, setEditForm] = useState<Partial<Homework>>({})
   const [savingEdit, setSavingEdit] = useState(false)
 
-  const isReviewer = ['owner', 'super_admin', 'admin', 'methodist', 'teacher'].includes(user?.role || '')
+  const isReviewer = ['owner', 'super_admin', 'admin', 'methodist'].includes(user?.role || '')
 
   const fetchHomeworks = async () => {
     setLoading(true)
@@ -173,6 +175,12 @@ export default function HomeworksPage() {
 
   const renderStudentView = () => (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-fox-dark">Мои домашние задания</h2>
+        {homeworks.length > 0 && (
+          <p className="text-sm text-gray-500">{homeworks.length} {homeworks.length === 1 ? 'задание' : 'задания'}</p>
+        )}
+      </div>
       {homeworks.length === 0 ? (
         <EmptyState icon="📝" title="Нет домашних заданий" description="Вам пока не назначены задания." />
       ) : (
@@ -181,10 +189,11 @@ export default function HomeworksPage() {
           const isSubmitted = h.status === 'submitted' || h.status === 'reviewed'
           return (
             <Card key={h.id} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Задание #{h.id}</p>
-                  <p className="font-semibold text-fox-dark">Урок #{h.lesson_id}</p>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-500">Задание #{h.id} · Урок #{h.lesson_id}</p>
+                  <p className="font-semibold text-fox-dark truncate">{h.title || 'Домашнее задание'}</p>
+                  {h.description && <p className="text-sm text-gray-600 mt-1">{h.description}</p>}
                 </div>
                 <Badge variant={meta.variant}>{meta.label}</Badge>
               </div>

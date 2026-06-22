@@ -1,9 +1,29 @@
 import os
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
 _ENV_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".env.development")
+
+# Секреты, которые нельзя использовать в продакшене
+_FORBIDDEN_SECRETS = {
+    "",
+    "dev-secret-change-in-production",
+    "dev-refresh-secret-change-in-production",
+    "change-me-in-production",
+    "change_me",
+    "change_me_in_env",
+    "foxinburg_dev_pass",
+    "foxinburg_redis_pass",
+}
+
+_DEFAULT_PASSWORD_SUBSTRINGS = {
+    "foxinburg_dev_pass",
+    "foxinburg_redis_pass",
+    "change_me",
+    "change_me_in_env",
+}
 
 
 class Settings(BaseSettings):
@@ -60,6 +80,38 @@ class Settings(BaseSettings):
 
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""
+
+    @model_validator(mode="after")
+    def _validate_production_secrets(self) -> "Settings":
+        if self.NODE_ENV != "production":
+            return self
+
+        secret_fields = [
+            ("JWT_SECRET", self.JWT_SECRET),
+            ("JWT_REFRESH_SECRET", self.JWT_REFRESH_SECRET),
+            ("CONTENT_TOKEN_SECRET", self.CONTENT_TOKEN_SECRET),
+            ("PASSWORD_ENCRYPTION_KEY", self.PASSWORD_ENCRYPTION_KEY),
+        ]
+        for name, value in secret_fields:
+            if value in _FORBIDDEN_SECRETS:
+                raise ValueError(
+                    f"{name} must be set to a strong unique value in production. "
+                    "Check your .env.production file."
+                )
+
+        if any(sub in self.DATABASE_URL for sub in _DEFAULT_PASSWORD_SUBSTRINGS):
+            raise ValueError(
+                "DATABASE_URL contains a default/weak password in production. "
+                "Set a strong POSTGRES_PASSWORD in .env.production."
+            )
+
+        if any(sub in self.REDIS_URL for sub in _DEFAULT_PASSWORD_SUBSTRINGS):
+            raise ValueError(
+                "REDIS_URL contains a default/weak password in production. "
+                "Set a strong REDIS_PASSWORD in .env.production."
+            )
+
+        return self
 
     class Config:
         env_file = _ENV_PATH

@@ -401,7 +401,9 @@ class MethodistAnalyticsService:
 
         teacher_ids = [t.id for t in teachers]
 
-        groups_result = await self.uow.session.execute(select(Group))
+        groups_result = await self.uow.session.execute(
+            select(Group).options(selectinload(Group.students))
+        )
         all_groups = list(groups_result.scalars().all())
 
         schedules_result = await self.uow.session.execute(

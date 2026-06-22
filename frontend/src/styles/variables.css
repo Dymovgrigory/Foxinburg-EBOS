@@ -7,6 +7,7 @@
   --fox-gold-light: #FFF3D6;
   --fox-gold-dark: #E8CF8A;
   --fox-white: #FFFFFF;
+  --fox-white-rgb: 255, 255, 255;
   --fox-dark: #2D2D3A;
   --fox-light: #F5F3FA;
   --fox-border: #E8E4F0;
@@ -42,6 +43,7 @@
   --fox-purple-light: #1c0e36;
   --fox-purple-dark: #0a0416;
   --fox-white: #1c1c24;
+  --fox-white-rgb: 28, 28, 36;
   --fox-dark: #F5F3FA;
   --fox-light: #12121a;
   --fox-border: #2d2b3a;

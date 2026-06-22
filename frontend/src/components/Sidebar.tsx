@@ -1,182 +1,10 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { FiChevronLeft, FiChevronRight, FiLogOut, FiMoon, FiSun } from 'react-icons/fi'
 import { useAuth } from '../contexts/AuthContext'
-import NotificationBadge from '../components/NotificationBadge'
-import HomeworkBadge from '../components/HomeworkBadge'
+import { useTheme } from '../contexts/ThemeContext'
+import { groupsForRole, roleLabel } from '../config/navigation'
 import BrandLogo from './BrandLogo'
-
-interface MenuItem {
-  to: string
-  label: string
-  icon: string
-  badge?: number | React.ReactNode
-  roles?: string[]
-}
-
-interface MenuGroup {
-  title?: string
-  items: MenuItem[]
-}
-
-const adminGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/system-center', label: 'Executive', icon: '🏠' },
-      { to: '/finance', label: 'Финансы', icon: '💹' },
-      { to: '/branches', label: 'Филиалы', icon: '🏢' },
-      { to: '/employees', label: 'Сотрудники', icon: '👥' },
-      { to: '/students', label: 'Ученики', icon: '🎓' },
-      { to: '/analytics', label: 'Аналитика', icon: '📊' },
-      { to: '/crm', label: 'CRM', icon: '📋' },
-      { to: '/marketing', label: 'Маркетинг', icon: '📣' },
-      { to: '/courses', label: 'Курсы', icon: '📚' },
-      { to: '/calendar', label: 'Расписание', icon: '📅' },
-      { to: '/chats', label: 'Чаты', icon: '💬' },
-      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
-    ],
-  },
-  {
-    title: 'Инструменты',
-    items: [{ to: '/ai', label: 'AI Помощник', icon: '🤖' }],
-  },
-  {
-    title: 'OS',
-    items: [
-      { to: '/system-center', label: 'OS Center', icon: '⚙️' },
-      { to: '/roles', label: 'Role Ecosystem', icon: '🛡️' },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-      { to: '/course-builder', label: 'Конструктор', icon: '🛠️' },
-    ],
-  },
-]
-
-const teacherGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/teacher-dashboard', label: 'Главная', icon: '🏠' },
-      { to: '/my-courses', label: 'Мои курсы', icon: '📚' },
-      { to: '/knowledge', label: 'База знаний', icon: '🧠' },
-      { to: '/homeworks', label: 'Домашние задания', icon: '📝', badge: <HomeworkBadge /> },
-      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
-      { to: '/certification', label: 'Сертификация', icon: '🏅' },
-      { to: '/progress', label: 'Мой прогресс', icon: '📈' },
-      { to: '/ai', label: 'AI Помощник', icon: '🤖' },
-      { to: '/library', label: 'Библиотека', icon: '📖' },
-      { to: '/calendar', label: 'Календарь', icon: '📅' },
-      { to: '/chats', label: 'Чаты', icon: '💬' },
-      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-    ],
-  },
-]
-
-const studentGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
-      { to: '/my-courses', label: 'Мои курсы', icon: '📚' },
-      { to: '/homeworks', label: 'Домашние задания', icon: '📝' },
-      { to: '/progress', label: 'Мой прогресс', icon: '📈' },
-      { to: '/library', label: 'Библиотека', icon: '📖' },
-      { to: '/calendar', label: 'Календарь', icon: '📅' },
-      { to: '/chats', label: 'Чаты', icon: '💬' },
-      { to: '/notifications', label: 'Уведомления', icon: '🔔', badge: <NotificationBadge /> },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-    ],
-  },
-]
-
-const managerGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
-      { to: '/crm', label: 'CRM', icon: '📋' },
-      { to: '/finance', label: 'Финансы', icon: '💹' },
-      { to: '/analytics', label: 'Аналитика', icon: '📊' },
-      { to: '/marketing', label: 'Маркетинг', icon: '📣' },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-    ],
-  },
-]
-
-const methodistGroups: MenuGroup[] = [
-  {
-    items: [{ to: '/methodist-dashboard', label: 'Дашборд', icon: '📊' }],
-  },
-  {
-    title: 'Академия',
-    items: [
-      { to: '/academy', label: 'Академия педагогов', icon: '🎓' },
-      { to: '/knowledge', label: 'База знаний', icon: '🧠' },
-    ],
-  },
-  {
-    title: 'Курсы',
-    items: [
-      { to: '/courses', label: 'Курсы', icon: '📚' },
-      { to: '/course-builder', label: 'Конструктор курсов', icon: '🛠️' },
-    ],
-  },
-  {
-    title: 'Учебный процесс',
-    items: [
-      { to: '/employee-groups', label: 'Группы сотрудников', icon: '👥' },
-      { to: '/students', label: 'Ученики', icon: '🎓' },
-      { to: '/homeworks', label: 'Проверка ДЗ', icon: '📝', badge: <HomeworkBadge /> },
-      { to: '/calendar', label: 'Расписание', icon: '📅' },
-    ],
-  },
-  {
-    title: 'Администрирование',
-    items: [{ to: '/settings', label: 'Настройки', icon: '🔧' }],
-  },
-]
-
-const parentGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
-      { to: '/progress', label: 'Прогресс ребёнка', icon: '📈' },
-      { to: '/payments', label: 'Оплата', icon: '💳' },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-    ],
-  },
-]
-
-const guestGroups: MenuGroup[] = [
-  {
-    items: [
-      { to: '/dashboard', label: 'Главная', icon: '🏠' },
-      { to: '/courses', label: 'Курсы', icon: '📚' },
-      { to: '/settings', label: 'Настройки', icon: '🔧' },
-    ],
-  },
-]
-
-function groupsForRole(role: string): MenuGroup[] {
-  if (role === 'teacher') return teacherGroups
-  if (role === 'student') return studentGroups
-  if (role === 'parent') return parentGroups
-  if (role === 'manager') return managerGroups
-  if (role === 'methodist') return methodistGroups
-  if (role === 'guest') return guestGroups
-  return adminGroups
-}
-
-function roleLabel(role?: string) {
-  const labels: Record<string, string> = {
-    owner: 'Владелец',
-    super_admin: 'Супер-админ',
-    admin: 'Администратор',
-    methodist: 'Методист',
-    teacher: 'Педагог',
-    manager: 'Менеджер',
-    student: 'Ученик',
-    parent: 'Родитель',
-    guest: 'Гость',
-  }
-  return labels[role || ''] || role
-}
 
 interface SidebarProps {
   mobileOpen: boolean
@@ -185,9 +13,11 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuth()
+  const { resolvedTheme, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
 
   const groups = groupsForRole(user?.role || 'owner')
   const isActive = (path: string) => location.pathname === path
@@ -196,6 +26,12 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     logout()
     navigate('/login')
   }
+
+  const avatar = (
+    <div className="w-10 h-10 rounded-full bg-fox-gold text-fox-purple flex items-center justify-center font-bold flex-shrink-0">
+      {user?.name?.[0] || user?.email?.[0] || '?'}
+    </div>
+  )
 
   const sidebarContent = (
     <>
@@ -207,15 +43,39 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Profile */}
       {!collapsed && (
         <div className="p-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-fox-gold text-fox-purple flex items-center justify-center font-bold flex-shrink-0">
-              {user?.name?.[0] || '?'}
-            </div>
-            <div className="min-w-0">
+          <button
+            onClick={() => setUserOpen(!userOpen)}
+            className="w-full flex items-center gap-3 rounded-xl hover:bg-white/5 transition p-1 -m-1"
+          >
+            {avatar}
+            <div className="min-w-0 text-left flex-1">
               <div className="text-sm font-medium text-white truncate">{user?.email}</div>
               <div className="text-xs text-fox-gold/80 capitalize font-medium">{roleLabel(user?.role)}</div>
             </div>
-          </div>
+          </button>
+          {userOpen && (
+            <div className="mt-2 space-y-1 pl-[52px]">
+              <Link
+                to="/settings"
+                onClick={onCloseMobile}
+                className="block text-sm text-white/70 hover:text-white py-1"
+              >
+                Профиль
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="block text-sm text-white/70 hover:text-red-300 py-1"
+              >
+                Выйти
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {collapsed && (
+        <div className="py-3 border-b border-white/10 flex justify-center">
+          {avatar}
         </div>
       )}
 
@@ -269,6 +129,17 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Bottom */}
       <div className="p-3 border-t border-white/10 space-y-1 flex-shrink-0">
         <button
+          onClick={toggleTheme}
+          className={[
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition',
+            collapsed && 'justify-center',
+          ].join(' ')}
+          title={resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+        >
+          {resolvedTheme === 'dark' ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
+          {!collapsed && <span>{resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>}
+        </button>
+        <button
           onClick={() => setCollapsed(!collapsed)}
           className={[
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition',
@@ -276,7 +147,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
           ].join(' ')}
           title={collapsed ? 'Развернуть' : 'Свернуть'}
         >
-          <span>{collapsed ? '→' : '←'}</span>
+          {collapsed ? <FiChevronRight className="text-lg" /> : <FiChevronLeft className="text-lg" />}
           {!collapsed && <span>Свернуть</span>}
         </button>
         <button
@@ -287,7 +158,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
           ].join(' ')}
           title={collapsed ? 'Выйти' : undefined}
         >
-          <span>⎋</span>
+          <FiLogOut className="text-lg" />
           {!collapsed && <span>Выйти</span>}
         </button>
       </div>
@@ -299,9 +170,10 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Desktop sidebar */}
       <aside
         className={[
-          'hidden lg:flex h-screen bg-fox-purple flex-col transition-all duration-300 flex-shrink-0',
+          'hidden lg:flex h-screen flex-col transition-all duration-300 flex-shrink-0',
           collapsed ? 'w-20' : 'w-64',
         ].join(' ')}
+        style={{ backgroundColor: 'var(--fox-purple)' }}
       >
         {sidebarContent}
       </aside>
@@ -317,9 +189,10 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Mobile sidebar */}
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-50 w-64 bg-fox-purple flex-col transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
+        style={{ backgroundColor: 'var(--fox-purple)' }}
       >
         {sidebarContent}
       </aside>

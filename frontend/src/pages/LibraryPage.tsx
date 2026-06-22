@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Card, Loader, EmptyState, Badge, Input, Button } from '../components/ui'
+import { LuLibrary } from 'react-icons/lu'
 
 interface LibraryFile {
   id: number
@@ -67,7 +68,7 @@ export default function LibraryPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Библиотека" subtitle="Материалы и файлы" icon="📖" />
+        <Header title="Библиотека" subtitle="Материалы и файлы" icon={<LuLibrary />} />
         <div className="p-6 max-w-7xl mx-auto">
           <Loader text="Загрузка файлов..." />
         </div>
@@ -77,7 +78,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Библиотека" subtitle={`${filtered.length} материалов`} icon="📖" />
+      <Header title="Библиотека" subtitle={`${filtered.length} материалов`} icon={<LuLibrary />} />
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -90,7 +91,7 @@ export default function LibraryPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Все типы</option>
               {types.map((t) => (
@@ -101,7 +102,7 @@ export default function LibraryPage() {
         </Card>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="📖" title="Нет файлов" description="В библиотеке пока нет загруженных материалов." />
+          <EmptyState icon={<LuLibrary />} title="Нет файлов" description="В библиотеке пока нет загруженных материалов." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((f) => (
@@ -110,7 +111,7 @@ export default function LibraryPage() {
                   <p className="font-medium text-fox-dark break-all">{f.original_name}</p>
                   {f.entity_type ? <Badge variant="default">{typeLabels[f.entity_type] || f.entity_type}</Badge> : null}
                 </div>
-                <div className="text-sm text-gray-500 space-y-1">
+                <div className="text-sm text-fox-gray space-y-1">
                   <p>Размер: {formatSize(f.size_bytes)}</p>
                   <p>Загружено: {new Date(f.created_at).toLocaleDateString('ru-RU')}</p>
                 </div>

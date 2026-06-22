@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Input, Badge } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../api'
+import { LuBell, LuLock, LuUser, LuWrench } from 'react-icons/lu'
 
 export default function SettingsPage() {
   const { user, login } = useAuth()
@@ -54,20 +55,20 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Настройки" icon="🔧" />
+      <Header title="Настройки" icon={<LuWrench />} />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
           <Card className="md:w-64 h-fit p-2">
             <div className="space-y-1">
-              <SidebarButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon="👤">
+              <SidebarButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<LuUser />}>
                 Профиль
               </SidebarButton>
-              <SidebarButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon="🔒">
+              <SidebarButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<LuLock />}>
                 Безопасность
               </SidebarButton>
-              <SidebarButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon="🔔">
+              <SidebarButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={<LuBell />}>
                 Уведомления
               </SidebarButton>
             </div>
@@ -93,18 +94,18 @@ export default function SettingsPage() {
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Роль</label>
-                    <div className="px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 text-sm">
+                    <label className="block text-sm font-medium text-fox-graphite mb-1.5">Роль</label>
+                    <div className="px-4 py-2.5 border border-fox-border rounded-xl bg-fox-light/50 text-fox-gray text-sm">
                       <Badge variant="purple">{roleLabel(user?.role)}</Badge>
                     </div>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">О себе</label>
+                    <label className="block text-sm font-medium text-fox-graphite mb-1.5">О себе</label>
                     <textarea
                       value={profile.bio}
                       onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                       rows={4}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                      className="w-full rounded-xl border border-fox-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -180,7 +181,7 @@ function SidebarButton({
 }: {
   active: boolean
   onClick: () => void
-  icon: string
+  icon: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -188,7 +189,7 @@ function SidebarButton({
       onClick={onClick}
       className={[
         'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition',
-        active ? 'bg-fox-purple text-white shadow-sm' : 'text-gray-600 hover:bg-fox-light',
+        active ? 'bg-fox-purple text-white shadow-sm' : 'text-fox-gray hover:bg-fox-light',
       ].join(' ')}
     >
       <span>{icon}</span>
@@ -202,11 +203,11 @@ function NotificationRow({ title, description }: { title: string; description: s
     <div className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30">
       <div>
         <div className="font-medium text-fox-dark">{title}</div>
-        <div className="text-xs text-gray-500">{description}</div>
+        <div className="text-xs text-fox-gray">{description}</div>
       </div>
       <label className="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" className="sr-only peer" defaultChecked />
-        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fox-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fox-purple" />
+        <div className="w-11 h-6 bg-fox-light peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fox-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-fox-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fox-purple" />
       </label>
     </div>
   )

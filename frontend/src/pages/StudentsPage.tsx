@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { LuGraduationCap, LuX } from 'react-icons/lu'
 
 interface Student {
   id: number
@@ -80,16 +81,16 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Ученики" subtitle={`Всего: ${filtered.length}`} icon="🎓" />
+      <Header title="Ученики" subtitle={`Всего: ${filtered.length}`} icon={<LuGraduationCap />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Список учеников</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{filtered.length} из {students.length}</p>
+              <p className="text-xs text-fox-gray mt-0.5">{filtered.length} из {students.length}</p>
             </div>
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
               {showForm ? 'Отмена' : 'Добавить ученика'}
             </Button>
           </div>
@@ -113,7 +114,7 @@ export default function StudentsPage() {
               <select
                 value={form.group_id}
                 onChange={(e) => setForm({ ...form, group_id: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Без группы</option>
                 {groups.map((g) => (
@@ -131,7 +132,7 @@ export default function StudentsPage() {
           <Loader text="Загрузка учеников..." />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="🎓"
+            icon={<LuGraduationCap />}
             title="Ученики не найдены"
             description={search ? 'Попробуй изменить поиск.' : 'Добавь первого ученика, чтобы начать.'}
             actionLabel={!search ? 'Добавить ученика' : undefined}

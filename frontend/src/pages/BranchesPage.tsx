@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { LuBuilding, LuX } from 'react-icons/lu'
 
 interface Organization {
   id: number
@@ -72,16 +73,16 @@ export default function BranchesPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Филиалы" subtitle="Организации и филиалы" icon="🏢" />
+      <Header title="Филиалы" subtitle="Организации и филиалы" icon={<LuBuilding />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Филиалы</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{branches.length} филиалов</p>
+              <p className="text-xs text-fox-gray mt-0.5">{branches.length} филиалов</p>
             </div>
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
               {showForm ? 'Отмена' : 'Новый филиал'}
             </Button>
           </div>
@@ -95,7 +96,7 @@ export default function BranchesPage() {
                 required
                 value={form.organization_id}
                 onChange={(e) => setForm({ ...form, organization_id: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Организация</option>
                 {orgs.map((o) => (
@@ -117,7 +118,7 @@ export default function BranchesPage() {
           <Loader text="Загрузка филиалов..." />
         ) : branches.length === 0 ? (
           <EmptyState
-            icon="🏢"
+            icon={<LuBuilding />}
             title="Нет филиалов"
             description="Создай первый филиал организации."
             actionLabel="Новый филиал"

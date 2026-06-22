@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
+import { LuCalendar, LuX } from 'react-icons/lu'
 
 interface Group {
   id: number
@@ -163,17 +164,17 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Расписание" subtitle={`Занятий: ${filtered.length}`} icon="📅" />
+      <Header title="Расписание" subtitle={`Занятий: ${filtered.length}`} icon={<LuCalendar />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Список занятий</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{filtered.length} из {schedules.length}</p>
+              <p className="text-xs text-fox-gray mt-0.5">{filtered.length} из {schedules.length}</p>
             </div>
             {canManage && (
-              <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+              <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
                 {showForm ? 'Отмена' : 'Новое занятие'}
               </Button>
             )}
@@ -189,7 +190,7 @@ export default function SchedulePage() {
             <select
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Все группы</option>
               {groups.map((g) => (
@@ -213,7 +214,7 @@ export default function SchedulePage() {
                 required
                 value={form.group_id}
                 onChange={(e) => setForm({ ...form, group_id: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Группа</option>
                 {groups.map((g) => (
@@ -224,7 +225,7 @@ export default function SchedulePage() {
                 required
                 value={form.teacher_id}
                 onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Преподаватель</option>
                 {teachers.map((t) => (
@@ -253,7 +254,7 @@ export default function SchedulePage() {
               <select
                 value={form.recurrence}
                 onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {Object.entries(recurrenceLabels).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
@@ -268,7 +269,7 @@ export default function SchedulePage() {
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="scheduled">Запланировано</option>
                 <option value="confirmed">Подтверждено</option>
@@ -280,7 +281,7 @@ export default function SchedulePage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                  className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
                 />
               </div>
               <div className="flex items-end">
@@ -296,7 +297,7 @@ export default function SchedulePage() {
           <Loader text="Загрузка расписания..." />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="📅"
+            icon={<LuCalendar />}
             title="Нет занятий"
             description={search || groupFilter ? 'Попробуй сбросить фильтры.' : canManage ? 'Создай первое занятие в расписании.' : 'Занятия пока не запланированы.'}
             actionLabel={canManage && !search && !groupFilter ? 'Новое занятие' : undefined}

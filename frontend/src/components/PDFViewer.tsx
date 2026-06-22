@@ -65,7 +65,7 @@ function PageCanvas({
       />
       {watermark && viewport && (
         <div
-          className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-12 overflow-hidden opacity-[0.12] rotate-[-25deg] text-gray-900 font-bold text-lg whitespace-nowrap"
+          className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-12 overflow-hidden opacity-[0.12] rotate-[-25deg] text-fox-purple font-bold text-lg whitespace-nowrap"
           aria-hidden="true"
         >
           {Array.from({ length: 16 }).map((_, i) => (
@@ -138,7 +138,7 @@ export default function PDFViewer({ url, watermark }: PDFViewerProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[70vh] bg-gray-50 rounded-xl text-gray-600">
+      <div className="flex items-center justify-center h-[70vh] bg-fox-light/50 rounded-xl text-fox-gray">
         {error}
       </div>
     )
@@ -146,32 +146,32 @@ export default function PDFViewer({ url, watermark }: PDFViewerProps) {
 
   if (!pdf || pages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[70vh] bg-gray-50 rounded-xl text-gray-500">
+      <div className="flex items-center justify-center h-[70vh] bg-fox-light/50 rounded-xl text-fox-gray">
         Загрузка документа…
       </div>
     )
   }
 
   return (
-    <div className="relative h-[70vh] bg-gray-100 rounded-xl overflow-hidden flex flex-col">
+    <div className="relative h-[70vh] bg-fox-light rounded-xl overflow-hidden flex flex-col">
       <div ref={containerRef} className="flex-1 overflow-auto p-4">
         {pages.map(({ page }, index) => (
           <PageCanvas key={index} page={page} scale={scale} watermark={watermark} />
         ))}
       </div>
-      <div className="flex items-center justify-end px-4 py-2 bg-white border-t border-gray-200 text-sm gap-2">
+      <div className="flex items-center justify-end px-4 py-2 bg-white border-t border-fox-border text-sm gap-2">
         <button
           type="button"
           onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
-          className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+          className="px-3 py-1 rounded-lg bg-fox-light hover:bg-fox-light"
         >
           −
         </button>
-        <span className="text-gray-600 min-w-[3rem] text-center">{Math.round(scale * 100)}%</span>
+        <span className="text-fox-gray min-w-[3rem] text-center">{Math.round(scale * 100)}%</span>
         <button
           type="button"
           onClick={() => setScale((s) => Math.min(3, s + 0.2))}
-          className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+          className="px-3 py-1 rounded-lg bg-fox-light hover:bg-fox-light"
         >
           +
         </button>

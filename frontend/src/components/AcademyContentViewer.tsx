@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { LuMaximize2, LuX } from 'react-icons/lu'
 import { teacherAcademyApi } from '../api'
 import PDFViewer from './PDFViewer'
 import {
@@ -128,9 +129,9 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
     }
 
     return (
-      <div className="flex flex-col items-center justify-center gap-4 p-8 bg-gray-50 rounded-xl text-center">
-        <p className="text-sm text-gray-600">{label}</p>
-        <p className="text-xs text-gray-400">
+      <div className="flex flex-col items-center justify-center gap-4 p-8 bg-fox-light/50 rounded-xl text-center">
+        <p className="text-sm text-fox-gray">{label}</p>
+        <p className="text-xs text-fox-gray/70">
           Файл доступен только для просмотра внутри платформы. Скачивание ограничено.
         </p>
       </div>
@@ -189,7 +190,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
 
   if (tokenError) {
     return (
-      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-600">
+      <div className="flex items-center justify-center h-[40vh] bg-fox-light/50 rounded-xl text-fox-gray">
         {tokenError}
       </div>
     )
@@ -197,7 +198,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
 
   if (!token) {
     return (
-      <div className="flex items-center justify-center h-[40vh] bg-gray-50 rounded-xl text-gray-500">
+      <div className="flex items-center justify-center h-[40vh] bg-fox-light/50 rounded-xl text-fox-gray">
         Загрузка защищённого материала…
       </div>
     )
@@ -221,7 +222,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         <div className={blocked ? 'blur-lg' : ''}>{viewer}</div>
         {watermark && !blocked && (
           <div
-            className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-16 overflow-hidden opacity-[0.12] rotate-[-25deg] text-gray-900 font-bold text-xl whitespace-nowrap"
+            className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-16 overflow-hidden opacity-[0.12] rotate-[-25deg] text-fox-purple font-bold text-xl whitespace-nowrap"
             aria-hidden="true"
           >
             {Array.from({ length: 18 }).map((_, i) => (
@@ -237,7 +238,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
           className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity px-3 py-1.5 text-xs font-medium text-white bg-fox-purple/80 hover:bg-fox-purple rounded-lg shadow"
           aria-label="Открыть на весь экран"
         >
-          ⛶ Весь экран
+          <LuMaximize2 className="inline w-4 h-4 mr-1.5" /> Весь экран
         </button>
         {blocked && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-white text-center p-6">
@@ -261,7 +262,7 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
             onClick={() => setIsFullscreen(false)}
             className="absolute top-4 right-4 z-20 px-3 py-1.5 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg"
           >
-            ✕ Закрыть
+            <LuX className="inline w-4 h-4 mr-1.5" /> Закрыть
           </button>
           <div
             className="relative w-[95vw] h-[95vh]"

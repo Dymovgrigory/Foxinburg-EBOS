@@ -16,7 +16,7 @@ export default function HomePage() {
   }, [user, isLoading, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+    <div className="min-h-screen flex items-center justify-center bg-fox-light">
       <div className="text-[#E85D4C] font-semibold">Загрузка...</div>
     </div>
   )

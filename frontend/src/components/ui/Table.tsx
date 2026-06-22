@@ -10,7 +10,7 @@ export function Table({ children, className = '' }: { children: React.ReactNode;
 
 export function Thead({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+    <thead className="bg-fox-light/50 text-xs uppercase text-fox-gray font-semibold">
       {children}
     </thead>
   )
@@ -38,7 +38,7 @@ export function Th({
       <div className="flex items-center gap-1">
         {children}
         {sortable && (
-          <span className="text-gray-400">
+          <span className="text-fox-gray/70">
             {sorted === 'asc' ? '▲' : sorted === 'desc' ? '▼' : '⇅'}
           </span>
         )}
@@ -48,7 +48,7 @@ export function Th({
 }
 
 export function Tbody({ children }: { children: React.ReactNode }) {
-  return <tbody className="divide-y divide-gray-100 bg-white">{children}</tbody>
+  return <tbody className="divide-y divide-fox-border bg-white">{children}</tbody>
 }
 
 export function Tr({
@@ -81,5 +81,5 @@ export function Td({
   children: React.ReactNode
   className?: string
 }) {
-  return <td className={['px-4 py-3 text-gray-700', className].join(' ')}>{children}</td>
+  return <td className={['px-4 py-3 text-fox-graphite', className].join(' ')}>{children}</td>
 }

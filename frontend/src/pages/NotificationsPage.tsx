@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
 import { notificationsApi } from '../api'
 import type { NotificationItem } from '../types'
+import { LuBell } from 'react-icons/lu'
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -89,14 +90,14 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Уведомления" subtitle={`Непрочитанных: ${unreadCount}`} icon="🔔" />
+      <Header title="Уведомления" subtitle={`Непрочитанных: ${unreadCount}`} icon={<LuBell />} />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Все уведомления</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{notifications.length} записей</p>
+              <p className="text-xs text-fox-gray mt-0.5">{notifications.length} записей</p>
             </div>
             {unreadCount > 0 && (
               <Button variant="secondary" size="sm" onClick={handleMarkAllRead}>
@@ -108,7 +109,7 @@ export default function NotificationsPage() {
           {loading ? (
             <Loader text="Загрузка уведомлений..." />
           ) : notifications.length === 0 ? (
-            <EmptyState icon="🔔" title="Нет уведомлений" description="Здесь будут появляться важные события." />
+            <EmptyState icon={<LuBell />} title="Нет уведомлений" description="Здесь будут появляться важные события." />
           ) : (
             <div className="space-y-3">
               {notifications.map((n) => (
@@ -121,14 +122,14 @@ export default function NotificationsPage() {
                       : 'bg-fox-purple/5 border-fox-purple/20',
                   ].join(' ')}
                 >
-                  <div className={['w-2 h-2 mt-2 rounded-full flex-shrink-0', n.is_read ? 'bg-gray-300' : 'bg-fox-purple'].join(' ')} />
+                  <div className={['w-2 h-2 mt-2 rounded-full flex-shrink-0', n.is_read ? 'bg-fox-border' : 'bg-fox-purple'].join(' ')} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant={typeVariant(n.type)} size="sm">{typeLabel(n.type)}</Badge>
-                      <span className="text-xs text-gray-400">{formatTime(n.created_at)}</span>
+                      <span className="text-xs text-fox-gray/70">{formatTime(n.created_at)}</span>
                     </div>
                     <h3 className="text-sm font-bold text-fox-dark">{n.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{n.message}</p>
+                    <p className="text-sm text-fox-gray mt-1">{n.message}</p>
                     {(n.link || n.entity_type) && (
                       <Button variant="ghost" size="sm" className="mt-2" onClick={() => handleNavigate(n)}>
                         Перейти →

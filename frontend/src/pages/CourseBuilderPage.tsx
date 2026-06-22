@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Input, Loader, EmptyState, Modal, ModalFooterActions } from '../components/ui'
 import { coursesApi, modulesApi, lessonsApi, testsApi, homeworksApi, groupsApi } from '../api'
 import type { Course, Module, Lesson, Test, TestQuestion, Group } from '../types'
+import { LuBookOpen, LuWrench, LuPencil, LuTrash2 } from 'react-icons/lu'
 
 interface EditableItem {
   id?: number
@@ -464,7 +465,7 @@ export default function CourseBuilderPage() {
   if (loadingCourses) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Конструктор курсов" subtitle="Редактирование обучения" icon="🛠️" />
+        <Header title="Конструктор курсов" subtitle="Редактирование обучения" icon={<LuWrench />} />
         <div className="p-6 max-w-6xl mx-auto">
           <Loader text="Загрузка курсов..." />
         </div>
@@ -474,25 +475,25 @@ export default function CourseBuilderPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Конструктор курсов" subtitle="Редактирование обучения" icon="🛠️" />
+      <Header title="Конструктор курсов" subtitle="Редактирование обучения" icon={<LuWrench />} />
 
       <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Courses */}
           <Card className="lg:col-span-3" padding="none">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="p-4 border-b border-fox-border bg-fox-light/50 flex items-center justify-between">
               <h3 className="font-bold text-fox-dark">Курсы</h3>
               <Button size="sm" onClick={() => setCourseModal({ title: '', description: '' })}>
                 + Курс
               </Button>
             </div>
-            <div className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
+            <div className="divide-y divide-fox-border max-h-[70vh] overflow-y-auto">
               {courses.map((course) => (
                 <div
                   key={course.id}
                   className={[
                     'p-4 cursor-pointer transition flex items-start justify-between gap-2',
-                    selectedCourseId === course.id ? 'bg-fox-purple/5' : 'hover:bg-gray-50',
+                    selectedCourseId === course.id ? 'bg-fox-purple/5' : 'hover:bg-fox-light/50',
                   ].join(' ')}
                   onClick={() => {
                     setSelectedCourseId(course.id)
@@ -504,39 +505,39 @@ export default function CourseBuilderPage() {
                     <p className={`text-sm font-medium truncate ${selectedCourseId === course.id ? 'text-fox-purple' : 'text-fox-dark'}`}>
                       {course.title}
                     </p>
-                    <p className="text-xs text-gray-400 truncate">{course.status}</p>
+                    <p className="text-xs text-fox-gray/70 truncate">{course.status}</p>
                   </div>
                   <div className="flex gap-1">
                     <button
-                      className="text-gray-400 hover:text-fox-purple"
+                      className="text-fox-gray/70 hover:text-fox-purple"
                       onClick={(e) => {
                         e.stopPropagation()
                         setCourseModal({ id: course.id, title: course.title, description: course.description || '' })
                       }}
                     >
-                      ✎
+                      <LuPencil size={16} />
                     </button>
                     <button
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-fox-gray/70 hover:text-red-500"
                       onClick={(e) => {
                         e.stopPropagation()
                         deleteCourse(course.id)
                       }}
                     >
-                      🗑
+                      <LuTrash2 size={16} />
                     </button>
                   </div>
                 </div>
               ))}
               {courses.length === 0 && (
-                <div className="p-6 text-center text-sm text-gray-400">Нет курсов</div>
+                <div className="p-6 text-center text-sm text-fox-gray/70">Нет курсов</div>
               )}
             </div>
           </Card>
 
           {/* Modules & Lessons */}
           <Card className="lg:col-span-4" padding="none">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="p-4 border-b border-fox-border bg-fox-light/50 flex items-center justify-between">
               <h3 className="font-bold text-fox-dark">
                 {selectedCourse ? selectedCourse.title : 'Выберите курс'}
               </h3>
@@ -551,7 +552,7 @@ export default function CourseBuilderPage() {
             </div>
             <div className="max-h-[70vh] overflow-y-auto p-3 space-y-3">
               {!selectedCourse ? (
-                <EmptyState icon="📚" title="Курс не выбран" description="Выберите курс слева" />
+                <EmptyState icon={<LuBookOpen />} title="Курс не выбран" description="Выберите курс слева" />
               ) : loadingModules ? (
                 <Loader text="Загрузка модулей..." />
               ) : (
@@ -562,7 +563,7 @@ export default function CourseBuilderPage() {
                       'rounded-xl border transition',
                       selectedModuleId === module.id
                         ? 'border-fox-purple bg-fox-purple/5'
-                        : 'border-gray-100 bg-white',
+                        : 'border-fox-border bg-white',
                     ].join(' ')}
                   >
                     <div
@@ -574,11 +575,11 @@ export default function CourseBuilderPage() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-fox-dark truncate">{module.title}</p>
-                        <p className="text-xs text-gray-400">{module.lessons?.length || 0} уроков</p>
+                        <p className="text-xs text-fox-gray/70">{module.lessons?.length || 0} уроков</p>
                       </div>
                       <div className="flex gap-1">
                         <button
-                          className="text-gray-400 hover:text-fox-purple"
+                          className="text-fox-gray/70 hover:text-fox-purple"
                           onClick={(e) => {
                             e.stopPropagation()
                             setModuleModal({
@@ -589,16 +590,16 @@ export default function CourseBuilderPage() {
                             })
                           }}
                         >
-                          ✎
+                          <LuPencil size={16} />
                         </button>
                         <button
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-fox-gray/70 hover:text-red-500"
                           onClick={(e) => {
                             e.stopPropagation()
                             deleteModule(module.id)
                           }}
                         >
-                          🗑
+                          <LuTrash2 size={16} />
                         </button>
                       </div>
                     </div>
@@ -612,7 +613,7 @@ export default function CourseBuilderPage() {
                               'flex items-center justify-between p-2 rounded-lg text-sm cursor-pointer',
                               selectedLessonId === lesson.id
                                 ? 'bg-fox-purple text-white'
-                                : 'bg-gray-50 hover:bg-gray-100 text-fox-dark',
+                                : 'bg-fox-light/50 hover:bg-fox-light text-fox-dark',
                             ].join(' ')}
                             onClick={() => setSelectedLessonId(lesson.id)}
                           >
@@ -621,7 +622,7 @@ export default function CourseBuilderPage() {
                             <div className="flex gap-1">
                               {index > 0 && (
                                 <button
-                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
+                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     moveLesson(module.id, lesson.id, -1)
@@ -633,7 +634,7 @@ export default function CourseBuilderPage() {
                               )}
                               {index < arr.length - 1 && (
                                 <button
-                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
+                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     moveLesson(module.id, lesson.id, 1)
@@ -644,22 +645,22 @@ export default function CourseBuilderPage() {
                                 </button>
                               )}
                               <button
-                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-fox-purple'}
+                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   openLessonModal(lesson, module.id)
                                 }}
                               >
-                                ✎
+                                <LuPencil size={16} />
                               </button>
                               <button
-                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'}
+                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-red-500'}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   deleteLesson(lesson.id)
                                 }}
                               >
-                                🗑
+                                <LuTrash2 size={16} />
                               </button>
                             </div>
                           </div>
@@ -692,34 +693,34 @@ export default function CourseBuilderPage() {
           {/* Lesson editor */}
           <div className="lg:col-span-5 space-y-6">
             {!selectedLesson ? (
-              <Card className="p-12 text-center text-gray-400">
+              <Card className="p-12 text-center text-fox-gray/70">
                 Выберите урок для редактирования
               </Card>
             ) : (
               <>
                 <Card>
                   <h3 className="text-lg font-bold text-fox-dark mb-4">{selectedLesson.title}</h3>
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className="text-sm text-fox-gray mb-4">
                     Материалы добавляются через синхронизацию с Яндекс.Диском на странице Академии.
                   </p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <span className="text-gray-400">Тип</span>
+                    <div className="bg-fox-light/50 p-3 rounded-xl">
+                      <span className="text-fox-gray/70">Тип</span>
                       <p className="font-medium text-fox-dark">
                         {lessonTypeIcon(selectedLesson.lesson_type)}{' '}
                         {LESSON_TYPE_OPTIONS.find((o) => o.value === selectedLesson.lesson_type)?.label || selectedLesson.lesson_type}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <span className="text-gray-400">Длительность</span>
+                    <div className="bg-fox-light/50 p-3 rounded-xl">
+                      <span className="text-fox-gray/70">Длительность</span>
                       <p className="font-medium text-fox-dark">{selectedLesson.duration_minutes} мин</p>
                     </div>
                   </div>
                   {selectedLesson.lesson_type === 'homework' && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm">
-                      <span className="text-gray-400">Шаблон ДЗ</span>
+                    <div className="mt-4 p-3 bg-fox-light/50 rounded-xl text-sm">
+                      <span className="text-fox-gray/70">Шаблон ДЗ</span>
                       <p className="font-medium text-fox-dark">{selectedLesson.homework_title || selectedLesson.title}</p>
-                      <p className="text-gray-500">{selectedLesson.homework_description}</p>
+                      <p className="text-fox-gray">{selectedLesson.homework_description}</p>
                     </div>
                   )}
                 </Card>
@@ -731,10 +732,10 @@ export default function CourseBuilderPage() {
                   {lessonTests.length > 0 ? (
                     <div className="space-y-2 mb-4">
                       {lessonTests.map((test) => (
-                        <div key={test.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <div key={test.id} className="flex items-center justify-between p-3 bg-fox-light/50 rounded-xl">
                           <div>
                             <p className="text-sm font-medium text-fox-dark">{test.title}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-fox-gray/70">
                               Проходной: {test.passing_score}% · Попыток: {test.max_attempts}
                             </p>
                           </div>
@@ -745,10 +746,10 @@ export default function CourseBuilderPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-400 mb-4">Тест ещё не создан</p>
+                    <p className="text-sm text-fox-gray/70 mb-4">Тест ещё не создан</p>
                   )}
 
-                  <div className="space-y-3 border-t border-gray-100 pt-4">
+                  <div className="space-y-3 border-t border-fox-border pt-4">
                     <Input
                       label="Название теста"
                       value={testForm.title || ''}
@@ -776,9 +777,9 @@ export default function CourseBuilderPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700">Вопросы</p>
+                      <p className="text-sm font-medium text-fox-graphite">Вопросы</p>
                       {questions.map((q, idx) => (
-                        <div key={idx} className="p-3 bg-gray-50 rounded-xl space-y-2">
+                        <div key={idx} className="p-3 bg-fox-light/50 rounded-xl space-y-2">
                           <Input
                             placeholder="Текст вопроса"
                             value={q.question_text || ''}
@@ -836,11 +837,11 @@ export default function CourseBuilderPage() {
                 <Card>
                   <h3 className="font-bold text-fox-dark mb-4">🏠 Домашнее задание</h3>
                   {lessonHomeworks.length > 0 ? (
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-sm text-fox-gray mb-4">
                       Назначено {lessonHomeworks.length} ученикам
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-400 mb-4">ДЗ ещё не назначено</p>
+                    <p className="text-sm text-fox-gray/70 mb-4">ДЗ ещё не назначено</p>
                   )}
                   <div className="space-y-3">
                     <Input
@@ -859,9 +860,9 @@ export default function CourseBuilderPage() {
                       onChange={(e) => setHomeworkForm({ ...homeworkForm, content: e.target.value })}
                     />
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Группа (необязательно)</label>
+                      <label className="block text-sm font-medium text-fox-graphite mb-1.5">Группа (необязательно)</label>
                       <select
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm"
+                        className="w-full rounded-xl border border-fox-border bg-white px-4 py-2.5 text-sm"
                         value={homeworkForm.group_id || ''}
                         onChange={(e) =>
                           setHomeworkForm({ ...homeworkForm, group_id: e.target.value ? Number(e.target.value) : undefined })
@@ -975,9 +976,9 @@ export default function CourseBuilderPage() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Формат урока</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Формат урока</label>
               <select
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm"
+                className="w-full rounded-xl border border-fox-border bg-white px-4 py-2.5 text-sm"
                 value={lessonModal.lesson_type || 'text'}
                 onChange={(e) =>
                   setLessonModal({
@@ -997,8 +998,8 @@ export default function CourseBuilderPage() {
             </div>
 
             {lessonModal.lesson_type === 'test' && (
-              <div className="space-y-3 border-t border-gray-100 pt-3">
-                <p className="text-sm font-medium text-gray-700">Настройки теста</p>
+              <div className="space-y-3 border-t border-fox-border pt-3">
+                <p className="text-sm font-medium text-fox-graphite">Настройки теста</p>
                 <Input
                   label="Название теста"
                   value={lessonModal.test?.title || ''}
@@ -1046,9 +1047,9 @@ export default function CourseBuilderPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Вопросы</p>
+                  <p className="text-sm font-medium text-fox-graphite">Вопросы</p>
                   {(lessonModal.test?.questions || []).map((q: any, idx: number) => (
-                    <div key={idx} className="p-3 bg-gray-50 rounded-xl space-y-2">
+                    <div key={idx} className="p-3 bg-fox-light/50 rounded-xl space-y-2">
                       <Input
                         placeholder="Текст вопроса"
                         value={q.question_text || ''}
@@ -1059,7 +1060,7 @@ export default function CourseBuilderPage() {
                         }}
                       />
                       <select
-                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                        className="w-full rounded-xl border border-fox-border bg-white px-3 py-2 text-sm"
                         value={q.question_type || 'single'}
                         onChange={(e) => {
                           const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }
@@ -1129,8 +1130,8 @@ export default function CourseBuilderPage() {
             )}
 
             {lessonModal.lesson_type === 'homework' && (
-              <div className="space-y-3 border-t border-gray-100 pt-3">
-                <p className="text-sm font-medium text-gray-700">Настройки ДЗ</p>
+              <div className="space-y-3 border-t border-fox-border pt-3">
+                <p className="text-sm font-medium text-fox-graphite">Настройки ДЗ</p>
                 <Input
                   label="Заголовок ДЗ"
                   value={lessonModal.homework?.title || ''}

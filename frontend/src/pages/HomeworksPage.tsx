@@ -19,6 +19,7 @@ import {
   Tr,
   Td,
 } from '../components/ui'
+import { LuNotebookPen, LuPencil, LuTrash2 } from 'react-icons/lu'
 
 interface Homework {
   id: number
@@ -178,11 +179,11 @@ export default function HomeworksPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-fox-dark">Мои домашние задания</h2>
         {homeworks.length > 0 && (
-          <p className="text-sm text-gray-500">{homeworks.length} {homeworks.length === 1 ? 'задание' : 'задания'}</p>
+          <p className="text-sm text-fox-gray">{homeworks.length} {homeworks.length === 1 ? 'задание' : 'задания'}</p>
         )}
       </div>
       {homeworks.length === 0 ? (
-        <EmptyState icon="📝" title="Нет домашних заданий" description="Вам пока не назначены задания." />
+        <EmptyState icon={<LuNotebookPen />} title="Нет домашних заданий" description="Вам пока не назначены задания." />
       ) : (
         homeworks.map((h) => {
           const meta = statusMeta[h.status] || { label: h.status, variant: 'default' as const }
@@ -191,26 +192,26 @@ export default function HomeworksPage() {
             <Card key={h.id} className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-500">Задание #{h.id} · Урок #{h.lesson_id}</p>
+                  <p className="text-sm text-fox-gray">Задание #{h.id} · Урок #{h.lesson_id}</p>
                   <p className="font-semibold text-fox-dark truncate">{h.title || 'Домашнее задание'}</p>
-                  {h.description && <p className="text-sm text-gray-600 mt-1">{h.description}</p>}
+                  {h.description && <p className="text-sm text-fox-gray mt-1">{h.description}</p>}
                 </div>
                 <Badge variant={meta.variant}>{meta.label}</Badge>
               </div>
 
               {isSubmitted ? (
-                <div className="p-3 bg-fox-light rounded-xl text-sm text-gray-700 border border-fox-border/30">
+                <div className="p-3 bg-fox-light rounded-xl text-sm text-fox-graphite border border-fox-border/30">
                   {h.content || 'Текстовый ответ отсутствует'}
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Текст ответа</label>
+                    <label className="block text-sm font-medium text-fox-graphite mb-1.5">Текст ответа</label>
                     <textarea
                       value={studentAnswer}
                       onChange={(e) => setStudentAnswer(e.target.value)}
                       rows={4}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                      className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
                       placeholder="Напишите ответ на задание..."
                     />
                   </div>
@@ -227,8 +228,8 @@ export default function HomeworksPage() {
               )}
 
               {(reviews[h.id] || []).length > 0 && (
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">История проверок</p>
+                <div className="border-t border-fox-border pt-4">
+                  <p className="text-sm font-medium text-fox-graphite mb-2">История проверок</p>
                   <div className="space-y-2">
                     {reviews[h.id].map((r) => (
                       <div key={r.id} className="p-3 bg-fox-light rounded-xl text-sm">
@@ -236,9 +237,9 @@ export default function HomeworksPage() {
                           <Badge variant={r.status === 'approved' ? 'success' : r.status === 'revision' ? 'warning' : 'error'}>
                             {statusMeta[r.status]?.label || r.status}
                           </Badge>
-                          {r.score !== null && <span className="text-gray-500">Балл: {r.score}</span>}
+                          {r.score !== null && <span className="text-fox-gray">Балл: {r.score}</span>}
                         </div>
-                        {r.comment && <p className="text-gray-600">{r.comment}</p>}
+                        {r.comment && <p className="text-fox-gray">{r.comment}</p>}
                       </div>
                     ))}
                   </div>
@@ -292,12 +293,8 @@ export default function HomeworksPage() {
                       >
                         Проверить
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => startEdit(h)}>
-                        ✎
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => deleteHomework(h.id)}>
-                        🗑
-                      </Button>
+                      <Button size="sm" variant="ghost" leftIcon={<LuPencil />} onClick={() => startEdit(h)} />
+                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" leftIcon={<LuTrash2 />} onClick={() => deleteHomework(h.id)} />
                     </div>
                   </Td>
                 </Tr>
@@ -333,20 +330,20 @@ export default function HomeworksPage() {
               onChange={(e) => setEditForm({ ...editForm, student_id: Number(e.target.value) })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Содержание</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Содержание</label>
               <textarea
                 value={editForm.content || ''}
                 onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
                 rows={4}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
               <select
                 value={editForm.status || ''}
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="assigned">Назначено</option>
                 <option value="submitted">Сдано</option>
@@ -377,17 +374,17 @@ export default function HomeworksPage() {
         {selected && (
           <form id="review-form" onSubmit={submitReview} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Решение</label>
-              <div className="p-3 bg-fox-light rounded-xl text-sm text-gray-700 border border-fox-border/30 min-h-[80px]">
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Решение</label>
+              <div className="p-3 bg-fox-light rounded-xl text-sm text-fox-graphite border border-fox-border/30 min-h-[80px]">
                 {selected.content || 'Текстовое решение отсутствует'}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус проверки</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус проверки</label>
               <select
                 value={review.status}
                 onChange={(e) => setReview({ ...review, status: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="approved">Принято</option>
                 <option value="revision">На доработку</option>
@@ -402,12 +399,12 @@ export default function HomeworksPage() {
               onChange={(e) => setReview({ ...review, score: e.target.value })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Комментарий</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Комментарий</label>
               <textarea
                 value={review.comment}
                 onChange={(e) => setReview({ ...review, comment: e.target.value })}
                 rows={3}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
               />
             </div>
           </form>
@@ -418,7 +415,7 @@ export default function HomeworksPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Домашние задания" subtitle={isReviewer ? 'Выдача и проверка ДЗ' : 'Мои домашние задания'} icon="📝" />
+      <Header title="Домашние задания" subtitle={isReviewer ? 'Выдача и проверка ДЗ' : 'Мои домашние задания'} icon={<LuNotebookPen />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
@@ -427,7 +424,7 @@ export default function HomeworksPage() {
               <h2 className="text-lg font-bold text-fox-dark">
                 {isReviewer ? 'Список заданий' : 'Мои задания'}
               </h2>
-              <p className="text-xs text-gray-500 mt-0.5">{homeworks.length} заданий</p>
+              <p className="text-xs text-fox-gray mt-0.5">{homeworks.length} заданий</p>
             </div>
             <Button onClick={() => fetchHomeworks()} variant="secondary" leftIcon="↻">
               Обновить
@@ -439,7 +436,7 @@ export default function HomeworksPage() {
           <Loader text="Загрузка заданий..." />
         ) : homeworks.length === 0 ? (
           <EmptyState
-            icon="📝"
+            icon={<LuNotebookPen />}
             title="Нет домашних заданий"
             description={isReviewer ? 'Когда ученики сдадут задания, они появятся здесь.' : 'Вам пока не назначены задания.'}
           />

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Card, Loader, EmptyState, Badge, Input, Modal } from '../components/ui'
+import { LuBrain } from 'react-icons/lu'
 
 interface Article {
   id: number
@@ -54,7 +55,7 @@ export default function KnowledgeBasePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="База знаний" subtitle="Методические материалы" icon="🧠" />
+        <Header title="База знаний" subtitle="Методические материалы" icon={<LuBrain />} />
         <div className="p-6 max-w-7xl mx-auto">
           <Loader text="Загрузка статей..." />
         </div>
@@ -64,7 +65,7 @@ export default function KnowledgeBasePage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="База знаний" subtitle={`${filtered.length} статей`} icon="🧠" />
+      <Header title="База знаний" subtitle={`${filtered.length} статей`} icon={<LuBrain />} />
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -77,7 +78,7 @@ export default function KnowledgeBasePage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Все категории</option>
               {categories.map((c) => (
@@ -88,7 +89,7 @@ export default function KnowledgeBasePage() {
         </Card>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="🧠" title="Нет статей" description="В базе знаний пока нет опубликованных материалов." />
+          <EmptyState icon={<LuBrain />} title="Нет статей" description="В базе знаний пока нет опубликованных материалов." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((a) => (
@@ -97,8 +98,8 @@ export default function KnowledgeBasePage() {
                   <h3 className="font-bold text-fox-dark">{a.title}</h3>
                   {a.category && <Badge variant="default">{a.category}</Badge>}
                 </div>
-                <p className="text-sm text-gray-600 line-clamp-3">{a.content}</p>
-                <p className="text-xs text-gray-400">{new Date(a.created_at).toLocaleDateString('ru-RU')}</p>
+                <p className="text-sm text-fox-gray line-clamp-3">{a.content}</p>
+                <p className="text-xs text-fox-gray/70">{new Date(a.created_at).toLocaleDateString('ru-RU')}</p>
               </Card>
             ))}
           </div>
@@ -114,7 +115,7 @@ export default function KnowledgeBasePage() {
         {selected && (
           <div className="space-y-4">
             {selected.category && <Badge variant="default">{selected.category}</Badge>}
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">{selected.content}</div>
+            <div className="prose prose-sm max-w-none text-fox-graphite whitespace-pre-wrap">{selected.content}</div>
           </div>
         )}
       </Modal>

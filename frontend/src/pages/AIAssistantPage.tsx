@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import { useToast, Card, Button, Input } from '../components/ui'
 import { aiApi } from '../api'
 import { getErrorMessage } from '../utils/error'
+import { LuBot } from 'react-icons/lu'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -57,7 +58,7 @@ export default function AIAssistantPage() {
 
   return (
     <div className="min-h-screen bg-fox-light flex flex-col">
-      <Header title="AI Помощник" icon="🤖" />
+      <Header title="AI Помощник" icon={<LuBot />} />
 
       <div className="flex-1 p-4 md:p-6 max-w-4xl mx-auto w-full flex flex-col">
         <Card className="flex-1 flex flex-col overflow-hidden min-h-[500px]">
@@ -75,7 +76,7 @@ export default function AIAssistantPage() {
                     'max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap',
                     m.role === 'user'
                       ? 'bg-fox-purple text-white rounded-br-none'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-none',
+                      : 'bg-fox-light text-fox-purple rounded-bl-none',
                   ].join(' ')}
                 >
                   {m.text}
@@ -84,7 +85,7 @@ export default function AIAssistantPage() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none px-4 py-3 text-sm flex items-center gap-2">
+                <div className="bg-fox-light text-fox-purple rounded-2xl rounded-bl-none px-4 py-3 text-sm flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-fox-gold border-t-transparent rounded-full animate-spin" />
                   <span>Думаю...</span>
                 </div>
@@ -93,7 +94,7 @@ export default function AIAssistantPage() {
             <div ref={bottomRef} />
           </div>
 
-          <div className="border-t border-gray-100 p-4">
+          <div className="border-t border-fox-border p-4">
             <div className="flex gap-3">
               <Input
                 value={input}

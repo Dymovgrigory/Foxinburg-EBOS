@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { crmApi, usersApi } from '../api'
 import type { Lead, Deal, User } from '../types'
+import { LuClipboardList, LuHandshake } from 'react-icons/lu'
 
 const LEAD_STATUSES = [
   { value: 'new', label: 'Новый' },
@@ -205,7 +206,7 @@ export default function CrmPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="CRM" subtitle="Лиды, сделки и воронка продаж" icon="📋" />
+      <Header title="CRM" subtitle="Лиды, сделки и воронка продаж" icon={<LuClipboardList />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
@@ -217,7 +218,7 @@ export default function CrmPage() {
                   onClick={() => setActiveTab(t)}
                   className={[
                     'px-4 py-2 rounded-lg text-sm font-medium transition',
-                    activeTab === t ? 'bg-fox-purple text-white shadow-sm' : 'text-gray-600 hover:bg-white',
+                    activeTab === t ? 'bg-fox-purple text-white shadow-sm' : 'text-fox-gray hover:bg-white',
                   ].join(' ')}
                 >
                   {t === 'pipeline' ? 'Воронка' : t === 'leads' ? 'Лиды' : 'Сделки'}
@@ -253,9 +254,9 @@ export default function CrmPage() {
                       className="p-3 bg-fox-light rounded-xl border border-fox-border/30 hover:border-fox-gold cursor-pointer transition"
                     >
                       <div className="font-medium text-sm text-fox-dark">{lead.name}</div>
-                      {lead.phone && <div className="text-xs text-gray-500">{lead.phone}</div>}
-                      {lead.source && <div className="text-xs text-gray-400 mt-1">источник: {lead.source}</div>}
-                      <div className="text-[10px] text-gray-400 mt-2">{formatDate(lead.created_at)}</div>
+                      {lead.phone && <div className="text-xs text-fox-gray">{lead.phone}</div>}
+                      {lead.source && <div className="text-xs text-fox-gray/70 mt-1">источник: {lead.source}</div>}
+                      <div className="text-[10px] text-fox-gray/70 mt-2">{formatDate(lead.created_at)}</div>
                     </div>
                   ))}
                 </div>
@@ -265,7 +266,7 @@ export default function CrmPage() {
         ) : activeTab === 'leads' ? (
           <Card>
             {leads.length === 0 ? (
-              <EmptyState icon="📋" title="Лидов пока нет" description="Добавь первого лида в воронку." actionLabel="Новый лид" onAction={openLeadCreate} />
+              <EmptyState icon={<LuClipboardList />} title="Лидов пока нет" description="Добавь первого лида в воронку." actionLabel="Новый лид" onAction={openLeadCreate} />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -287,7 +288,7 @@ export default function CrmPage() {
                         <Td>
                           <div className="text-sm">
                             {l.email && <div>{l.email}</div>}
-                            {l.phone && <div className="text-gray-500">{l.phone}</div>}
+                            {l.phone && <div className="text-fox-gray">{l.phone}</div>}
                           </div>
                         </Td>
                         <Td>{l.source || '—'}</Td>
@@ -310,7 +311,7 @@ export default function CrmPage() {
         ) : (
           <Card>
             {deals.length === 0 ? (
-              <EmptyState icon="🤝" title="Сделок пока нет" description="Создай первую сделку." actionLabel="Новая сделка" onAction={openDealCreate} />
+              <EmptyState icon={<LuHandshake />} title="Сделок пока нет" description="Создай первую сделку." actionLabel="Новая сделка" onAction={openDealCreate} />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -369,11 +370,11 @@ export default function CrmPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Источник" value={leadForm.source} onChange={(e) => setLeadForm({ ...leadForm, source: e.target.value })} />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
               <select
                 value={leadForm.status}
                 onChange={(e) => setLeadForm({ ...leadForm, status: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {LEAD_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -382,11 +383,11 @@ export default function CrmPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Менеджер</label>
+            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Менеджер</label>
             <select
               value={leadForm.manager_id}
               onChange={(e) => setLeadForm({ ...leadForm, manager_id: e.target.value })}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Без менеджера</option>
               {managers.map((m) => (
@@ -412,12 +413,12 @@ export default function CrmPage() {
       >
         <form id="deal-form" onSubmit={handleDealSubmit} className="grid gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Лид</label>
+            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Лид</label>
             <select
               required
               value={dealForm.lead_id}
               onChange={(e) => setDealForm({ ...dealForm, lead_id: e.target.value })}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Выберите лид</option>
               {leads.map((l) => (
@@ -429,11 +430,11 @@ export default function CrmPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Сумма (₽)" type="number" step="0.01" required value={dealForm.amount} onChange={(e) => setDealForm({ ...dealForm, amount: e.target.value })} />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
               <select
                 value={dealForm.status}
                 onChange={(e) => setDealForm({ ...dealForm, status: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {DEAL_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>

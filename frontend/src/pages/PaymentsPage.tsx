@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { financeApi } from '../api'
 import type { Payment, Transaction } from '../types'
+import { LuCreditCard, LuRefreshCw } from 'react-icons/lu'
 
 const METHODS: Record<string, string> = {
   cash: 'Наличные',
@@ -61,7 +62,7 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Оплата" subtitle="История платежей и баланс" icon="💳" />
+      <Header title="Оплата" subtitle="История платежей и баланс" icon={<LuCreditCard />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {loading ? (
@@ -73,21 +74,21 @@ export default function PaymentsPage() {
                 <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">💰</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{formatMoney(balance?.balance || 0)}</div>
-                  <div className="text-xs text-gray-500">Текущий баланс</div>
+                  <div className="text-xs text-fox-gray">Текущий баланс</div>
                 </div>
               </Card>
               <Card className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-green-500 text-white flex items-center justify-center text-xl">↗</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{formatMoney(totalPaid)}</div>
-                  <div className="text-xs text-gray-500">Оплачено</div>
+                  <div className="text-xs text-fox-gray">Оплачено</div>
                 </div>
               </Card>
               <Card className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-red-500 text-white flex items-center justify-center text-xl">↘</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{formatMoney(totalRefunded)}</div>
-                  <div className="text-xs text-gray-500">Возвратов</div>
+                  <div className="text-xs text-fox-gray">Возвратов</div>
                 </div>
               </Card>
             </div>
@@ -95,7 +96,7 @@ export default function PaymentsPage() {
             <Card>
               <h2 className="text-lg font-bold text-fox-dark mb-4">История платежей</h2>
               {payments.length === 0 ? (
-                <EmptyState icon="💳" title="Платежей пока нет" description="Здесь появятся все платежи по твоему аккаунту." />
+                <EmptyState icon={<LuCreditCard />} title="Платежей пока нет" description="Здесь появятся все платежи по твоему аккаунту." />
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -121,7 +122,7 @@ export default function PaymentsPage() {
                           <Td>
                             <Badge variant={statusVariant(p.status)} size="sm">{STATUSES[p.status] || p.status}</Badge>
                           </Td>
-                          <Td className="text-gray-500">{p.description || '—'}</Td>
+                          <Td className="text-fox-gray">{p.description || '—'}</Td>
                         </Tr>
                       ))}
                     </Tbody>
@@ -133,7 +134,7 @@ export default function PaymentsPage() {
             <Card>
               <h2 className="text-lg font-bold text-fox-dark mb-4">Движения по балансу</h2>
               {transactions.length === 0 ? (
-                <EmptyState icon="🔄" title="Транзакций пока нет" description="Здесь будут отображаться все движения по балансу." />
+                <EmptyState icon={<LuRefreshCw />} title="Транзакций пока нет" description="Здесь будут отображаться все движения по балансу." />
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -155,7 +156,7 @@ export default function PaymentsPage() {
                             {formatMoney(t.amount)}
                           </Td>
                           <Td>{formatMoney(t.balance_after)}</Td>
-                          <Td className="text-gray-500">{t.description || '—'}</Td>
+                          <Td className="text-fox-gray">{t.description || '—'}</Td>
                         </Tr>
                       ))}
                     </Tbody>

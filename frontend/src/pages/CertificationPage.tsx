@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { useToast, Card, Button, Loader, Badge } from '../components/ui'
 import { teacherAcademyApi } from '../api'
 import { getErrorMessage } from '../utils/error'
+import { LuAward } from 'react-icons/lu'
 
 interface ProgressData {
   enrollment_id: number
@@ -54,7 +55,7 @@ export default function CertificationPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Сертификация" icon="🏅" />
+      <Header title="Сертификация" icon={<LuAward />} />
 
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
         {loading ? (
@@ -66,7 +67,7 @@ export default function CertificationPage() {
               <h2 className="text-2xl font-bold text-fox-dark mb-2">
                 {completed ? 'Сертификат Академии педагогов' : 'Сертификация'}
               </h2>
-              <p className="text-gray-500 mb-6 max-w-lg mx-auto">
+              <p className="text-fox-gray mb-6 max-w-lg mx-auto">
                 {completed
                   ? 'Поздравляем! Вы успешно завершили Академию педагогов FOXINBURG и можете получить сертификат.'
                   : 'Завершите все модули Академии педагогов, чтобы получить сертификат.'}
@@ -95,7 +96,7 @@ export default function CertificationPage() {
             {!completed && (
               <Card className="p-6">
                 <h3 className="text-lg font-bold text-fox-dark mb-4">Как получить сертификат?</h3>
-                <ol className="list-decimal list-inside space-y-2 text-gray-600">
+                <ol className="list-decimal list-inside space-y-2 text-fox-gray">
                   <li>Пройдите все модули Академии педагогов.</li>
                   <li>Выполните итоговое задание (если предусмотрено).</li>
                   <li>Вернитесь на эту страницу — сертификат станет доступен автоматически.</li>

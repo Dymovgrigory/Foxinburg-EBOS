@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useChatSocket } from '../hooks/useChatSocket'
 import { chatsApi, usersApi } from '../api'
 import type { ChatRoom, ChatMessage, User } from '../types'
+import { LuMessageSquare } from 'react-icons/lu'
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -116,7 +117,7 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Чаты" subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'} icon="💬" />
+      <Header title="Чаты" subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'} icon={<LuMessageSquare />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto h-[calc(100vh-64px-32px)]">
         <Card padding="none" className="h-full flex overflow-hidden">
@@ -134,7 +135,7 @@ export default function ChatPage() {
               {loadingRooms ? (
                 <Loader text="Загрузка..." size="sm" />
               ) : rooms.length === 0 ? (
-                <p className="p-4 text-sm text-gray-400 text-center">Нет чатов</p>
+                <p className="p-4 text-sm text-fox-gray/70 text-center">Нет чатов</p>
               ) : (
                 rooms.map((room) => (
                   <button
@@ -144,7 +145,7 @@ export default function ChatPage() {
                       'w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition',
                       selectedRoom?.id === room.id
                         ? 'bg-fox-purple text-white shadow-sm'
-                        : 'text-gray-700 hover:bg-fox-light',
+                        : 'text-fox-graphite hover:bg-fox-light',
                     ].join(' ')}
                   >
                     {room.name}
@@ -161,7 +162,7 @@ export default function ChatPage() {
                 <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
                   <div>
                     <div className="font-bold text-fox-dark">{selectedRoom.name}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-fox-gray/70">
                       {connected ? (
                         <span className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -179,7 +180,7 @@ export default function ChatPage() {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-fox-light/50">
                   {allMessages.length === 0 ? (
-                    <div className="text-center text-gray-400 mt-10">Нет сообщений</div>
+                    <div className="text-center text-fox-gray/70 mt-10">Нет сообщений</div>
                   ) : (
                     allMessages.map((m) => {
                       const isMe = m.sender_id === user?.id
@@ -197,11 +198,11 @@ export default function ChatPage() {
                             <span className={['text-xs font-bold', isMe ? 'text-fox-gold' : 'text-fox-purple'].join(' ')}>
                               {m.sender_name || 'Неизвестно'}
                             </span>
-                            <span className={['text-[10px]', isMe ? 'text-white/70' : 'text-gray-400'].join(' ')}>
+                            <span className={['text-[10px]', isMe ? 'text-white/70' : 'text-fox-gray/70'].join(' ')}>
                               {formatTime(m.created_at)}
                             </span>
                           </div>
-                          <p className={['whitespace-pre-wrap', isMe ? 'text-white/90' : 'text-gray-700'].join(' ')}>
+                          <p className={['whitespace-pre-wrap', isMe ? 'text-white/90' : 'text-fox-graphite'].join(' ')}>
                             {m.content}
                           </p>
                         </div>
@@ -224,8 +225,8 @@ export default function ChatPage() {
                 </form>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                <EmptyState icon="💬" title="Выберите чат" description="Или создайте новый, чтобы начать общение." />
+              <div className="flex-1 flex items-center justify-center text-fox-gray/70">
+                <EmptyState icon={<LuMessageSquare />} title="Выберите чат" description="Или создайте новый, чтобы начать общение." />
               </div>
             )}
           </div>
@@ -252,17 +253,17 @@ export default function ChatPage() {
             onChange={(e) => setNewRoomName(e.target.value)}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Участники</label>
+            <label className="block text-sm font-medium text-fox-graphite mb-2">Участники</label>
             <div className="max-h-48 overflow-y-auto space-y-2 border border-fox-border/50 rounded-xl p-3">
               {users.map((u) => (
-                <label key={u.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <label key={u.id} className="flex items-center gap-2 text-sm text-fox-graphite cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedParticipants.includes(u.id)}
                     onChange={() => toggleParticipant(u.id)}
-                    className="rounded border-gray-300 text-fox-purple focus:ring-fox-gold"
+                    className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
                   />
-                  {u.name} <span className="text-gray-400">({u.email})</span>
+                  {u.name} <span className="text-fox-gray/70">({u.email})</span>
                 </label>
               ))}
             </div>

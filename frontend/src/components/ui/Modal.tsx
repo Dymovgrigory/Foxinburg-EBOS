@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { LuX } from 'react-icons/lu'
 import Button from './Button'
 
 interface ModalProps {
@@ -52,24 +53,25 @@ export default function Modal({
       />
       <div
         className={[
-          'relative w-full bg-white rounded-2xl shadow-fox-lg overflow-hidden',
+          'relative w-full rounded-2xl shadow-fox-lg overflow-hidden',
           'transform transition-all scale-100',
           sizeClasses[size],
         ].join(' ')}
+        style={{ backgroundColor: 'var(--fox-white)' }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-fox-border">
+          <h3 className="text-lg font-bold text-fox-purple">{title}</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-fox-gray/70 hover:text-fox-gray hover:bg-fox-light transition"
             aria-label="Закрыть"
           >
-            ✕
+            <LuX size={20} />
           </button>
         </div>
         <div className="px-6 py-5">{children}</div>
         {footer && (
-          <div className="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+          <div className="px-6 py-4 bg-fox-light/50 flex items-center justify-end gap-3">
             {footer}
           </div>
         )}

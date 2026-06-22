@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Modal, Input, EmptyState, Loader } from '../components/ui'
+import { LuBookOpen } from 'react-icons/lu'
 
 interface Lesson {
   id: number
@@ -105,14 +106,14 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Курсы" subtitle="Управление учебными программами" icon="📚" />
+      <Header title="Курсы" subtitle="Управление учебными программами" icon={<LuBookOpen />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Все курсы</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{filteredCourses.length} из {courses.length} курсов</p>
+              <p className="text-xs text-fox-gray mt-0.5">{filteredCourses.length} из {courses.length} курсов</p>
             </div>
             <Button onClick={() => setShowForm(true)} leftIcon="+">Новый курс</Button>
           </div>
@@ -127,7 +128,7 @@ export default function CoursesPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Все типы</option>
               {uniqueTypes.map((t) => (
@@ -141,7 +142,7 @@ export default function CoursesPage() {
           <Loader text="Загрузка курсов..." />
         ) : filteredCourses.length === 0 ? (
           <EmptyState
-            icon="📚"
+            icon={<LuBookOpen />}
             title="Курсы не найдены"
             description={search || typeFilter ? 'Попробуй изменить фильтры поиска.' : 'Создай первый курс, чтобы начать обучение.'}
             actionLabel={!search && !typeFilter ? 'Создать курс' : undefined}
@@ -158,7 +159,7 @@ export default function CoursesPage() {
                     <h3 className="text-lg font-bold text-fox-dark leading-tight">{course.title}</h3>
                     <Badge variant={meta.variant}>{meta.label}</Badge>
                   </div>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">{course.short_description || course.description || 'Без описания'}</p>
+                  <p className="text-sm text-fox-gray mb-4 line-clamp-2">{course.short_description || course.description || 'Без описания'}</p>
 
                   <div className="flex flex-wrap gap-2 mb-5">
                     <Badge variant="purple">{course.type}</Badge>
@@ -166,7 +167,7 @@ export default function CoursesPage() {
                     <Badge variant="default">Модулей: {course.modules.length}</Badge>
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-gray-100">
+                  <div className="mt-auto pt-4 border-t border-fox-border">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -180,7 +181,7 @@ export default function CoursesPage() {
                   {isExpanded && (
                     <div className="mt-4 space-y-3 animate-in fade-in duration-200">
                       {course.modules.length === 0 ? (
-                        <p className="text-sm text-gray-400">В курсе пока нет модулей</p>
+                        <p className="text-sm text-fox-gray/70">В курсе пока нет модулей</p>
                       ) : (
                         course.modules.map((m) => (
                           <div key={m.id} className="bg-fox-light rounded-xl p-3 border border-fox-border/30">
@@ -188,7 +189,7 @@ export default function CoursesPage() {
                             {m.lessons.length > 0 && (
                               <ul className="mt-2 space-y-1">
                                 {m.lessons.map((l) => (
-                                  <li key={l.id} className="text-xs text-gray-600 flex items-center gap-2">
+                                  <li key={l.id} className="text-xs text-fox-gray flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-fox-purple" />
                                     {l.title} ({l.duration_minutes} мин)
                                   </li>
@@ -235,12 +236,12 @@ export default function CoursesPage() {
             onChange={(e) => setForm({ ...form, short_description: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Полное описание</label>
+            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Полное описание</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
+              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -251,32 +252,32 @@ export default function CoursesPage() {
               onChange={(e) => setForm({ ...form, passing_score: Number(e.target.value) })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Тип курса</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Тип курса</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="academy">Academy</option>
                 <option value="world">World</option>
               </select>
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fox-graphite">
             <input
               type="checkbox"
               checked={form.is_sequential}
               onChange={(e) => setForm({ ...form, is_sequential: e.target.checked })}
-              className="rounded border-gray-300 text-fox-purple focus:ring-fox-gold"
+              className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
             />
             Последовательное прохождение
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fox-graphite">
             <input
               type="checkbox"
               checked={form.certificate_enabled}
               onChange={(e) => setForm({ ...form, certificate_enabled: e.target.checked })}
-              className="rounded border-gray-300 text-fox-purple focus:ring-fox-gold"
+              className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
             />
             Выдавать сертификат
           </label>

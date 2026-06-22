@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import { employeeGroupsApi, usersApi, coursesApi } from '../api'
 import { useToast, Button, Card, Input, Loader, EmptyState, Modal, Badge } from '../components/ui'
 import type { EmployeeGroup, User, Course } from '../types'
+import { LuUsers, LuPencil, LuTrash2 } from 'react-icons/lu'
 
 const GROUP_TYPE_OPTIONS = [
   { value: 'internal', label: 'Сотрудники школы' },
@@ -184,7 +185,7 @@ export default function EmployeeGroupsPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Группы сотрудников" subtitle="Управление группами педагогов и администраторов" icon="👥" />
+      <Header title="Группы сотрудников" subtitle="Управление группами педагогов и администраторов" icon={<LuUsers />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
@@ -199,7 +200,7 @@ export default function EmployeeGroupsPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               >
                 <option value="">Все типы</option>
                 {GROUP_TYPE_OPTIONS.map((o) => (
@@ -217,7 +218,7 @@ export default function EmployeeGroupsPage() {
           <Loader text="Загрузка групп..." />
         ) : filteredGroups.length === 0 ? (
           <EmptyState
-            icon="👥"
+            icon={<LuUsers />}
             title="Группы не найдены"
             description="Создайте первую группу сотрудников"
             actionLabel="Создать группу"
@@ -230,12 +231,12 @@ export default function EmployeeGroupsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-fox-dark">{group.name}</h3>
-                    <p className="text-xs text-gray-400 mt-1">{GROUP_TYPE_LABELS[group.group_type] || group.group_type}</p>
+                    <p className="text-xs text-fox-gray/70 mt-1">{GROUP_TYPE_LABELS[group.group_type] || group.group_type}</p>
                   </div>
                   <Badge variant="default">{group.member_count || group.members?.length || 0} чел.</Badge>
                 </div>
                 {group.description && (
-                  <p className="text-sm text-gray-600 mt-3 line-clamp-2">{group.description}</p>
+                  <p className="text-sm text-fox-gray mt-3 line-clamp-2">{group.description}</p>
                 )}
                 <div className="mt-auto pt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="ghost" onClick={() => setMembersGroup(group)}>
@@ -244,16 +245,8 @@ export default function EmployeeGroupsPage() {
                   <Button size="sm" variant="ghost" onClick={() => setEnrollGroup(group)}>
                     Зачислить на курс
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setModal({ id: group.id, name: group.name, description: group.description, group_type: group.group_type })}
-                  >
-                    ✎
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(group.id)}>
-                    🗑
-                  </Button>
+                  <Button size="sm" variant="ghost" leftIcon={<LuPencil />} onClick={() => setModal({ id: group.id, name: group.name, description: group.description, group_type: group.group_type })} />
+                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" leftIcon={<LuTrash2 />} onClick={() => handleDelete(group.id)} />
                 </div>
               </Card>
             ))}
@@ -288,7 +281,7 @@ export default function EmployeeGroupsPage() {
               <select
                 value={modal.group_type || 'internal'}
                 onChange={(e) => setModal({ ...modal, group_type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="w-full px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               >
                 {GROUP_TYPE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -302,7 +295,7 @@ export default function EmployeeGroupsPage() {
                 onChange={(e) => setModal({ ...modal, description: e.target.value })}
                 placeholder="Описание группы..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="w-full px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               />
             </div>
           </div>
@@ -322,7 +315,7 @@ export default function EmployeeGroupsPage() {
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="flex-1 min-w-0 px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               >
                 <option value="">Выберите сотрудника</option>
                 {users
@@ -339,19 +332,20 @@ export default function EmployeeGroupsPage() {
               {membersLoading ? (
                 <Loader text="Загрузка участников..." />
               ) : (membersGroup.members || []).length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">В группе пока нет участников</p>
+                <p className="text-sm text-fox-gray text-center py-4">В группе пока нет участников</p>
               ) : (
                 (membersGroup.members || []).map((member) => (
                   <div key={member.id} className="flex items-center justify-between p-3 bg-fox-light rounded-xl">
                     <div>
                       <div className="text-sm font-medium text-fox-dark">{member.name}</div>
-                      <div className="text-xs text-gray-400">{member.email} • {member.role}</div>
+                      <div className="text-xs text-fox-gray/70">{member.email} • {member.role}</div>
                     </div>
                     <button
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-fox-gray/70 hover:text-red-500 p-1"
                       onClick={() => handleRemoveMember(member.id)}
+                      aria-label="Удалить"
                     >
-                      🗑
+                      <LuTrash2 size={18} />
                     </button>
                   </div>
                 ))
@@ -377,7 +371,7 @@ export default function EmployeeGroupsPage() {
           }
         >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-fox-gray">
               Все участники группы ({enrollGroup.members?.length || 0}) будут зачислены на выбранный курс.
             </p>
             <div>
@@ -385,7 +379,7 @@ export default function EmployeeGroupsPage() {
               <select
                 value={selectedCourseId}
                 onChange={(e) => setSelectedCourseId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
+                className="w-full px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50"
               >
                 <option value="">Выберите курс</option>
                 {courses.map((c) => (

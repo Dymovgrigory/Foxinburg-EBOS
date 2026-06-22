@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge } from '../components/ui'
 import { systemApi } from '../api'
 import type { SystemPermissionsResponse } from '../types'
+import { LuShield } from 'react-icons/lu'
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Владелец',
@@ -92,13 +93,13 @@ export default function RolesPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Role Ecosystem" subtitle="Роли, права и иерархия доступа" icon="🛡️" />
+      <Header title="Role Ecosystem" subtitle="Роли, права и иерархия доступа" icon={<LuShield />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {loading ? (
           <Loader text="Загрузка прав доступа..." />
         ) : !data ? (
-          <EmptyState icon="🛡️" title="Не удалось загрузить права" description="Попробуй обновить страницу." />
+          <EmptyState icon={<LuShield />} title="Не удалось загрузить права" description="Попробуй обновить страницу." />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -106,21 +107,21 @@ export default function RolesPage() {
                 <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">🛡️</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{roles.length}</div>
-                  <div className="text-xs text-gray-500">Ролей</div>
+                  <div className="text-xs text-fox-gray">Ролей</div>
                 </div>
               </Card>
               <Card className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-fox-gold text-fox-purple flex items-center justify-center text-xl">🔑</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{permissions.length}</div>
-                  <div className="text-xs text-gray-500">Разрешений</div>
+                  <div className="text-xs text-fox-gray">Разрешений</div>
                 </div>
               </Card>
               <Card className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center text-xl">🔗</div>
                 <div>
                   <div className="text-2xl font-bold text-fox-dark">{data.endpoints_count}</div>
-                  <div className="text-xs text-gray-500">Endpoint'ов</div>
+                  <div className="text-xs text-fox-gray">Endpoint'ов</div>
                 </div>
               </Card>
             </div>
@@ -131,9 +132,9 @@ export default function RolesPage() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-fox-border">
-                      <th className="text-left py-2 px-3 font-semibold text-gray-700 sticky left-0 bg-white min-w-[220px]">Разрешение</th>
+                      <th className="text-left py-2 px-3 font-semibold text-fox-graphite sticky left-0 bg-white min-w-[220px]">Разрешение</th>
                       {roles.map((role) => (
-                        <th key={role} className="text-center py-2 px-3 font-semibold text-gray-700 min-w-[80px]">
+                        <th key={role} className="text-center py-2 px-3 font-semibold text-fox-graphite min-w-[80px]">
                           {ROLE_LABELS[role] || role}
                         </th>
                       ))}
@@ -144,7 +145,7 @@ export default function RolesPage() {
                       <tr key={permission} className="border-b border-fox-border/50 hover:bg-fox-light/50">
                         <td className="py-2 px-3 sticky left-0 bg-white">
                           <span className="text-fox-dark">{PERMISSION_LABELS[permission] || permission}</span>
-                          <span className="block text-[10px] text-gray-400 font-mono">{permission}</span>
+                          <span className="block text-[10px] text-fox-gray/70 font-mono">{permission}</span>
                         </td>
                         {roles.map((role) => {
                           const has = data.role_permissions[role]?.includes(permission)
@@ -153,7 +154,7 @@ export default function RolesPage() {
                               {has ? (
                                 <Badge variant="success" size="sm">✓</Badge>
                               ) : (
-                                <span className="text-gray-300">—</span>
+                                <span className="text-fox-gray/50">—</span>
                               )}
                             </td>
                           )
@@ -172,7 +173,7 @@ export default function RolesPage() {
                   {roles.map((role) => (
                     <div key={role}>
                       <div className="font-medium text-fox-dark">{ROLE_LABELS[role] || role}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-fox-gray">
                         {data.role_hierarchy[role]?.length
                           ? `управляет: ${data.role_hierarchy[role].map((r) => ROLE_LABELS[r] || r).join(', ')}`
                           : 'не управляет другими ролями'}
@@ -188,7 +189,7 @@ export default function RolesPage() {
                   {Object.entries(data.module_permissions).map(([module, moduleRoles]) => (
                     <div key={module}>
                       <div className="font-medium text-fox-dark">{MODULE_LABELS[module] || module}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-fox-gray">
                         {moduleRoles.map((r) => ROLE_LABELS[r] || r).join(', ')}
                       </div>
                     </div>

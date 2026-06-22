@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
+import { LuCircleCheck, LuX, LuTriangleAlert, LuInfo, LuCircleX } from 'react-icons/lu'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -29,11 +30,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }
 
-  const iconByType: Record<ToastType, string> = {
-    success: '✅',
-    error: '❌',
-    warning: '⚠️',
-    info: 'ℹ️',
+  const iconByType: Record<ToastType, React.ReactNode> = {
+    success: <LuCircleCheck className="w-5 h-5" />,
+    error: <LuCircleX className="w-5 h-5" />,
+    warning: <LuTriangleAlert className="w-5 h-5" />,
+    info: <LuInfo className="w-5 h-5" />,
   }
 
   const colorByType: Record<ToastType, string> = {
@@ -60,10 +61,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <p className="text-sm font-medium flex-1">{toast.message}</p>
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-fox-gray/70 hover:text-fox-purple transition"
               aria-label="Закрыть"
             >
-              ✕
+              <LuX size={16} />
             </button>
           </div>
         ))}

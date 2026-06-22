@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { financeApi, usersApi } from '../api'
 import type { Payment, Transaction, User } from '../types'
+import { LuRefreshCw, LuTrendingUp } from 'react-icons/lu'
 
 const METHODS = [
   { value: 'cash', label: 'Наличные' },
@@ -130,7 +131,7 @@ export default function FinancePage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Финансы" subtitle="Финансовая аналитика и управление" icon="💹" />
+      <Header title="Финансы" subtitle="Финансовая аналитика и управление" icon={<LuTrendingUp />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {/* Stats */}
@@ -139,21 +140,21 @@ export default function FinancePage() {
             <div className="w-12 h-12 rounded-xl bg-green-500 text-white flex items-center justify-center text-xl">↗</div>
             <div>
               <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.income_kopecks)}</div>
-              <div className="text-xs text-gray-500">Доходы</div>
+              <div className="text-xs text-fox-gray">Доходы</div>
             </div>
           </Card>
           <Card className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-red-500 text-white flex items-center justify-center text-xl">↘</div>
             <div>
               <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.refund_kopecks)}</div>
-              <div className="text-xs text-gray-500">Возвраты</div>
+              <div className="text-xs text-fox-gray">Возвраты</div>
             </div>
           </Card>
           <Card className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">💰</div>
             <div>
               <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.net_kopecks)}</div>
-              <div className="text-xs text-gray-500">Чистый доход</div>
+              <div className="text-xs text-fox-gray">Чистый доход</div>
             </div>
           </Card>
         </div>
@@ -163,7 +164,7 @@ export default function FinancePage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Платежи</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{payments.length} записей</p>
+              <p className="text-xs text-fox-gray mt-0.5">{payments.length} записей</p>
             </div>
             <Button onClick={openCreate} leftIcon="+">Новый платёж</Button>
           </div>
@@ -172,7 +173,7 @@ export default function FinancePage() {
             <Loader text="Загрузка платежей..." />
           ) : payments.length === 0 ? (
             <EmptyState
-              icon="💹"
+              icon={<LuTrendingUp />}
               title="Платежей пока нет"
               description="Создай первый платёж, чтобы начать учёт финансов."
               actionLabel="Новый платёж"
@@ -231,7 +232,7 @@ export default function FinancePage() {
           {loading ? (
             <Loader text="Загрузка транзакций..." />
           ) : transactions.length === 0 ? (
-            <EmptyState icon="🔄" title="Транзакций пока нет" description="Здесь будут автоматические движения по балансу." />
+            <EmptyState icon={<LuRefreshCw />} title="Транзакций пока нет" description="Здесь будут автоматические движения по балансу." />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -255,7 +256,7 @@ export default function FinancePage() {
                         {formatMoney(t.amount)}
                       </Td>
                       <Td>{formatMoney(t.balance_after)}</Td>
-                      <Td className="text-gray-500">{t.description || '—'}</Td>
+                      <Td className="text-fox-gray">{t.description || '—'}</Td>
                     </Tr>
                   ))}
                 </Tbody>
@@ -281,12 +282,12 @@ export default function FinancePage() {
       >
         <form id="payment-form" onSubmit={handleSubmit} className="grid gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Ученик</label>
+            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Ученик</label>
             <select
               required
               value={form.student_id}
               onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
             >
               <option value="">Выберите ученика</option>
               {students.map((s) => (
@@ -304,11 +305,11 @@ export default function FinancePage() {
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Тип</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Тип</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as 'income' | 'refund' })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="income">Доход</option>
                 <option value="refund">Возврат</option>
@@ -317,11 +318,11 @@ export default function FinancePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Способ</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Способ</label>
               <select
                 value={form.method}
                 onChange={(e) => setForm({ ...form, method: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {METHODS.map((m) => (
                   <option key={m.value} value={m.value}>{m.label}</option>
@@ -329,11 +330,11 @@ export default function FinancePage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Статус</label>
+              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>

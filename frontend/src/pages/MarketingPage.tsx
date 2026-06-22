@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { analyticsApi, crmApi } from '../api'
 import type { DashboardAnalytics, Lead, Deal } from '../types'
+import { LuClipboardList, LuCoins, LuHandshake, LuMegaphone, LuTarget } from 'react-icons/lu'
 
 const STATUS_COLORS = ['bg-fox-purple', 'bg-fox-gold', 'bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-red-500', 'bg-pink-500', 'bg-teal-500']
 
@@ -73,20 +74,20 @@ export default function MarketingPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Маркетинг" subtitle="Воронка, лиды и источники" icon="📣" />
+      <Header title="Маркетинг" subtitle="Воронка, лиды и источники" icon={<LuMegaphone />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {loading ? (
           <Loader text="Загрузка маркетинга..." />
         ) : !data ? (
-          <EmptyState icon="📣" title="Не удалось загрузить данные" description="Попробуй обновить страницу." />
+          <EmptyState icon={<LuMegaphone />} title="Не удалось загрузить данные" description="Попробуй обновить страницу." />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard icon="📋" label="Лидов" value={String(leadsTotal)} color="bg-blue-500" />
-              <MetricCard icon="🤝" label="Сделок" value={String(dealsTotal)} color="bg-pink-500" />
-              <MetricCard icon="🎯" label="Конверсия" value={`${conversionRate}%`} color="bg-green-500" />
-              <MetricCard icon="💰" label="Доход" value={formatMoney(data.total_income_kopecks)} color="bg-fox-purple" />
+              <MetricCard icon={<LuClipboardList />} label="Лидов" value={String(leadsTotal)} color="bg-blue-500" />
+              <MetricCard icon={<LuHandshake />} label="Сделок" value={String(dealsTotal)} color="bg-pink-500" />
+              <MetricCard icon={<LuTarget />} label="Конверсия" value={`${conversionRate}%`} color="bg-green-500" />
+              <MetricCard icon={<LuCoins />} label="Доход" value={formatMoney(data.total_income_kopecks)} color="bg-fox-purple" />
             </div>
 
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -98,7 +99,7 @@ export default function MarketingPage() {
             <Card>
               <h2 className="text-lg font-bold text-fox-dark mb-4">Последние сделки</h2>
               {deals.length === 0 ? (
-                <EmptyState icon="🤝" title="Сделок пока нет" description="Создай первую сделку в CRM." />
+                <EmptyState icon={<LuHandshake />} title="Сделок пока нет" description="Создай первую сделку в CRM." />
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -135,13 +136,13 @@ export default function MarketingPage() {
   )
 }
 
-function MetricCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+function MetricCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <Card className="flex items-center gap-4">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${color}`}>{icon}</div>
       <div>
         <div className="text-2xl font-bold text-fox-dark">{value}</div>
-        <div className="text-xs text-gray-500">{label}</div>
+        <div className="text-xs text-fox-gray">{label}</div>
       </div>
     </Card>
   )
@@ -164,16 +165,16 @@ function DistributionCard({
       <h3 className="text-base font-bold text-fox-dark mb-4">{title}</h3>
       <div className="space-y-3">
         {entries.length === 0 ? (
-          <p className="text-sm text-gray-400">Нет данных</p>
+          <p className="text-sm text-fox-gray/70">Нет данных</p>
         ) : (
           entries.map(([key, value], idx) => {
             const percent = Math.round((value / total) * 100)
             return (
               <div key={key}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 capitalize">{labels?.[key] || key}</span>
+                  <span className="text-fox-graphite capitalize">{labels?.[key] || key}</span>
                   <span className="font-medium text-fox-dark">
-                    {value} <span className="text-gray-400">({percent}%)</span>
+                    {value} <span className="text-fox-gray/70">({percent}%)</span>
                   </span>
                 </div>
                 <div className="h-2 bg-fox-border rounded-full overflow-hidden">

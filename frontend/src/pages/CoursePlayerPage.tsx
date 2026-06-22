@@ -347,7 +347,7 @@ export default function CoursePlayerPage() {
               </div>
 
               {activeLesson.description && (
-                <p className="text-gray-600 text-sm mb-6 whitespace-pre-line">{activeLesson.description}</p>
+                <p className="text-fox-gray text-sm mb-6 whitespace-pre-line">{activeLesson.description}</p>
               )}
 
               {/* Text / Video */}
@@ -358,7 +358,7 @@ export default function CoursePlayerPage() {
                       <div key={c.id} className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
                         <div className="font-medium text-sm text-fox-dark">{c.title || 'Материал'}</div>
                         {c.content_type === 'text' && c.body && (
-                          <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">{c.body}</p>
+                          <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">{c.body}</p>
                         )}
                         {c.content_type === 'video' && c.external_url && (
                           <video src={c.external_url} controls className="mt-2 w-full rounded-lg" />
@@ -424,7 +424,7 @@ export default function CoursePlayerPage() {
                   <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
                     <div className="font-medium text-fox-dark">{activeLesson.homework_title || activeLesson.title}</div>
                     {activeLesson.homework_description && (
-                      <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">{activeLesson.homework_description}</p>
+                      <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">{activeLesson.homework_description}</p>
                     )}
                   </div>
                   {homework ? (
@@ -435,7 +435,7 @@ export default function CoursePlayerPage() {
                         disabled={homework.status !== 'assigned'}
                         placeholder="Ваш ответ..."
                         rows={6}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-gray-50"
+                        className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
                       />
                       <div className="flex items-center gap-3">
                         <Button
@@ -458,7 +458,7 @@ export default function CoursePlayerPage() {
                             )}
                           </div>
                           {homeworkReview.comment && (
-                            <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                            <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
                               {homeworkReview.comment}
                             </p>
                           )}
@@ -511,7 +511,7 @@ function TestQuestionView({
                 key={String(opt)}
                 className={[
                   'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                  selected ? 'border-fox-gold bg-fox-gold/10' : 'border-gray-200 bg-white hover:bg-gray-50',
+                  selected ? 'border-fox-gold bg-fox-gold/10' : 'border-fox-border bg-white hover:bg-fox-light/50',
                 ].join(' ')}
               >
                 <input
@@ -541,7 +541,7 @@ function TestQuestionView({
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ваш ответ"
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
         />
       )}
     </div>

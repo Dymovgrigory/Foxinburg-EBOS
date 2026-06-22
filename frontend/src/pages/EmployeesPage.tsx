@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { LuUsers, LuX } from 'react-icons/lu'
 
 interface User {
   id: number
@@ -92,16 +93,16 @@ export default function EmployeesPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Сотрудники" subtitle={`Всего: ${filtered.length}`} icon="👥" />
+      <Header title="Сотрудники" subtitle={`Всего: ${filtered.length}`} icon={<LuUsers />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-fox-dark">Список пользователей</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{filtered.length} из {users.length}</p>
+              <p className="text-xs text-fox-gray mt-0.5">{filtered.length} из {users.length}</p>
             </div>
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? '✕' : '+'}>
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
               {showForm ? 'Отмена' : 'Добавить пользователя'}
             </Button>
           </div>
@@ -122,7 +123,7 @@ export default function EmployeesPage() {
                     'px-3 py-1.5 rounded-full text-xs font-semibold transition border',
                     filter === f.key
                       ? 'bg-fox-purple text-white border-fox-purple shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-fox-purple hover:text-fox-purple',
+                      : 'bg-white text-fox-gray border-fox-border hover:border-fox-purple hover:text-fox-purple',
                   ].join(' ')}
                 >
                   {f.label}
@@ -142,7 +143,7 @@ export default function EmployeesPage() {
               <select
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {filters.filter((f) => f.key !== 'all').map((f) => (
                   <option key={f.key} value={f.key}>{f.label}</option>
@@ -151,7 +152,7 @@ export default function EmployeesPage() {
               <select
                 value={form.plan}
                 onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="FREE">FREE</option>
                 <option value="PREMIUM">PREMIUM</option>
@@ -159,7 +160,7 @@ export default function EmployeesPage() {
               <select
                 value={form.target_language}
                 onChange={(e) => setForm({ ...form, target_language: e.target.value })}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="ru">Русский</option>
                 <option value="en">English</option>
@@ -176,7 +177,7 @@ export default function EmployeesPage() {
           <Loader text="Загрузка пользователей..." />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="👥"
+            icon={<LuUsers />}
             title="Пользователи не найдены"
             description={search || filter !== 'all' ? 'Попробуй изменить фильтры.' : 'Добавь первого пользователя.'}
             actionLabel={!search && filter === 'all' ? 'Добавить пользователя' : undefined}

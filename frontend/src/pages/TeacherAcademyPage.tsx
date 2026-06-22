@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,6 +6,7 @@ import AcademyContentViewer from '../components/AcademyContentViewer'
 import { lessonsApi, testsApi, homeworksApi } from '../api'
 import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
 import type { Lesson as FullLesson, TestQuestion, TestAttempt, Homework, HomeworkReview } from '../types'
+import { LuGraduationCap, LuLock, LuCircleCheck, LuBookOpen, LuPlay } from 'react-icons/lu'
 
 interface LessonContent {
   id: number
@@ -54,11 +55,11 @@ interface Progress {
   modules: ProgressModule[]
 }
 
-const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant']; icon: string }> = {
-  completed: { label: 'Завершён', variant: 'success', icon: '✅' },
-  available: { label: 'Доступен', variant: 'info', icon: '🔓' },
-  in_progress: { label: 'В процессе', variant: 'warning', icon: '📖' },
-  locked: { label: 'Заблокирован', variant: 'default', icon: '🔒' },
+const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant']; icon: React.ReactNode }> = {
+  completed: { label: 'Завершён', variant: 'success', icon: <LuCircleCheck /> },
+  available: { label: 'Доступен', variant: 'info', icon: <LuPlay /> },
+  in_progress: { label: 'В процессе', variant: 'warning', icon: <LuBookOpen /> },
+  locked: { label: 'Заблокирован', variant: 'default', icon: <LuLock /> },
 }
 
 function parseJson(value?: string | null) {
@@ -328,7 +329,7 @@ export default function TeacherAcademyPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
+        <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
         <div className="p-6 max-w-6xl mx-auto">
           <Loader text="Загрузка курса..." />
         </div>
@@ -339,10 +340,10 @@ export default function TeacherAcademyPage() {
   if (!course) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
+        <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
         <div className="p-6 max-w-6xl mx-auto">
           <EmptyState
-            icon="🎓"
+            icon={<LuGraduationCap />}
             title="Курс не найден"
             description="Материалы Академии педагогов ещё не импортированы."
             actionLabel={isMethodist ? 'Синхронизировать' : undefined}
@@ -357,7 +358,7 @@ export default function TeacherAcademyPage() {
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon="🎓" />
+      <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {/* Hero card */}
@@ -392,7 +393,7 @@ export default function TeacherAcademyPage() {
           <Card className="flex items-center gap-5">
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                <path className="text-fox-gray/30" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
                 <path
                   className="text-fox-gold"
                   strokeDasharray={`${progress.progress_percent}, 100`}
@@ -407,14 +408,14 @@ export default function TeacherAcademyPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-fox-dark">Общий прогресс</p>
-              <p className="text-xs text-gray-400">{completedCount} из {totalCount} модулей завершено</p>
+              <p className="text-xs text-fox-gray/70">{completedCount} из {totalCount} модулей завершено</p>
             </div>
           </Card>
         )}
 
         {notEnrolled ? (
           <EmptyState
-            icon="🔒"
+            icon={<LuLock />}
             title="Вы не зачислены на курс"
             description="Обратитесь к методисту, чтобы получить доступ к материалам Академии педагогов."
           />
@@ -422,11 +423,11 @@ export default function TeacherAcademyPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Sidebar modules */}
             <Card padding="none" className="lg:sticky lg:top-6 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="p-4 border-b border-fox-border bg-fox-light/50">
                 <h3 className="font-bold text-fox-dark">Модули курса</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Открываются по порядку</p>
+                <p className="text-xs text-fox-gray/70 mt-0.5">Открываются по порядку</p>
               </div>
-              <div className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
+              <div className="divide-y divide-fox-border max-h-[70vh] overflow-y-auto">
                 {course.modules.map((module, idx) => {
                   const status = moduleStatus(module.id)
                   const meta = statusMeta[status] || statusMeta.locked
@@ -442,11 +443,11 @@ export default function TeacherAcademyPage() {
                       disabled={disabled}
                       className={[
                         'w-full text-left p-4 transition flex items-center gap-3',
-                        isActive ? 'bg-fox-purple/5' : 'hover:bg-gray-50',
+                        isActive ? 'bg-fox-purple/5' : 'hover:bg-fox-light/50',
                         disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
                       ].join(' ')}
                     >
-                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-fox-light text-fox-gray text-xs font-bold flex items-center justify-center">
                         {idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -501,7 +502,7 @@ export default function TeacherAcademyPage() {
                             'px-3 py-1.5 text-xs font-medium rounded-lg border transition',
                             activeLessonId === lesson.id
                               ? 'bg-fox-purple text-white border-fox-purple'
-                              : 'bg-white text-fox-dark border-gray-200 hover:border-fox-purple/30',
+                              : 'bg-white text-fox-dark border-fox-border hover:border-fox-purple/30',
                           ].join(' ')}
                         >
                           {lesson.title}
@@ -556,7 +557,7 @@ export default function TeacherAcademyPage() {
                               {activeLessonDetail.homework_title || activeLessonDetail.title}
                             </div>
                             {activeLessonDetail.homework_description && (
-                              <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                              <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
                                 {activeLessonDetail.homework_description}
                               </p>
                             )}
@@ -569,7 +570,7 @@ export default function TeacherAcademyPage() {
                                 disabled={homework.status !== 'assigned'}
                                 placeholder="Ваш ответ..."
                                 rows={6}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-gray-50"
+                                className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
                               />
                               <div className="flex items-center gap-3">
                                 <Button
@@ -592,22 +593,22 @@ export default function TeacherAcademyPage() {
                                     )}
                                   </div>
                                   {homeworkReview.comment && (
-                                    <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                                    <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
                                       {homeworkReview.comment}
                                     </p>
                                   )}
-                                  <p className="text-xs text-gray-400 mt-2">
+                                  <p className="text-xs text-fox-gray/70 mt-2">
                                     {new Date(homeworkReview.created_at).toLocaleString('ru-RU')}
                                   </p>
                                 </div>
                               )}
                             </>
                           ) : (
-                            <p className="text-sm text-gray-500">Домашнее задание не назначено.</p>
+                            <p className="text-sm text-fox-gray">Домашнее задание не назначено.</p>
                           )}
                         </div>
                       ) : (
-                        <div className="p-8 text-center text-gray-400 bg-fox-light rounded-xl">
+                        <div className="p-8 text-center text-fox-gray/70 bg-fox-light rounded-xl">
                           В уроке пока нет материалов.
                         </div>
                       )
@@ -617,7 +618,7 @@ export default function TeacherAcademyPage() {
                           <div className="flex items-center gap-2 mb-3">
                             <span className="w-2 h-2 rounded-full bg-fox-purple" />
                             <h4 className="text-sm font-semibold text-fox-dark">{content.title || 'Материал'}</h4>
-                            <span className="ml-auto text-[10px] uppercase tracking-wide text-gray-400 font-medium">
+                            <span className="ml-auto text-[10px] uppercase tracking-wide text-fox-gray/70 font-medium">
                               {content.content_type}
                             </span>
                           </div>
@@ -625,14 +626,14 @@ export default function TeacherAcademyPage() {
                         </div>
                       ))
                     ) : (
-                      <div className="p-8 text-center text-gray-400 bg-fox-light rounded-xl">
+                      <div className="p-8 text-center text-fox-gray/70 bg-fox-light rounded-xl">
                         В уроке пока нет материалов.
                       </div>
                     )}
                   </div>
                 </Card>
               ) : (
-                <Card className="p-12 text-center text-gray-400">
+                <Card className="p-12 text-center text-fox-gray/70">
                   Выберите модуль из списка слева
                 </Card>
               )}
@@ -674,7 +675,7 @@ function TestQuestionView({
                 key={String(opt)}
                 className={[
                   'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                  selected ? 'border-fox-gold bg-fox-gold/10' : 'border-gray-200 bg-white hover:bg-gray-50',
+                  selected ? 'border-fox-gold bg-fox-gold/10' : 'border-fox-border bg-white hover:bg-fox-light/50',
                 ].join(' ')}
               >
                 <input
@@ -693,7 +694,7 @@ function TestQuestionView({
                   }}
                   className="accent-fox-gold"
                 />
-                <span className="text-sm text-gray-700">{opt}</span>
+                <span className="text-sm text-fox-graphite">{opt}</span>
               </label>
             )
           })}
@@ -704,7 +705,7 @@ function TestQuestionView({
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ваш ответ"
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import { useToast, Card, Badge, Loader, Button } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, progressApi, coursesApi, notificationsApi } from '../api'
 import type { Schedule, Homework, LessonProgress, Course } from '../types'
+import { LuBookOpen, LuNotebookPen, LuCircleCheck, LuBell, LuHouse } from 'react-icons/lu'
 
 export default function StudentDashboardPage() {
   const { user } = useAuth()
@@ -63,15 +64,15 @@ export default function StudentDashboardPage() {
   )
 
   const widgets = [
-    { title: 'Доступно курсов', value: courses.length, icon: '📚', color: 'bg-blue-500' },
-    { title: 'Домашних заданий', value: homeworks.length, icon: '📝', color: 'bg-amber-500' },
-    { title: 'Пройдено уроков', value: completedLessons, icon: '✅', color: 'bg-green-500' },
-    { title: 'Уведомлений', value: unreadCount, icon: '🔔', color: 'bg-red-500' },
+    { title: 'Доступно курсов', value: courses.length, icon: <LuBookOpen />, color: 'bg-blue-500' },
+    { title: 'Домашних заданий', value: homeworks.length, icon: <LuNotebookPen />, color: 'bg-amber-500' },
+    { title: 'Пройдено уроков', value: completedLessons, icon: <LuCircleCheck />, color: 'bg-green-500' },
+    { title: 'Уведомлений', value: unreadCount, icon: <LuBell />, color: 'bg-red-500' },
   ]
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Главная" icon="🏠" />
+      <Header title="Главная" icon={<LuHouse />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {loading ? (
@@ -94,7 +95,7 @@ export default function StudentDashboardPage() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-fox-dark">{w.value}</div>
-                    <div className="text-xs text-gray-500">{w.title}</div>
+                    <div className="text-xs text-fox-gray">{w.title}</div>
                   </div>
                 </Card>
               ))}
@@ -110,7 +111,7 @@ export default function StudentDashboardPage() {
                 </div>
                 <div className="space-y-3">
                   {upcomingLessons.length === 0 ? (
-                    <p className="text-sm text-gray-400">Нет ближайших занятий</p>
+                    <p className="text-sm text-fox-gray/70">Нет ближайших занятий</p>
                   ) : (
                     upcomingLessons.map((s) => (
                       <div
@@ -119,13 +120,13 @@ export default function StudentDashboardPage() {
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{s.title}</div>
-                          <div className="text-xs text-gray-500">{s.room || 'Онлайн'}</div>
+                          <div className="text-xs text-fox-gray">{s.room || 'Онлайн'}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-fox-purple">
                             {formatTime(s.start_time)}
                           </div>
-                          <div className="text-xs text-gray-500">{formatDate(s.start_time)}</div>
+                          <div className="text-xs text-fox-gray">{formatDate(s.start_time)}</div>
                         </div>
                       </div>
                     ))
@@ -142,7 +143,7 @@ export default function StudentDashboardPage() {
                 </div>
                 <div className="space-y-3">
                   {pendingHomeworks.length === 0 ? (
-                    <p className="text-sm text-gray-400">Нет активных заданий</p>
+                    <p className="text-sm text-fox-gray/70">Нет активных заданий</p>
                   ) : (
                     pendingHomeworks.map((h) => (
                       <div
@@ -151,7 +152,7 @@ export default function StudentDashboardPage() {
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{h.title || `Задание #${h.id}`}</div>
-                          <div className="text-xs text-gray-500">{formatDate(h.created_at)}</div>
+                          <div className="text-xs text-fox-gray">{formatDate(h.created_at)}</div>
                         </div>
                         <Badge variant={homeworkStatusVariant(h.status)} size="sm">
                           {homeworkStatusLabel(h.status)}
@@ -171,7 +172,7 @@ export default function StudentDashboardPage() {
                   return (
                     <div key={course.id}>
                       <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-700">{course.title}</span>
+                        <span className="text-fox-graphite">{course.title}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-fox-dark">{courseProgress}%</span>
                           <Button
@@ -192,7 +193,7 @@ export default function StudentDashboardPage() {
                     </div>
                   )
                 })}
-                {courses.length === 0 && <p className="text-sm text-gray-400">Курсы пока не назначены</p>}
+                {courses.length === 0 && <p className="text-sm text-fox-gray/70">Курсы пока не назначены</p>}
               </div>
             </Card>
           </>

@@ -1,4 +1,3 @@
-
 interface LoaderProps {
   size?: 'sm' | 'md' | 'lg'
   text?: string
@@ -23,9 +22,12 @@ export default function Loader({ size = 'md', text, fullScreen = false }: Loader
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur">
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur"
+        style={{ backgroundColor: 'rgba(var(--fox-white-rgb), 0.9)' }}
+      >
         {spinner}
-        {text && <p className="mt-4 text-sm text-gray-600 font-medium">{text}</p>}
+        {text && <p className="mt-4 text-sm font-medium" style={{ color: 'var(--fox-gray)' }}>{text}</p>}
       </div>
     )
   }
@@ -33,7 +35,7 @@ export default function Loader({ size = 'md', text, fullScreen = false }: Loader
   return (
     <div className="flex flex-col items-center justify-center p-8">
       {spinner}
-      {text && <p className="mt-3 text-sm text-gray-500">{text}</p>}
+      {text && <p className="mt-3 text-sm" style={{ color: 'var(--fox-gray)' }}>{text}</p>}
     </div>
   )
 }

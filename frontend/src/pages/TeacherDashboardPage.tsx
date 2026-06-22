@@ -6,6 +6,8 @@ import { useToast, Card, Badge, Loader, Button } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, usersApi, notificationsApi } from '../api'
 import type { Schedule, Homework, User } from '../types'
+import { LuCalendar, LuNotebookPen, LuGraduationCap, LuBell, LuHouse } from 'react-icons/lu'
+import { roleLabel } from '../config/navigation'
 
 export default function TeacherDashboardPage() {
   const { user } = useAuth()
@@ -55,15 +57,15 @@ export default function TeacherDashboardPage() {
   )
 
   const widgets = [
-    { title: 'Ближайших занятий', value: upcomingLessons.length, icon: '📅', color: 'bg-blue-500' },
-    { title: 'Мои задания', value: myHomeworks.length, icon: '📝', color: 'bg-amber-500' },
-    { title: 'Учеников', value: students.length, icon: '🎓', color: 'bg-green-500' },
-    { title: 'Уведомлений', value: unreadCount, icon: '🔔', color: 'bg-red-500' },
+    { title: 'Ближайших занятий', value: upcomingLessons.length, icon: <LuCalendar />, color: 'bg-blue-500' },
+    { title: 'Мои задания', value: myHomeworks.length, icon: <LuNotebookPen />, color: 'bg-amber-500' },
+    { title: 'Учеников', value: students.length, icon: <LuGraduationCap />, color: 'bg-green-500' },
+    { title: 'Уведомлений', value: unreadCount, icon: <LuBell />, color: 'bg-red-500' },
   ]
 
   return (
     <div className="min-h-screen bg-fox-light">
-      <Header title="Главная" icon="🏠" />
+      <Header title="Главная" icon={<LuHouse />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {loading ? (
@@ -86,7 +88,7 @@ export default function TeacherDashboardPage() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-fox-dark">{w.value}</div>
-                    <div className="text-xs text-gray-500">{w.title}</div>
+                    <div className="text-xs text-fox-gray">{w.title}</div>
                   </div>
                 </Card>
               ))}
@@ -102,7 +104,7 @@ export default function TeacherDashboardPage() {
                 </div>
                 <div className="space-y-3">
                   {upcomingLessons.length === 0 ? (
-                    <p className="text-sm text-gray-400">Нет ближайших занятий</p>
+                    <p className="text-sm text-fox-gray/70">Нет ближайших занятий</p>
                   ) : (
                     upcomingLessons.map((s) => (
                       <div
@@ -111,11 +113,11 @@ export default function TeacherDashboardPage() {
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{s.title}</div>
-                          <div className="text-xs text-gray-500">{s.room || 'Онлайн'}</div>
+                          <div className="text-xs text-fox-gray">{s.room || 'Онлайн'}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-fox-purple">{formatTime(s.start_time)}</div>
-                          <div className="text-xs text-gray-500">{formatDate(s.start_time)}</div>
+                          <div className="text-xs text-fox-gray">{formatDate(s.start_time)}</div>
                         </div>
                       </div>
                     ))
@@ -132,7 +134,7 @@ export default function TeacherDashboardPage() {
                 </div>
                 <div className="space-y-3">
                   {myHomeworks.length === 0 ? (
-                    <p className="text-sm text-gray-400">Нет активных заданий</p>
+                    <p className="text-sm text-fox-gray/70">Нет активных заданий</p>
                   ) : (
                     myHomeworks.map((h) => (
                       <div
@@ -141,7 +143,7 @@ export default function TeacherDashboardPage() {
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{h.title || `Задание #${h.id}`}</div>
-                          <div className="text-xs text-gray-500">{formatDate(h.created_at)}</div>
+                          <div className="text-xs text-fox-gray">{formatDate(h.created_at)}</div>
                         </div>
                         <Badge variant={homeworkStatusVariant(h.status)} size="sm">
                           {homeworkStatusLabel(h.status)}
@@ -196,20 +198,6 @@ function homeworkStatusLabel(status: string) {
   return map[status] || status
 }
 
-function roleLabel(role?: string) {
-  const labels: Record<string, string> = {
-    owner: 'Владелец',
-    super_admin: 'Супер-админ',
-    admin: 'Администратор',
-    methodist: 'Методист',
-    teacher: 'Педагог',
-    manager: 'Менеджер',
-    student: 'Ученик',
-    parent: 'Родитель',
-    guest: 'Гость',
-  }
-  return labels[role || ''] || role
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })

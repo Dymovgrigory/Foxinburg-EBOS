@@ -1,17 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast, Button, Card, Loader, Tabs, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { methodistsApi } from '../api'
 import type { MethodistAnalytics, PendingHomeworkItem, UpcomingScheduleItem } from '../types'
+import {
+  LuLayoutDashboard,
+  LuBookOpen,
+  LuGraduationCap,
+  LuNotebookPen,
+  LuUsers,
+  LuUsersRound,
+  LuCircleCheck,
+  LuClock,
+  LuChartLine,
+} from 'react-icons/lu'
 
 const TABS = [
-  { id: 'overview', label: 'Обзор', icon: '📊' },
-  { id: 'courses', label: 'Курсы', icon: '📚' },
-  { id: 'students', label: 'Студенты', icon: '🎓' },
-  { id: 'homeworks', label: 'ДЗ и тесты', icon: '📝' },
-  { id: 'teachers', label: 'Преподаватели', icon: '👨‍🏫' },
+  { id: 'overview', label: 'Обзор', icon: <LuLayoutDashboard /> },
+  { id: 'courses', label: 'Курсы', icon: <LuBookOpen /> },
+  { id: 'students', label: 'Студенты', icon: <LuGraduationCap /> },
+  { id: 'homeworks', label: 'ДЗ и тесты', icon: <LuNotebookPen /> },
+  { id: 'teachers', label: 'Преподаватели', icon: <LuUsers /> },
 ]
 
 const RISK_LABELS: Record<string, { label: string; color: string }> = {
@@ -57,13 +68,13 @@ function formatDate(iso?: string | null) {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function KpiCard({ icon, value, label, color = 'bg-fox-purple/10 text-fox-purple' }: { icon: string; value: string | number; label: string; color?: string }) {
+function KpiCard({ icon, value, label, color = 'bg-fox-purple/10 text-fox-purple' }: { icon: React.ReactNode; value: string | number; label: string; color?: string }) {
   return (
     <Card className="flex items-center gap-4">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
       <div>
         <p className="text-2xl font-bold text-fox-dark">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-xs text-fox-gray">{label}</p>
       </div>
     </Card>
   )
@@ -73,8 +84,8 @@ function ProgressBar({ value, label, color = 'bg-fox-purple' }: { value: number;
   const percent = Math.min(100, Math.max(0, value))
   return (
     <div className="w-full">
-      {label && <div className="flex justify-between text-xs mb-1"><span className="text-gray-600">{label}</span><span className="font-medium text-fox-dark">{percent}%</span></div>}
-      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+      {label && <div className="flex justify-between text-xs mb-1"><span className="text-fox-gray">{label}</span><span className="font-medium text-fox-dark">{percent}%</span></div>}
+      <div className="h-2 w-full bg-fox-light rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -115,7 +126,7 @@ function DonutChart({ segments, size = 120 }: { segments: { label: string; value
         {segments.map((s, i) => (
           <div key={i} className="flex items-center gap-2 text-xs">
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-gray-600">{s.label}</span>
+            <span className="text-fox-gray">{s.label}</span>
             <span className="font-medium text-fox-dark ml-auto">{s.value}</span>
           </div>
         ))}
@@ -169,14 +180,14 @@ export default function MethodistDashboardPage() {
     if (!analytics) return []
     const o = analytics.overview
     return [
-      { icon: '📚', value: o.courses_count, label: 'Курсов', color: 'bg-fox-purple/10 text-fox-purple', path: '/courses' },
-      { icon: '👥', value: o.groups_count, label: 'Групп', color: 'bg-fox-gold/20 text-fox-dark', path: '/employee-groups' },
-      { icon: '🎓', value: o.students_count, label: 'Учеников', color: 'bg-green-100 text-green-700', path: '/students' },
-      { icon: '👨‍🏫', value: o.teachers_count, label: 'Преподавателей', color: 'bg-blue-100 text-blue-700', path: '/employee-groups' },
-      { icon: '📝', value: o.pending_homeworks_count, label: 'ДЗ на проверку', color: 'bg-orange-100 text-orange-700', path: '/homeworks' },
-      { icon: '⏰', value: o.overdue_homeworks_count, label: 'Просроченные ДЗ', color: 'bg-red-100 text-red-700', path: '/homeworks' },
-      { icon: '📈', value: `${o.average_progress_percent}%`, label: 'Средний прогресс', color: 'bg-teal-100 text-teal-700' },
-      { icon: '✅', value: `${o.average_attendance_percent}%`, label: 'Посещаемость', color: 'bg-indigo-100 text-indigo-700' },
+      { icon: <LuBookOpen />, value: o.courses_count, label: 'Курсов', color: 'bg-fox-purple/10 text-fox-purple', path: '/courses' },
+      { icon: <LuUsersRound />, value: o.groups_count, label: 'Групп', color: 'bg-fox-gold/20 text-fox-dark', path: '/employee-groups' },
+      { icon: <LuGraduationCap />, value: o.students_count, label: 'Учеников', color: 'bg-green-100 text-green-700', path: '/students' },
+      { icon: <LuUsers />, value: o.teachers_count, label: 'Преподавателей', color: 'bg-blue-100 text-blue-700', path: '/employee-groups' },
+      { icon: <LuNotebookPen />, value: o.pending_homeworks_count, label: 'ДЗ на проверку', color: 'bg-orange-100 text-orange-700', path: '/homeworks' },
+      { icon: <LuClock />, value: o.overdue_homeworks_count, label: 'Просроченные ДЗ', color: 'bg-red-100 text-red-700', path: '/homeworks' },
+      { icon: <LuChartLine />, value: `${o.average_progress_percent}%`, label: 'Средний прогресс', color: 'bg-teal-100 text-teal-700' },
+      { icon: <LuCircleCheck />, value: `${o.average_attendance_percent}%`, label: 'Посещаемость', color: 'bg-indigo-100 text-indigo-700' },
     ]
   }, [analytics])
 
@@ -216,7 +227,7 @@ export default function MethodistDashboardPage() {
   if (loading || !analytics) {
     return (
       <div className="min-h-screen bg-fox-light">
-        <Header title="Дашборд методиста" subtitle="Обзор учебного процесса" icon="📊" />
+        <Header title="Дашборд методиста" subtitle="Обзор учебного процесса" icon={<LuLayoutDashboard />} />
         <div className="p-6 max-w-7xl mx-auto">
           <Loader text="Загрузка аналитики..." />
         </div>
@@ -229,7 +240,7 @@ export default function MethodistDashboardPage() {
       <Header
         title="Дашборд методиста"
         subtitle={`Добро пожаловать, ${user?.name || user?.email || 'методист'}!`}
-        icon="📊"
+        icon={<LuLayoutDashboard />}
       />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -252,7 +263,7 @@ export default function MethodistDashboardPage() {
                     {homeworkSegments.length > 0 ? (
                       <DonutChart segments={homeworkSegments} />
                     ) : (
-                      <p className="text-sm text-gray-500">Нет данных по домашним заданиям</p>
+                      <p className="text-sm text-fox-gray">Нет данных по домашним заданиям</p>
                     )}
                   </Card>
 
@@ -289,7 +300,7 @@ export default function MethodistDashboardPage() {
                       action={<Button size="sm" variant="ghost" onClick={() => navigate('/homeworks')}>Все ДЗ</Button>}
                     />
                     {analytics.homeworks_and_tests.pending_homeworks.length === 0 ? (
-                      <p className="text-sm text-gray-500">Нет заданий на проверку</p>
+                      <p className="text-sm text-fox-gray">Нет заданий на проверку</p>
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {analytics.homeworks_and_tests.pending_homeworks.map((hw) => (
@@ -302,7 +313,7 @@ export default function MethodistDashboardPage() {
                   <Card className="space-y-4">
                     <SectionHeader title="Ближайшие занятия" />
                     {analytics.upcoming_schedule.length === 0 ? (
-                      <p className="text-sm text-gray-500">Нет запланированных занятий</p>
+                      <p className="text-sm text-fox-gray">Нет запланированных занятий</p>
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {analytics.upcoming_schedule.map((s) => (
@@ -323,7 +334,7 @@ export default function MethodistDashboardPage() {
                     placeholder="Поиск курса..."
                     value={courseFilter}
                     onChange={(e) => setCourseFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                    className="px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
                   />
                   <Button onClick={() => navigate('/courses')}>Управление курсами</Button>
                 </div>
@@ -345,7 +356,7 @@ export default function MethodistDashboardPage() {
                         <Tr key={course.id}>
                           <Td>
                             <div className="font-medium text-fox-dark">{course.title}</div>
-                            <div className="text-xs text-gray-400">{course.type}</div>
+                            <div className="text-xs text-fox-gray/70">{course.type}</div>
                           </Td>
                           <Td><Badge variant={course.status === 'published' ? 'success' : 'default'}>{COURSE_STATUS_LABELS[course.status] || course.status}</Badge></Td>
                           <Td>{course.modules_count}</Td>
@@ -360,7 +371,7 @@ export default function MethodistDashboardPage() {
                     </Tbody>
                   </Table>
                 </div>
-                {filteredCourses.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Курсы не найдены</p>}
+                {filteredCourses.length === 0 && <p className="text-sm text-fox-gray text-center py-4">Курсы не найдены</p>}
               </div>
             )}
 
@@ -372,7 +383,7 @@ export default function MethodistDashboardPage() {
                     placeholder="Поиск по имени или email..."
                     value={studentFilter}
                     onChange={(e) => setStudentFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                    className="px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
                   />
                   <Button onClick={() => navigate('/students')}>Все ученики</Button>
                 </div>
@@ -394,7 +405,7 @@ export default function MethodistDashboardPage() {
                         <Tr key={student.id}>
                           <Td>
                             <div className="font-medium text-fox-dark">{student.name}</div>
-                            <div className="text-xs text-gray-400">{student.email}</div>
+                            <div className="text-xs text-fox-gray/70">{student.email}</div>
                           </Td>
                           <Td>{student.group_name || '—'}</Td>
                           <Td>{student.active_enrollments_count}</Td>
@@ -418,7 +429,7 @@ export default function MethodistDashboardPage() {
                     </Tbody>
                   </Table>
                 </div>
-                {filteredStudents.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Ученики не найдены</p>}
+                {filteredStudents.length === 0 && <p className="text-sm text-fox-gray text-center py-4">Ученики не найдены</p>}
               </div>
             )}
 
@@ -430,14 +441,14 @@ export default function MethodistDashboardPage() {
                     {homeworkSegments.length > 0 ? (
                       <DonutChart segments={homeworkSegments} />
                     ) : (
-                      <p className="text-sm text-gray-500">Нет данных</p>
+                      <p className="text-sm text-fox-gray">Нет данных</p>
                     )}
                   </Card>
                   <Card className="space-y-4">
                     <SectionHeader title="Тесты" />
                     <div className="grid grid-cols-2 gap-4">
-                      <KpiCard icon="📝" value={analytics.homeworks_and_tests.average_test_score} label="Средний балл" color="bg-fox-purple/10 text-fox-purple" />
-                      <KpiCard icon="✅" value={`${analytics.homeworks_and_tests.test_pass_rate_percent}%`} label="Проходной балл" color="bg-green-100 text-green-700" />
+                      <KpiCard icon={<LuNotebookPen />} value={analytics.homeworks_and_tests.average_test_score} label="Средний балл" color="bg-fox-purple/10 text-fox-purple" />
+                      <KpiCard icon={<LuCircleCheck />} value={`${analytics.homeworks_and_tests.test_pass_rate_percent}%`} label="Проходной балл" color="bg-green-100 text-green-700" />
                     </div>
                   </Card>
                   <Card className="space-y-4">
@@ -452,7 +463,7 @@ export default function MethodistDashboardPage() {
                 <Card className="space-y-4">
                   <SectionHeader title="ДЗ на проверку" />
                   {analytics.homeworks_and_tests.pending_homeworks.length === 0 ? (
-                    <p className="text-sm text-gray-500">Нет заданий на проверку</p>
+                    <p className="text-sm text-fox-gray">Нет заданий на проверку</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <Table>
@@ -484,7 +495,7 @@ export default function MethodistDashboardPage() {
                 <Card className="space-y-4">
                   <SectionHeader title="Последние тесты" />
                   {analytics.homeworks_and_tests.recent_test_attempts.length === 0 ? (
-                    <p className="text-sm text-gray-500">Нет завершённых тестов</p>
+                    <p className="text-sm text-fox-gray">Нет завершённых тестов</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <Table>
@@ -523,7 +534,7 @@ export default function MethodistDashboardPage() {
                     placeholder="Поиск преподавателя..."
                     value={teacherFilter}
                     onChange={(e) => setTeacherFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
+                    className="px-3 py-2 border border-fox-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-fox-gold/50 sm:max-w-sm"
                   />
                   <Button onClick={() => navigate('/employee-groups')}>Группы сотрудников</Button>
                 </div>
@@ -544,7 +555,7 @@ export default function MethodistDashboardPage() {
                         <Tr key={teacher.id}>
                           <Td>
                             <div className="font-medium text-fox-dark">{teacher.name}</div>
-                            <div className="text-xs text-gray-400">{teacher.email}</div>
+                            <div className="text-xs text-fox-gray/70">{teacher.email}</div>
                           </Td>
                           <Td>{teacher.groups_count}</Td>
                           <Td>{teacher.students_count}</Td>
@@ -562,7 +573,7 @@ export default function MethodistDashboardPage() {
                     </Tbody>
                   </Table>
                 </div>
-                {filteredTeachers.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Преподаватели не найдены</p>}
+                {filteredTeachers.length === 0 && <p className="text-sm text-fox-gray text-center py-4">Преподаватели не найдены</p>}
               </div>
             )}
           </div>
@@ -577,10 +588,10 @@ function PendingHomeworkRow({ homework }: { homework: PendingHomeworkItem }) {
     <div className="flex items-center justify-between p-3 bg-fox-light rounded-xl">
       <div>
         <div className="text-sm font-medium text-fox-dark">{homework.title}</div>
-        <div className="text-xs text-gray-400">{homework.student_name} • {homework.lesson_title}</div>
+        <div className="text-xs text-fox-gray/70">{homework.student_name} • {homework.lesson_title}</div>
       </div>
       <div className="text-right">
-        <div className="text-xs text-gray-500">{formatDateTime(homework.submitted_at)}</div>
+        <div className="text-xs text-fox-gray">{formatDateTime(homework.submitted_at)}</div>
         {homework.is_overdue && <span className="text-xs text-red-500 font-medium">Просрочено</span>}
       </div>
     </div>
@@ -592,12 +603,12 @@ function ScheduleRow({ schedule }: { schedule: UpcomingScheduleItem }) {
     <div className="flex items-center justify-between p-3 bg-fox-light rounded-xl">
       <div>
         <div className="text-sm font-medium text-fox-dark">{schedule.title}</div>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-fox-gray/70">
           {schedule.group_name || 'Без группы'} • {schedule.teacher_name}
           {schedule.room && ` • ${schedule.room}`}
         </div>
       </div>
-      <div className="text-xs text-gray-500 text-right">
+      <div className="text-xs text-fox-gray text-right">
         <div>{formatDate(schedule.start_time)}</div>
         <div>{new Date(schedule.start_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — {new Date(schedule.end_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
       </div>

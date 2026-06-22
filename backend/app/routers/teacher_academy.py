@@ -95,9 +95,11 @@ async def _check_content_access(user: User, content: LessonContent, uow: UnitOfW
 
 async def _require_content_token_user(
     content_id: int,
-    content_token: str = Query(..., alias="content_token"),
+    content_token: Optional[str] = Query(default=None, alias="content_token"),
     uow: UnitOfWork = Depends(get_uow),
 ) -> User:
+    if not content_token:
+        return error_response("Отсутствует токен доступа к материалу", status_code=403)
     try:
         token_content_id, user_id = await validate_content_token(content_token)
     except ContentTokenError as exc:

@@ -21,7 +21,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     'bg-white text-fox-purple border border-fox-border hover:bg-fox-light active:bg-fox-border focus:ring-fox-purple',
   danger:
-    'bg-fox-error text-white hover:bg-red-600 focus:ring-red-300 shadow-sm',
+    'bg-fox-error text-white hover:bg-fox-error/90 focus:ring-fox-error/30 shadow-sm',
   ghost:
     'bg-transparent text-fox-purple hover:bg-fox-purple/5 active:bg-fox-purple/10 focus:ring-fox-purple',
 }

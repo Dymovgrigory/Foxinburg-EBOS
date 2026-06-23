@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends
 
@@ -17,6 +17,8 @@ async def list_schedules(
     group_id: Optional[int] = None,
     teacher_id: Optional[int] = None,
     branch_id: Optional[int] = None,
+    room: Optional[str] = None,
+    status: Optional[str] = None,
     start_from: Optional[datetime] = None,
     start_to: Optional[datetime] = None,
     current_user=Depends(require_permission(Permission.GROUP_READ)),
@@ -27,6 +29,8 @@ async def list_schedules(
         group_id=group_id,
         teacher_id=teacher_id,
         branch_id=branch_id,
+        room=room,
+        status=status,
         start_from=start_from,
         start_to=start_to,
     )
@@ -37,6 +41,43 @@ async def list_schedules(
     )
 
 
+@router.get("/calendar")
+async def calendar_schedules(
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
+    group_id: Optional[int] = None,
+    teacher_id: Optional[int] = None,
+    branch_id: Optional[int] = None,
+    room: Optional[str] = None,
+    current_user=Depends(require_permission(Permission.GROUP_READ)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Развёрнутые события для календаря (с учётом recurrence)."""
+    if not from_date:
+        from_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if not to_date:
+        to_date = from_date + timedelta(days=7)
+    service = ScheduleService(uow)
+    schedules = await service.list_schedules(
+        group_id=group_id,
+        teacher_id=teacher_id,
+        branch_id=branch_id,
+        room=room,
+        start_from=from_date - timedelta(days=365),
+        start_to=to_date,
+        limit=500,
+    )
+    occurrences = []
+    for schedule in schedules:
+        occurrences.extend(service.generate_occurrences(schedule, from_date, to_date))
+    occurrences.sort(key=lambda x: x["start_time"])
+    return success_response(
+        data=occurrences,
+        message="Календарь занятий",
+        meta={"total": len(occurrences)},
+    )
+
+
 @router.post("")
 async def create_schedule(
     data: ScheduleCreate,
@@ -44,21 +85,28 @@ async def create_schedule(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = ScheduleService(uow)
-    schedule = await service.create_schedule(
-        title=data.title,
-        group_id=data.group_id,
-        teacher_id=data.teacher_id,
-        start_time=data.start_time,
-        end_time=data.end_time,
-        description=data.description,
-        branch_id=data.branch_id,
-        course_id=data.course_id,
-        lesson_id=data.lesson_id,
-        room=data.room,
-        recurrence=data.recurrence,
-        recurrence_end=data.recurrence_end,
-        status=data.status,
-    )
+    try:
+        schedule = await service.create_schedule(
+            title=data.title,
+            group_id=data.group_id,
+            teacher_id=data.teacher_id,
+            start_time=data.start_time,
+            end_time=data.end_time,
+            description=data.description,
+            branch_id=data.branch_id,
+            course_id=data.course_id,
+            lesson_id=data.lesson_id,
+            room=data.room,
+            recurrence=data.recurrence,
+            recurrence_end=data.recurrence_end,
+            status=data.status,
+            color=data.color,
+            is_online=data.is_online,
+            topic=data.topic,
+            replacement_teacher_id=data.replacement_teacher_id,
+        )
+    except ValueError as e:
+        return error_response(str(e), status_code=409)
     return success_response(
         data=ScheduleResponse.model_validate(schedule).model_dump(),
         message="Занятие создано",
@@ -90,7 +138,10 @@ async def update_schedule(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = ScheduleService(uow)
-    schedule = await service.update_schedule(schedule_id, data=data.model_dump(exclude_unset=True))
+    try:
+        schedule = await service.update_schedule(schedule_id, data=data.model_dump(exclude_unset=True))
+    except ValueError as e:
+        return error_response(str(e), status_code=409)
     if not schedule:
         return error_response("Занятие не найдено", status_code=404)
     await uow.commit()

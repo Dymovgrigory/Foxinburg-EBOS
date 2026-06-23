@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -30,11 +30,18 @@ class Schedule(Base):
     # scheduled, cancelled, completed
     status = Column(String, default="scheduled", nullable=False)
 
+    # UI / BigBen-style extras
+    color = Column(String, nullable=True)
+    is_online = Column(Boolean, default=False, nullable=False)
+    topic = Column(String, nullable=True)
+    replacement_teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     group = relationship("Group", back_populates="schedules")
     teacher = relationship("User", foreign_keys=[teacher_id])
+    replacement_teacher = relationship("User", foreign_keys=[replacement_teacher_id])
     branch = relationship("Branch")
     course = relationship("Course", back_populates="schedules")
     lesson = relationship("Lesson", foreign_keys=[lesson_id], back_populates="schedules")

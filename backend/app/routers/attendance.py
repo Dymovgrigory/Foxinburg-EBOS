@@ -7,6 +7,7 @@ from app.core.responses import success_response, error_response
 from app.schemas.schedule import AttendanceCreate, AttendanceUpdate, AttendanceResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.schedule_service import ScheduleService, AttendanceService
+from app.services.finance_service import FinanceService
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -53,6 +54,13 @@ async def mark_attendance(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = AttendanceService(uow)
+    schedule_service = ScheduleService(uow)
+    finance_service = FinanceService(uow)
+
+    schedule = await schedule_service.get_by_id(data.schedule_id)
+    if not schedule:
+        return error_response("Занятие не найдено", status_code=404)
+
     attendance = await service.mark_attendance(
         schedule_id=data.schedule_id,
         student_id=data.student_id,
@@ -60,6 +68,17 @@ async def mark_attendance(
         marked_by_id=current_user.id,
         notes=data.notes,
     )
+
+    # Автоматическое списание с баланса за занятие
+    await finance_service.charge_for_lesson(schedule, data.student_id, data.status)
+
+    # При отметке посещаемости занятие считается проведённым
+    if schedule.status != "completed":
+        schedule.status = "completed"
+        await uow.session.flush()
+
+    await uow.commit()
+    await uow.session.refresh(attendance)
     return success_response(
         data=AttendanceResponse.model_validate(attendance).model_dump(),
         message="Посещаемость отмечена",

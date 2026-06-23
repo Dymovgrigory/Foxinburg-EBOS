@@ -6,6 +6,7 @@ import type {
   Module,
   Lesson,
   Schedule,
+  ScheduleOccurrence,
   Attendance,
   Group,
   GroupMembership,
@@ -19,6 +20,13 @@ import type {
   TestAttempt,
   Payment,
   Transaction,
+  Invoice,
+  Expense,
+  PayrollResponse,
+  PnLResponse,
+  StaffLeave,
+  StaffKpi,
+  RoleConfig,
   Lead,
   Deal,
   NotificationItem,
@@ -59,10 +67,16 @@ export const authApi = {
 export const usersApi = {
   list: () => api.get<ApiResponse<User[]>>('/users').then(unwrap),
   listStudents: () => api.get<ApiResponse<User[]>>('/users/students').then(unwrap),
+  employees: (params?: { role?: string; hr_status?: string; search?: string }) =>
+    api.get<ApiResponse<User[]>>('/users/employees', { params }).then(unwrap),
+  get: (id: number) => api.get<ApiResponse<User>>(`/users/${id}`).then(unwrap),
   create: (data: Partial<User> & { password: string }) =>
     api.post<ApiResponse<User>>('/users', data).then(unwrap),
   update: (id: number, data: Partial<User>) => api.patch<ApiResponse<User>>(`/users/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/users/${id}`).then(unwrap),
+  payroll: (id: number, params: { from_date: string; to_date: string }) =>
+    api.get<ApiResponse<PayrollResponse>>(`/users/${id}/payroll`, { params }).then(unwrap),
+  documents: (id: number) => api.get<ApiResponse<{ id: number; original_name: string; public_url?: string; file_type?: string; size_bytes?: number; created_at: string }[]>>(`/users/${id}/documents`).then(unwrap),
 }
 
 export const coursesApi = {
@@ -124,9 +138,20 @@ export const schedulesApi = {
     group_id?: number
     teacher_id?: number
     branch_id?: number
+    room?: string
+    status?: string
     start_from?: string
     start_to?: string
   }) => api.get<ApiResponse<Schedule[]>>('/schedules', { params }).then(unwrap),
+  calendar: (params?: {
+    from_date?: string
+    to_date?: string
+    group_id?: number
+    teacher_id?: number
+    branch_id?: number
+    room?: string
+  }) => api.get<ApiResponse<ScheduleOccurrence[]>>('/schedules/calendar', { params }).then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Schedule>>(`/schedules/${id}`).then(unwrap),
   create: (data: Partial<Schedule>) => api.post<ApiResponse<Schedule>>('/schedules', data).then(unwrap),
   update: (id: number, data: Partial<Schedule>) =>
     api.patch<ApiResponse<Schedule>>(`/schedules/${id}`, data).then(unwrap),
@@ -245,6 +270,50 @@ export const financeApi = {
   myTransactions: () => api.get<ApiResponse<Transaction[]>>('/finance/transactions/me').then(unwrap),
   balance: () => api.get<ApiResponse<{ balance: number; total_paid: number }>>('/finance/balance').then(unwrap),
   analytics: () => api.get<ApiResponse<FinanceAnalytics>>('/analytics/finance').then(unwrap),
+  invoices: (params?: { student_id?: number; group_id?: number; status?: string }) =>
+    api.get<ApiResponse<Invoice[]>>('/finance/invoices', { params }).then(unwrap),
+  createInvoice: (data: Partial<Invoice>) => api.post<ApiResponse<Invoice>>('/finance/invoices', data).then(unwrap),
+  updateInvoice: (id: number, data: Partial<Invoice>) =>
+    api.patch<ApiResponse<Invoice>>(`/finance/invoices/${id}`, data).then(unwrap),
+  deleteInvoice: (id: number) => api.delete<ApiResponse<void>>(`/finance/invoices/${id}`).then(unwrap),
+  generateInvoices: (data: { group_id: number; period_start: string; period_end: string; due_date?: string }) =>
+    api.post<ApiResponse<Invoice[]>>('/finance/invoices/generate', data).then(unwrap),
+  payInvoice: (id: number, data: { amount: number; method?: string; description?: string }) =>
+    api.post<ApiResponse<Payment>>(`/finance/invoices/${id}/pay`, data).then(unwrap),
+  debtors: () => api.get<ApiResponse<{ student_id: number; student_name: string; total_debt_kopecks: number; invoices: Invoice[] }[]>>('/finance/debtors').then(unwrap),
+  expenses: (params?: { branch_id?: number; category?: string; date_from?: string; date_to?: string }) =>
+    api.get<ApiResponse<Expense[]>>('/finance/expenses', { params }).then(unwrap),
+  createExpense: (data: Partial<Expense>) => api.post<ApiResponse<Expense>>('/finance/expenses', data).then(unwrap),
+  updateExpense: (id: number, data: Partial<Expense>) =>
+    api.patch<ApiResponse<Expense>>(`/finance/expenses/${id}`, data).then(unwrap),
+  deleteExpense: (id: number) => api.delete<ApiResponse<void>>(`/finance/expenses/${id}`).then(unwrap),
+  payroll: (params: { teacher_id: number; from_date: string; to_date: string }) =>
+    api.get<ApiResponse<PayrollResponse>>('/finance/payroll', { params }).then(unwrap),
+  pnl: (params: { from_date: string; to_date: string; branch_id?: number }) =>
+    api.get<ApiResponse<PnLResponse>>('/finance/pnl', { params }).then(unwrap),
+}
+
+export const hrApi = {
+  leaves: (params?: { user_id?: number; status?: string }) =>
+    api.get<ApiResponse<StaffLeave[]>>('/hr/leaves', { params }).then(unwrap),
+  createLeave: (data: Partial<StaffLeave>) => api.post<ApiResponse<StaffLeave>>('/hr/leaves', data).then(unwrap),
+  updateLeave: (id: number, data: Partial<StaffLeave>) =>
+    api.patch<ApiResponse<StaffLeave>>(`/hr/leaves/${id}`, data).then(unwrap),
+  deleteLeave: (id: number) => api.delete<ApiResponse<void>>(`/hr/leaves/${id}`).then(unwrap),
+  kpis: (params?: { user_id?: number; period_start?: string; period_end?: string }) =>
+    api.get<ApiResponse<StaffKpi[]>>('/hr/kpis', { params }).then(unwrap),
+  createKpi: (data: Partial<StaffKpi>) => api.post<ApiResponse<StaffKpi>>('/hr/kpis', data).then(unwrap),
+  updateKpi: (id: number, data: Partial<StaffKpi>) =>
+    api.patch<ApiResponse<StaffKpi>>(`/hr/kpis/${id}`, data).then(unwrap),
+  deleteKpi: (id: number) => api.delete<ApiResponse<void>>(`/hr/kpis/${id}`).then(unwrap),
+}
+
+export const roleConfigApi = {
+  list: () => api.get<ApiResponse<RoleConfig[]>>('/system/roles').then(unwrap),
+  create: (data: Partial<RoleConfig>) => api.post<ApiResponse<RoleConfig>>('/system/roles', data).then(unwrap),
+  update: (role: string, data: Partial<RoleConfig>) =>
+    api.patch<ApiResponse<RoleConfig>>(`/system/roles/${role}`, data).then(unwrap),
+  delete: (role: string) => api.delete<ApiResponse<void>>(`/system/roles/${role}`).then(unwrap),
 }
 
 export const crmApi = {

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.models.finance import Payment, Transaction
+from app.models.finance import Payment, Transaction, Invoice, Expense
 from app.models.crm import Lead, Deal
 from app.models.enrollment import Enrollment, LessonProgress
 from app.models.homework import Homework
@@ -77,11 +77,35 @@ async def finance_analytics(
         select(func.sum(Payment.amount)).where(Payment.type == "refund", Payment.status == "completed")
     )
     refund = refund_result.scalar() or 0
+
+    invoices_total_result = await db.execute(select(func.sum(Invoice.amount)))
+    invoices_total = invoices_total_result.scalar() or 0
+
+    invoices_paid_result = await db.execute(
+        select(func.sum(Invoice.amount)).where(Invoice.status == "paid")
+    )
+    invoices_paid = invoices_paid_result.scalar() or 0
+
+    debt_result = await db.execute(
+        select(func.sum(Invoice.amount)).where(Invoice.status.in_(["draft", "sent", "overdue"]))
+    )
+    debt = debt_result.scalar() or 0
+
+    expenses_result = await db.execute(
+        select(func.sum(Expense.amount)).where(Expense.status != "cancelled")
+    )
+    expenses = expenses_result.scalar() or 0
+
     return success_response(
         data={
             "income_kopecks": income,
             "refund_kopecks": refund,
             "net_kopecks": income - refund,
+            "invoices_total_kopecks": invoices_total,
+            "invoices_paid_kopecks": invoices_paid,
+            "debt_kopecks": debt,
+            "expenses_kopecks": expenses,
+            "pnl_kopecks": income - refund - expenses,
         },
         message="Финансовая аналитика",
     )

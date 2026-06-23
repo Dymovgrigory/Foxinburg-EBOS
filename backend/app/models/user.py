@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, DateTime, Date, Boolean, ForeignKey, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -30,6 +30,14 @@ class User(Base):
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
     group_id = Column(Integer, ForeignKey("groups.id", use_alter=True), nullable=True)
+
+    # HR-поля
+    position = Column(String, nullable=True)
+    employment_date = Column(Date, nullable=True)
+    salary_type = Column(String, default="hourly", nullable=False)  # hourly, fixed, percent
+    salary_rate = Column(Integer, default=0, nullable=False)  # копейки в час или фикс
+    hr_status = Column(String, default="active", nullable=False)  # active, probation, on_leave, fired
+    contract_number = Column(String, nullable=True)
 
     balance = Column(Integer, default=0)  # в копейках
     debt = Column(Integer, default=0)

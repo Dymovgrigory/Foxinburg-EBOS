@@ -1,6 +1,5 @@
 from typing import Optional
-from sqlalchemy import select
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.models.user import User
 from app.models.group import Group
@@ -96,6 +95,32 @@ class UserService(BaseService[User]):
         )
         return user
 
+    async def update_user(
+        self,
+        user: User,
+        data: dict,
+        current_user: Optional[User] = None,
+    ) -> User:
+        new_role = data.get("role")
+        if new_role and current_user and not can_manage_role(current_user.role, new_role):
+            raise ValueError("Вы не можете назначить эту роль")
+
+        old_values = {k: getattr(user, k) for k in data.keys()}
+        for field, value in data.items():
+            setattr(user, field, value)
+        await self.uow.session.flush()
+
+        await AuditService.log_action(
+            self.uow,
+            action="UPDATE",
+            entity_type="user",
+            entity_id=user.id,
+            old_values=old_values,
+            new_values=data,
+            user_id=current_user.id if current_user else None,
+        )
+        return user
+
     async def update_last_login(self, user: User) -> None:
         from datetime import datetime
         user.last_login_at = utc_now()
@@ -119,4 +144,23 @@ class UserService(BaseService[User]):
             .where(User.role == "student", User.group_id.in_(group_ids))
             .order_by(User.name)
         )
+        return list(result.scalars().all())
+
+    async def get_employees(
+        self,
+        *,
+        role: Optional[str] = None,
+        hr_status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> list[User]:
+        non_employee_roles = {"student", "parent", "guest"}
+        query = select(User).where(User.role.notin_(non_employee_roles))
+        if role:
+            query = query.where(User.role == role)
+        if hr_status:
+            query = query.where(User.hr_status == hr_status)
+        if search:
+            pattern = f"%{search}%"
+            query = query.where(or_(User.name.ilike(pattern), User.email.ilike(pattern)))
+        result = await self.uow.session.execute(query.order_by(User.name))
         return list(result.scalars().all())

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict
 
@@ -28,6 +28,12 @@ class UserUpdate(BaseModel):
     organization_id: Optional[int] = None
     branch_id: Optional[int] = None
     group_id: Optional[int] = None
+    position: Optional[str] = None
+    employment_date: Optional[date] = None
+    salary_type: Optional[str] = None
+    salary_rate: Optional[int] = None
+    hr_status: Optional[str] = None
+    contract_number: Optional[str] = None
 
 
 class UserTelegramLink(BaseModel):
@@ -49,6 +55,12 @@ class UserResponse(UserBase):
     branch_id: Optional[int]
     group_id: Optional[int]
     telegram_chat_id: Optional[str]
+    position: Optional[str]
+    employment_date: Optional[date]
+    salary_type: str
+    salary_rate: int
+    hr_status: str
+    contract_number: Optional[str]
     created_at: datetime
     updated_at: datetime
     last_login_at: Optional[datetime]
@@ -63,4 +75,8 @@ class UserListResponse(BaseModel):
     role: str
     plan: str
     is_active: bool
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    hr_status: Optional[str] = None
+    salary_rate: Optional[int] = None
     created_at: datetime

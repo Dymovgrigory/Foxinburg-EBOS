@@ -22,6 +22,12 @@ export interface User {
   telegram_chat_id?: string | null
   last_login_at?: string
   created_at?: string
+  position?: string | null
+  employment_date?: string | null
+  salary_type?: string
+  salary_rate?: number
+  hr_status?: string
+  contract_number?: string | null
 }
 
 export interface Course {
@@ -87,7 +93,32 @@ export interface Schedule {
   status: string
   recurrence?: string
   recurrence_end?: string | null
+  color?: string | null
+  is_online?: boolean
+  topic?: string | null
+  replacement_teacher_id?: number | null
   created_at: string
+}
+
+export interface ScheduleOccurrence {
+  schedule_id: number
+  title: string
+  topic?: string | null
+  description?: string | null
+  group_id?: number | null
+  teacher_id?: number | null
+  replacement_teacher_id?: number | null
+  branch_id?: number | null
+  course_id?: number | null
+  lesson_id?: number | null
+  room?: string | null
+  start_time: string
+  end_time: string
+  status: string
+  color?: string | null
+  is_online?: boolean
+  recurrence?: string
+  is_exception?: boolean
 }
 
 export interface Attendance {
@@ -262,10 +293,13 @@ export interface HomeworkReview {
 export interface Payment {
   id: number
   student_id: number
+  invoice_id?: number | null
   amount: number
   type: 'income' | 'refund'
   method: string
   status: string
+  period_start?: string | null
+  period_end?: string | null
   description?: string
   created_at: string
 }
@@ -278,6 +312,94 @@ export interface Transaction {
   balance_after: number
   description?: string
   created_at: string
+}
+
+export interface Invoice {
+  id: number
+  student_id: number
+  group_id?: number | null
+  membership_id?: number | null
+  amount: number
+  status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue'
+  due_date?: string | null
+  period_start?: string | null
+  period_end?: string | null
+  description?: string | null
+  paid_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Expense {
+  id: number
+  branch_id?: number | null
+  created_by_id?: number | null
+  category: string
+  amount: number
+  expense_date: string
+  description?: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PayrollLessonItem {
+  schedule_id: number
+  title: string
+  group_name?: string | null
+  start_time: string
+  end_time: string
+  academic_hours: number
+  amount_kopecks: number
+}
+
+export interface PayrollResponse {
+  teacher_id: number
+  teacher_name: string
+  period_start: string
+  period_end: string
+  rate_kopecks: number
+  total_academic_hours: number
+  total_amount_kopecks: number
+  lessons: PayrollLessonItem[]
+}
+
+export interface StaffLeave {
+  id: number
+  user_id: number
+  leave_type: string
+  start_date: string
+  end_date: string
+  status: string
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StaffKpi {
+  id: number
+  user_id: number
+  period_start: string
+  period_end: string
+  metric: string
+  target: number
+  actual: number
+  unit: string
+  notes?: string | null
+  completion_percent: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RoleConfig {
+  id: number
+  role: string
+  label: string
+  permissions: string[]
+  is_custom: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface Lead {
@@ -443,6 +565,20 @@ export interface DashboardAnalytics {
 export interface FinanceAnalytics {
   income_kopecks: number
   refund_kopecks: number
+  net_kopecks: number
+  invoices_total_kopecks: number
+  invoices_paid_kopecks: number
+  debt_kopecks: number
+  expenses_kopecks: number
+  pnl_kopecks: number
+}
+
+export interface PnLResponse {
+  period_start: string
+  period_end: string
+  income_kopecks: number
+  refund_kopecks: number
+  expense_kopecks: number
   net_kopecks: number
 }
 

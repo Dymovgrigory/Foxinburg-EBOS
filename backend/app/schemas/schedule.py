@@ -17,6 +17,10 @@ class ScheduleBase(BaseModel):
     recurrence: Optional[str] = "none"
     recurrence_end: Optional[datetime] = None
     status: Optional[str] = "scheduled"
+    color: Optional[str] = None
+    is_online: Optional[bool] = False
+    topic: Optional[str] = None
+    replacement_teacher_id: Optional[int] = None
 
 
 class ScheduleCreate(ScheduleBase):
@@ -37,6 +41,10 @@ class ScheduleUpdate(BaseModel):
     recurrence: Optional[str] = None
     recurrence_end: Optional[datetime] = None
     status: Optional[str] = None
+    color: Optional[str] = None
+    is_online: Optional[bool] = None
+    topic: Optional[str] = None
+    replacement_teacher_id: Optional[int] = None
 
 
 class ScheduleResponse(ScheduleBase):

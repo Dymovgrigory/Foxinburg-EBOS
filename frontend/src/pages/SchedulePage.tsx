@@ -1,63 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
-import api from '../services/api'
-import { useToast, Button, Card, Badge, Input, Select, Textarea, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
+import { useToast, Button, Card, Loader, EmptyState, Tabs, PageShell } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
-import { usersApi, attendanceApi } from '../api'
+import { schedulesApi, groupsApi, usersApi, branchesApi, attendanceApi } from '../api'
 import AttendanceModal from '../components/AttendanceModal'
-import type { User, Attendance } from '../types'
-import { LuCalendar, LuX, LuCheck } from 'react-icons/lu'
+import ScheduleCalendar, { type CalendarView } from '../components/schedule/ScheduleCalendar'
+import ScheduleFilters, { type FilterState } from '../components/schedule/ScheduleFilters'
+import ScheduleEventModal from '../components/schedule/ScheduleEventModal'
+import ScheduleCreateModal from '../components/schedule/ScheduleCreateModal'
+import { addDays, startOfWeek, formatDateLong, sortOccurrences } from '../components/schedule/utils'
+import type { ScheduleOccurrence, User, Attendance, Group, Branch } from '../types'
+import { LuCalendar, LuChevronLeft, LuChevronRight, LuPlus } from 'react-icons/lu'
 
-interface Group {
-  id: number
-  name: string
-}
-
-interface Teacher {
-  id: number
-  name: string
-  email: string
-  role: string
-}
-
-interface Schedule {
-  id: number
-  title: string
-  description?: string
-  group_id: number
-  teacher_id: number
-  branch_id?: number
-  course_id?: number
-  lesson_id?: number
-  room?: string
-  start_time: string
-  end_time: string
-  recurrence: string
-  recurrence_end?: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
-const recurrenceLabels: Record<string, string> = {
-  none: 'Без повторения',
-  daily: 'Ежедневно',
-  weekly: 'Еженедельно',
-  monthly: 'Ежемесячно',
-}
-
-const statusMeta: Record<string, { label: string; variant: Parameters<typeof Badge>[0]['variant'] }> = {
-  scheduled: { label: 'Запланировано', variant: 'info' },
-  confirmed: { label: 'Подтверждено', variant: 'success' },
-  cancelled: { label: 'Отменено', variant: 'error' },
-  completed: { label: 'Проведено', variant: 'default' },
-}
-
-function formatDateTime(iso?: string) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
+const VIEW_TABS = [
+  { id: 'week', label: 'Неделя' },
+  { id: 'day', label: 'День' },
+  { id: 'month', label: 'Месяц' },
+  { id: 'agenda', label: 'Список' },
+]
 
 export default function SchedulePage() {
   const { user } = useAuth()
@@ -65,334 +25,227 @@ export default function SchedulePage() {
   const isTeacher = user?.role === 'teacher'
   const isStudent = user?.role === 'student'
   const canManage = !isTeacher && !isStudent
-  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const canConduct = ['teacher', 'methodist', 'admin', 'super_admin', 'owner'].includes(user?.role || '')
+
+  const [view, setView] = useState<CalendarView>('week')
+  const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [occurrences, setOccurrences] = useState<ScheduleOccurrence[]>([])
   const [groups, setGroups] = useState<Group[]>([])
-  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [teachers, setTeachers] = useState<User[]>([])
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [rooms, setRooms] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [groupFilter, setGroupFilter] = useState('')
-  const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    group_id: '',
-    teacher_id: '',
+  const [filters, setFilters] = useState<FilterState>({
+    branchId: '',
     room: '',
-    start_time: '',
-    end_time: '',
-    recurrence: 'none',
-    recurrence_end: '',
-    status: 'scheduled',
+    teacherId: '',
+    groupId: '',
+    status: '',
+    search: '',
   })
 
-  const [conductSchedule, setConductSchedule] = useState<Schedule | null>(null)
+  const [selectedOccurrence, setSelectedOccurrence] = useState<ScheduleOccurrence | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+
+  const [conductSchedule, setConductSchedule] = useState<ScheduleOccurrence | null>(null)
   const [conductStudents, setConductStudents] = useState<User[]>([])
   const [conductAttendances, setConductAttendances] = useState<Attendance[]>([])
   const [conductLoading, setConductLoading] = useState(false)
 
-  const canConduct = ['teacher', 'methodist', 'admin', 'super_admin', 'owner'].includes(user?.role || '')
-
-  const openConduct = async (schedule: Schedule) => {
-    setConductSchedule(schedule)
-    setConductLoading(true)
-    try {
-      const [studentsRes, attendancesRes] = await Promise.all([
-        usersApi.listStudents(),
-        attendanceApi.listBySchedule(schedule.id),
-      ])
-      const roster = studentsRes.filter((u) => u.group_id === schedule.group_id)
-      setConductStudents(roster)
-      setConductAttendances(attendancesRes)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки данных для занятия', 'error')
-    } finally {
-      setConductLoading(false)
-    }
-  }
-
   const fetchData = async () => {
     setLoading(true)
     try {
-      const params = isTeacher || isStudent ? { teacher_id: user?.id } : {}
-      const [schedulesRes, groupsRes] = await Promise.all([
-        api.get('/schedules', { params }),
-        api.get('/groups/my'),
+      const [groupsRes, usersRes, branchesRes] = await Promise.all([
+        canManage ? groupsApi.list({ status: 'current' }) : groupsApi.my(),
+        canManage ? usersApi.list() : Promise.resolve([]),
+        branchesApi.list().catch(() => []),
       ])
-      setSchedules(schedulesRes.data.data || [])
-      setGroups(groupsRes.data.data || [])
+      setGroups(groupsRes)
+      setBranches(branchesRes)
+      const teacherList = (usersRes as User[]).filter((u) => u.role === 'teacher')
+      setTeachers(teacherList)
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки расписания', 'error')
-    } finally {
-      setLoading(false)
+      showToast(err?.response?.data?.message || 'Ошибка загрузки справочников', 'error')
     }
+    await fetchCalendar()
+    setLoading(false)
+  }
 
-    if (canManage) {
-      try {
-        const usersRes = await api.get('/users')
-        const allUsers: Teacher[] = usersRes.data.data || []
-        setTeachers(allUsers.filter((u) => u.role === 'teacher'))
-      } catch {
-        setTeachers([])
-      }
+  const fetchCalendar = async () => {
+    const range = getDateRange(view, currentDate)
+    const params: Record<string, string | number | undefined> = {
+      from_date: range.from.toISOString(),
+      to_date: range.to.toISOString(),
+    }
+    if (filters.branchId) params.branch_id = Number(filters.branchId)
+    if (filters.teacherId) params.teacher_id = Number(filters.teacherId)
+    if (filters.groupId) params.group_id = Number(filters.groupId)
+    if (filters.room) params.room = filters.room
+
+    try {
+      const data = await schedulesApi.calendar(params)
+      setOccurrences(data)
+      // Собираем уникальные аудитории из загруженных событий
+      const uniqueRooms = Array.from(new Set(data.map((o) => o.room).filter(Boolean) as string[])).sort()
+      setRooms(uniqueRooms)
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Ошибка загрузки календаря', 'error')
     }
   }
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const filtered = useMemo(() => {
-    let list = [...schedules]
-    if (groupFilter) list = list.filter((s) => s.group_id === Number(groupFilter))
-    if (search) list = list.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()))
-    return list.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-  }, [schedules, groupFilter, search])
+  useEffect(() => {
+    fetchCalendar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, currentDate, filters.branchId, filters.teacherId, filters.groupId, filters.room])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.group_id || !form.teacher_id || !form.start_time || !form.end_time) {
-      showToast('Заполните обязательные поля', 'warning')
-      return
+  const filteredOccurrences = useMemo(() => {
+    let list = [...occurrences]
+    if (filters.status) list = list.filter((o) => o.status === filters.status)
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      list = list.filter(
+        (o) =>
+          o.title.toLowerCase().includes(q) ||
+          (groups.find((g) => g.id === o.group_id)?.name || '').toLowerCase().includes(q) ||
+          (teachers.find((t) => t.id === o.teacher_id)?.name || '').toLowerCase().includes(q)
+      )
     }
-    setSubmitting(true)
+    return sortOccurrences(list)
+  }, [occurrences, filters.status, filters.search, groups, teachers])
+
+  const groupMap = useMemo(() => {
+    const map: Record<number, string> = {}
+    groups.forEach((g) => (map[g.id] = g.name))
+    return map
+  }, [groups])
+
+  const teacherMap = useMemo(() => {
+    const map: Record<number, string> = {}
+    teachers.forEach((t) => (map[t.id] = t.name))
+    return map
+  }, [teachers])
+
+  const navigate = (direction: number) => {
+    if (view === 'day') setCurrentDate((d) => addDays(d, direction))
+    else if (view === 'week') setCurrentDate((d) => addDays(d, direction * 7))
+    else if (view === 'month') setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + direction, 1))
+  }
+
+  const openConduct = async (occurrence: ScheduleOccurrence) => {
+    if (!occurrence.group_id) return
+    setConductSchedule(occurrence)
+    setConductLoading(true)
     try {
-      await api.post('/schedules', {
-        title: form.title,
-        description: form.description || null,
-        group_id: Number(form.group_id),
-        teacher_id: Number(form.teacher_id),
-        room: form.room || null,
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: new Date(form.end_time).toISOString(),
-        recurrence: form.recurrence,
-        recurrence_end: form.recurrence_end ? new Date(form.recurrence_end).toISOString() : null,
-        status: form.status,
-      })
-      setShowForm(false)
-      setForm({
-        title: '',
-        description: '',
-        group_id: '',
-        teacher_id: '',
-        room: '',
-        start_time: '',
-        end_time: '',
-        recurrence: 'none',
-        recurrence_end: '',
-        status: 'scheduled',
-      })
-      showToast('Занятие создано', 'success')
-      await fetchData()
+      const [studentsRes, attendancesRes] = await Promise.all([
+        usersApi.listStudents(),
+        attendanceApi.listBySchedule(occurrence.schedule_id),
+      ])
+      const roster = (studentsRes as User[]).filter((u) => u.group_id === occurrence.group_id)
+      setConductStudents(roster)
+      setConductAttendances(attendancesRes)
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка создания занятия', 'error')
+      showToast(err?.response?.data?.message || 'Ошибка загрузки данных для занятия', 'error')
     } finally {
-      setSubmitting(false)
+      setConductLoading(false)
     }
   }
 
   return (
     <PageShell>
-      <Header title="Расписание" subtitle={`Занятий: ${filtered.length}`} icon={<LuCalendar />} />
+      <Header title="Расписание" subtitle={`Занятий: ${filteredOccurrences.length}`} icon={<LuCalendar />} />
 
       <div className="p-4 md:p-6 w-full space-y-6">
-        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
-          <div
-            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
-            style={{
-              backgroundImage: 'url(/brand/wave.png)',
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'top right',
-            }}
-          />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Расписание занятий</h2>
-              <p className="text-fox-gray">{filtered.length} из {schedules.length} занятий</p>
-            </div>
-            {canManage && (
-              <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
-                {showForm ? 'Отмена' : 'Новое занятие'}
-              </Button>
-            )}
-          </div>
-        </div>
-
         <Card>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              placeholder="Поиск по названию"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="sm:max-w-xs"
-            />
-            <Select
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
-              className="sm:max-w-xs"
-            >
-              <option value="">Все группы</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </Select>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-fox-purple">{pageTitle(view, currentDate)}</h2>
+              <p className="text-sm text-fox-gray mt-1">{filteredOccurrences.length} из {occurrences.length} занятий</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center bg-white border border-fox-border rounded-button overflow-hidden">
+                <button onClick={() => navigate(-1)} className="p-2 hover:bg-fox-light text-fox-graphite">
+                  <LuChevronLeft />
+                </button>
+                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 text-sm font-semibold text-fox-graphite hover:bg-fox-light">
+                  Сегодня
+                </button>
+                <button onClick={() => navigate(1)} className="p-2 hover:bg-fox-light text-fox-graphite">
+                  <LuChevronRight />
+                </button>
+              </div>
+              <Tabs tabs={VIEW_TABS} activeTab={view} onChange={(id) => setView(id as CalendarView)} />
+              {canManage && (
+                <Button leftIcon={<LuPlus />} onClick={() => setShowCreate(true)}>
+                  Новое занятие
+                </Button>
+              )}
+            </div>
           </div>
         </Card>
 
-        {showForm && (
-          <Card>
-            <h3 className="text-base font-bold text-fox-dark mb-4">Новое занятие</h3>
-            <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-4">
-              <Input
-                required
-                placeholder="Название занятия"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-              <Select
-                required
-                value={form.group_id}
-                onChange={(e) => setForm({ ...form, group_id: e.target.value })}
-              >
-                <option value="">Группа</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </Select>
-              <Select
-                required
-                value={form.teacher_id}
-                onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
-              >
-                <option value="">Преподаватель</option>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </Select>
-              <Input
-                placeholder="Аудитория / ссылка"
-                value={form.room}
-                onChange={(e) => setForm({ ...form, room: e.target.value })}
-              />
-              <Input
-                required
-                type="datetime-local"
-                label="Начало"
-                value={form.start_time}
-                onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-              />
-              <Input
-                required
-                type="datetime-local"
-                label="Окончание"
-                value={form.end_time}
-                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-              />
-              <Select
-                value={form.recurrence}
-                onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-              >
-                {Object.entries(recurrenceLabels).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </Select>
-              <Input
-                type="datetime-local"
-                label="Повторять до"
-                value={form.recurrence_end}
-                onChange={(e) => setForm({ ...form, recurrence_end: e.target.value })}
-              />
-              <Select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="scheduled">Запланировано</option>
-                <option value="confirmed">Подтверждено</option>
-                <option value="cancelled">Отменено</option>
-              </Select>
-              <div className="md:col-span-2">
-                <Textarea
-                  placeholder="Описание"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={2}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button type="submit" loading={submitting} className="w-full">
-                  Создать занятие
-                </Button>
-              </div>
-            </form>
-          </Card>
-        )}
-
-        {loading ? (
-          <Loader text="Загрузка расписания..." />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<LuCalendar />}
-            title="Нет занятий"
-            description={search || groupFilter ? 'Попробуй сбросить фильтры.' : canManage ? 'Создай первое занятие в расписании.' : 'Занятия пока не запланированы.'}
-            actionLabel={canManage && !search && !groupFilter ? 'Новое занятие' : undefined}
-            onAction={canManage && !search && !groupFilter ? () => setShowForm(true) : undefined}
+        <Card>
+          <ScheduleFilters
+            filters={filters}
+            onChange={setFilters}
+            branches={branches}
+            rooms={rooms}
+            teachers={teachers}
+            groups={groups}
           />
-        ) : (
-          <Card padding="none">
-            <Table>
-              <Thead>
-                <tr>
-                  <Th>Название</Th>
-                  <Th>Группа</Th>
-                  <Th>Преподаватель</Th>
-                  <Th>Начало</Th>
-                  <Th>Окончание</Th>
-                  <Th>Аудитория</Th>
-                  <Th>Повторение</Th>
-                  <Th>Статус</Th>
-                  {canConduct && <Th>Действия</Th>}
-                </tr>
-              </Thead>
-              <Tbody>
-                {filtered.map((s) => {
-                  const meta = statusMeta[s.status] || { label: s.status, variant: 'default' as const }
-                  const isOwnLesson = s.teacher_id === user?.id
-                  const showConduct = canConduct && (user?.role !== 'teacher' || isOwnLesson)
-                  return (
-                    <Tr key={s.id}>
-                      <Td className="font-medium text-fox-dark">{s.title}</Td>
-                      <Td>{groups.find((g) => g.id === s.group_id)?.name || '—'}</Td>
-                      <Td>{teachers.find((t) => t.id === s.teacher_id)?.name || '—'}</Td>
-                      <Td className="whitespace-nowrap">{formatDateTime(s.start_time)}</Td>
-                      <Td className="whitespace-nowrap">{formatDateTime(s.end_time)}</Td>
-                      <Td>{s.room || '—'}</Td>
-                      <Td>{recurrenceLabels[s.recurrence] || s.recurrence}</Td>
-                      <Td><Badge variant={meta.variant}>{meta.label}</Badge></Td>
-                      {canConduct && (
-                        <Td>
-                          {showConduct && s.status !== 'cancelled' ? (
-                            <Button
-                              size="sm"
-                              variant={s.status === 'completed' ? 'secondary' : 'primary'}
-                              leftIcon={<LuCheck size={14} />}
-                              onClick={() => openConduct(s)}
-                            >
-                              {s.status === 'completed' ? 'Посещаемость' : 'Провести'}
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-fox-gray">—</span>
-                          )}
-                        </Td>
-                      )}
-                    </Tr>
-                  )
-                })}
-              </Tbody>
-            </Table>
-          </Card>
-        )}
+        </Card>
+
+        <Card padding="none" className="overflow-hidden">
+          {loading ? (
+            <Loader text="Загрузка расписания..." />
+          ) : filteredOccurrences.length === 0 ? (
+            <EmptyState
+              icon={<LuCalendar />}
+              title="Нет занятий"
+              description="Попробуй изменить фильтры или создай первое занятие."
+              actionLabel={canManage ? 'Новое занятие' : undefined}
+              onAction={canManage ? () => setShowCreate(true) : undefined}
+            />
+          ) : (
+            <div className="p-4">
+              <ScheduleCalendar
+                view={view}
+                currentDate={currentDate}
+                occurrences={filteredOccurrences}
+                groups={groupMap}
+                teachers={teacherMap}
+                onSelect={setSelectedOccurrence}
+              />
+            </div>
+          )}
+        </Card>
       </div>
+
+      <ScheduleEventModal
+        isOpen={!!selectedOccurrence}
+        onClose={() => setSelectedOccurrence(null)}
+        occurrence={selectedOccurrence}
+        groups={groups}
+        teachers={teachers}
+        branches={branches}
+        canManage={canManage}
+        onSaved={fetchCalendar}
+        onConduct={canConduct ? openConduct : undefined}
+      />
+
+      <ScheduleCreateModal
+        isOpen={showCreate}
+        onClose={() => setShowCreate(false)}
+        initialDate={currentDate}
+        groups={groups}
+        teachers={teachers}
+        branches={branches}
+        onCreated={fetchCalendar}
+      />
 
       <AttendanceModal
         isOpen={!!conductSchedule}
@@ -401,12 +254,53 @@ export default function SchedulePage() {
           setConductStudents([])
           setConductAttendances([])
         }}
-        schedule={conductSchedule}
+        schedule={
+          conductSchedule
+            ? ({
+                ...conductSchedule,
+                id: conductSchedule.schedule_id,
+              } as any)
+            : null
+        }
         students={conductStudents}
         initialAttendances={conductAttendances}
         loading={conductLoading}
-        onSaved={fetchData}
+        onSaved={() => {
+          fetchCalendar()
+          setConductSchedule(null)
+        }}
       />
     </PageShell>
   )
+}
+
+function getDateRange(view: CalendarView, currentDate: Date): { from: Date; to: Date } {
+  const now = new Date(currentDate)
+  if (view === 'day') {
+    const from = new Date(now)
+    from.setHours(0, 0, 0, 0)
+    const to = new Date(now)
+    to.setHours(23, 59, 59, 999)
+    return { from, to }
+  }
+  if (view === 'week') {
+    const from = startOfWeek(now)
+    const to = addDays(from, 6)
+    to.setHours(23, 59, 59, 999)
+    return { from, to }
+  }
+  // month
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { from, to }
+}
+
+function pageTitle(view: CalendarView, currentDate: Date): string {
+  if (view === 'day') return formatDateLong(currentDate.toISOString())
+  if (view === 'week') {
+    const start = startOfWeek(currentDate)
+    const end = addDays(start, 6)
+    return `${formatDateLong(start.toISOString())} – ${formatDateLong(end.toISOString())}`
+  }
+  return currentDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 }

@@ -169,8 +169,13 @@ ROLE_PERMISSIONS = {
 
 
 def has_permission(user_role: str, permission: Permission) -> bool:
-    allowed = ROLE_PERMISSIONS.get(user_role, [])
-    return permission in allowed
+    # Встроенные роли
+    allowed = ROLE_PERMISSIONS.get(user_role)
+    if allowed is not None:
+        return permission in allowed
+    # Кастомные роли из кэша
+    from app.services.role_config_service import RoleConfigCache
+    return permission.value in RoleConfigCache.get(user_role)
 
 
 def can_manage_role(manager_role: str, target_role: str) -> bool:

@@ -16,17 +16,18 @@ from app.services.redis_client import get_redis
 from app.models import (
     User, Organization, Branch, Course, Module, Lesson, LessonContent,
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
-    EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
+    EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction, Invoice, Expense,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
-    Task, Directory,
+    Task, Directory, StaffLeave, StaffKpi,
 )
 
 from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, employee_groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
-    chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys,
+    chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
+    role_config,
 )
 from app.admin import setup_admin
 
@@ -55,6 +56,16 @@ async def lifespan(app: FastAPI):
     if settings.NODE_ENV == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    # Загружаем кастомные роли в кэш
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.role_config_service import RoleConfigService
+    try:
+        async with UnitOfWork() as uow:
+            await RoleConfigService(uow).load_cache()
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Failed to load role config cache")
 
     # Автоматическая синхронизация Академии педагогов с Яндекс.Диском
     if settings.YANDEX_DISK_TOKEN and settings.YANDEX_DISK_PUBLIC_FOLDER:
@@ -137,6 +148,8 @@ app.include_router(tasks.router, prefix="/api/v3")
 app.include_router(directories.router, prefix="/api/v3")
 app.include_router(reports.router, prefix="/api/v3")
 app.include_router(surveys.router, prefix="/api/v3")
+app.include_router(hr.router, prefix="/api/v3")
+app.include_router(role_config.router, prefix="/api/v3")
 
 setup_admin(app)
 

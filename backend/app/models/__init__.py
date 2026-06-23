@@ -9,7 +9,7 @@ from .group import Group, GroupMembership
 from .employee_group import EmployeeGroup, employee_group_members
 from .enrollment import Enrollment, LessonProgress
 from .crm import Lead, Deal
-from .finance import Payment, Transaction
+from .finance import Payment, Transaction, Invoice, Expense
 from .event import SystemEvent, AuditLog
 from .notification import Notification
 from .achievement import Achievement, UserAchievement
@@ -20,6 +20,8 @@ from .knowledge import KnowledgeArticle
 from .task import Task
 from .directory import Directory
 from .survey import Survey, SurveyQuestion, SurveyResponse, SurveyAnswer
+from .hr import StaffLeave, StaffKpi
+from .role_config import RoleConfig
 
 __all__ = [
     "Base",
@@ -45,6 +47,8 @@ __all__ = [
     "Deal",
     "Payment",
     "Transaction",
+    "Invoice",
+    "Expense",
     "SystemEvent",
     "AuditLog",
     "Notification",
@@ -63,4 +67,7 @@ __all__ = [
     "SurveyQuestion",
     "SurveyResponse",
     "SurveyAnswer",
+    "StaffLeave",
+    "StaffKpi",
+    "RoleConfig",
 ]

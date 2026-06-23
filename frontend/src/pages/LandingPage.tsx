@@ -141,7 +141,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         'Прогресс и аналитика ученика',
       ],
       icon: <LuBookOpen className="w-7 h-7" />,
-      image: '/brand/mascot-3d.png',
+      image: '/brand/mascot-hero.png',
       reverse: false,
     },
     {
@@ -287,10 +287,15 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                       linear-gradient(180deg, #1c0e36 0%, #24133d 50%, #1c0e36 100%);
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-16px) rotate(1deg); }
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
         }
-        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float { animation: float 5s ease-in-out infinite; }
+        @keyframes gentle-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+        }
+        .animate-gentle-pulse { animation: gentle-pulse 6s ease-in-out infinite; }
         @keyframes slow-spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -448,31 +453,31 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               </div>
             </div>
 
-            <div className="relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-lg">
-                <div className="absolute inset-0 bg-gradient-to-tr from-fox-purple/40 to-fox-gold/20 rounded-full blur-3xl" />
+            <div className="relative flex justify-center lg:justify-end items-center">
+              <div className="relative w-full max-w-[380px] lg:max-w-[420px]">
+                <div className="absolute inset-0 bg-gradient-to-tr from-fox-purple/40 to-fox-gold/20 rounded-full blur-3xl scale-90" />
                 <img
-                  src="/brand/mascot-3d.png"
+                  src="/brand/mascot-hero.png"
                   alt="FOXINBURG mascot"
-                  className="relative z-10 w-full h-auto drop-shadow-2xl animate-float"
+                  className="relative z-10 w-full h-auto max-h-[60vh] object-contain mx-auto drop-shadow-[0_0_50px_rgba(249,228,166,0.12)] animate-float"
                 />
                 {/* Floating stats cards */}
-                <div className="absolute top-8 -left-4 glass-card rounded-2xl p-4 hidden md:flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
-                  <div className="w-10 h-10 rounded-full bg-fox-gold/20 flex items-center justify-center text-fox-gold">
-                    <LuBookOpen className="w-5 h-5" />
+                <div className="absolute top-4 -left-2 glass-card rounded-2xl px-4 py-3 hidden md:flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
+                  <div className="w-9 h-9 rounded-full bg-fox-gold/20 flex items-center justify-center text-fox-gold">
+                    <LuBookOpen className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="text-xs text-white/60">Курсов</p>
-                    <p className="font-bold">∞</p>
+                    <p className="font-bold text-sm">∞</p>
                   </div>
                 </div>
-                <div className="absolute bottom-16 -right-4 glass-card rounded-2xl p-4 hidden md:flex items-center gap-3 animate-float" style={{ animationDelay: '2s' }}>
-                  <div className="w-10 h-10 rounded-full bg-emerald-400/20 flex items-center justify-center text-emerald-300">
-                    <LuTrendingUp className="w-5 h-5" />
+                <div className="absolute bottom-24 -right-2 glass-card rounded-2xl px-4 py-3 hidden md:flex items-center gap-3 animate-float" style={{ animationDelay: '2s' }}>
+                  <div className="w-9 h-9 rounded-full bg-emerald-400/20 flex items-center justify-center text-emerald-300">
+                    <LuTrendingUp className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="text-xs text-white/60">Рост выручки</p>
-                    <p className="font-bold">+35%</p>
+                    <p className="font-bold text-sm">+35%</p>
                   </div>
                 </div>
               </div>

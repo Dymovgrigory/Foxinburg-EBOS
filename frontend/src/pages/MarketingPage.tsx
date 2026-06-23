@@ -1,12 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { analyticsApi, crmApi } from '../api'
 import type { DashboardAnalytics, Lead, Deal } from '../types'
 import { LuClipboardList, LuCoins, LuHandshake, LuMegaphone, LuTarget } from 'react-icons/lu'
 
-const STATUS_COLORS = ['bg-fox-purple', 'bg-fox-gold', 'bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-red-500', 'bg-pink-500', 'bg-teal-500']
+const STATUS_COLORS = [
+  'bg-fox-purple',
+  'bg-fox-gold',
+  'bg-fox-graphite',
+  'bg-fox-light border border-fox-border',
+  'bg-fox-purple/80',
+  'bg-fox-gold/80',
+  'bg-fox-graphite/80',
+  'bg-fox-light/80 border border-fox-border',
+]
 
 const LEAD_STATUSES: Record<string, string> = {
   new: 'Новый',
@@ -84,10 +94,10 @@ export default function MarketingPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard icon={<LuClipboardList />} label="Лидов" value={String(leadsTotal)} color="bg-blue-500" />
-              <MetricCard icon={<LuHandshake />} label="Сделок" value={String(dealsTotal)} color="bg-pink-500" />
-              <MetricCard icon={<LuTarget />} label="Конверсия" value={`${conversionRate}%`} color="bg-green-500" />
-              <MetricCard icon={<LuCoins />} label="Доход" value={formatMoney(data.total_income_kopecks)} color="bg-fox-purple" />
+              <StatCard title="Лидов" value={String(leadsTotal)} icon={<LuClipboardList />} variant="purple" />
+              <StatCard title="Сделок" value={String(dealsTotal)} icon={<LuHandshake />} variant="gold" />
+              <StatCard title="Конверсия" value={`${conversionRate}%`} icon={<LuTarget />} variant="graphite" />
+              <StatCard title="Доход" value={formatMoney(data.total_income_kopecks)} icon={<LuCoins />} variant="outline" />
             </div>
 
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -133,18 +143,6 @@ export default function MarketingPage() {
         )}
       </div>
     </div>
-  )
-}
-
-function MetricCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
-  return (
-    <Card className="flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${color}`}>{icon}</div>
-      <div>
-        <div className="text-2xl font-bold text-fox-dark">{value}</div>
-        <div className="text-xs text-fox-gray">{label}</div>
-      </div>
-    </Card>
   )
 }
 

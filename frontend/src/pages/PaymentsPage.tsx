@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { financeApi } from '../api'
 import type { Payment, Transaction } from '../types'
-import { LuCreditCard, LuRefreshCw } from 'react-icons/lu'
+import { LuCreditCard, LuRefreshCw, LuWallet, LuTrendingUp, LuTrendingDown } from 'react-icons/lu'
 
 const METHODS: Record<string, string> = {
   cash: 'Наличные',
@@ -70,27 +71,9 @@ export default function PaymentsPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">💰</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{formatMoney(balance?.balance || 0)}</div>
-                  <div className="text-xs text-fox-gray">Текущий баланс</div>
-                </div>
-              </Card>
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-500 text-white flex items-center justify-center text-xl">↗</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{formatMoney(totalPaid)}</div>
-                  <div className="text-xs text-fox-gray">Оплачено</div>
-                </div>
-              </Card>
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-red-500 text-white flex items-center justify-center text-xl">↘</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{formatMoney(totalRefunded)}</div>
-                  <div className="text-xs text-fox-gray">Возвратов</div>
-                </div>
-              </Card>
+              <StatCard title="Текущий баланс" value={formatMoney(balance?.balance || 0)} icon={<LuWallet />} variant="purple" />
+              <StatCard title="Оплачено" value={formatMoney(totalPaid)} icon={<LuTrendingUp />} variant="gold" />
+              <StatCard title="Возвратов" value={formatMoney(totalRefunded)} icon={<LuTrendingDown />} variant="graphite" />
             </div>
 
             <Card>
@@ -152,7 +135,7 @@ export default function PaymentsPage() {
                         <Tr key={t.id}>
                           <Td>{formatDate(t.created_at)}</Td>
                           <Td className="capitalize">{t.type}</Td>
-                          <Td className={t.amount >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                          <Td className={t.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-fox-error font-semibold'}>
                             {formatMoney(t.amount)}
                           </Td>
                           <Td>{formatMoney(t.balance_after)}</Td>

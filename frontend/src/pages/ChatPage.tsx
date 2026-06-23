@@ -165,7 +165,7 @@ export default function ChatPage() {
                     <div className="text-xs text-fox-gray/70">
                       {connected ? (
                         <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           Подключено
                         </span>
                       ) : (

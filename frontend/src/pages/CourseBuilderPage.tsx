@@ -518,7 +518,7 @@ export default function CourseBuilderPage() {
                       <LuPencil size={16} />
                     </button>
                     <button
-                      className="text-fox-gray/70 hover:text-red-500"
+                      className="text-fox-gray/70 hover:text-fox-error"
                       onClick={(e) => {
                         e.stopPropagation()
                         deleteCourse(course.id)
@@ -593,7 +593,7 @@ export default function CourseBuilderPage() {
                           <LuPencil size={16} />
                         </button>
                         <button
-                          className="text-fox-gray/70 hover:text-red-500"
+                          className="text-fox-gray/70 hover:text-fox-error"
                           onClick={(e) => {
                             e.stopPropagation()
                             deleteModule(module.id)
@@ -654,7 +654,7 @@ export default function CourseBuilderPage() {
                                 <LuPencil size={16} />
                               </button>
                               <button
-                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-red-500'}
+                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-error'}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   deleteLesson(lesson.id)

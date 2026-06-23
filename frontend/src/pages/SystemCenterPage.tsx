@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { analyticsApi, systemApi, usersApi, coursesApi, organizationsApi } from '../api'
 import {
   LuUsers,
@@ -90,14 +91,14 @@ export default function SystemCenterPage() {
 
   const stats = useMemo(
     () => [
-      { label: 'Пользователей', value: users.length, icon: <LuUsers />, color: 'bg-fox-purple' },
-      { label: 'Курсов', value: courses.length, icon: <LuBookOpen />, color: 'bg-fox-gold text-fox-purple' },
-      { label: 'Организаций', value: organizations.length, icon: <LuBuilding />, color: 'bg-blue-500' },
-      { label: 'Филиалов', value: branchesCount, icon: <LuBuilding2 />, color: 'bg-emerald-500' },
-      { label: 'API endpoints', value: system?.endpoints_count || 0, icon: <LuCode />, color: 'bg-violet-500' },
-      { label: 'Ролей', value: 9, icon: <LuShield />, color: 'bg-pink-500' },
-      { label: 'Бэкапов', value: 1, icon: <LuDatabaseBackup />, color: 'bg-teal-500' },
-      { label: 'Статус', value: 'OK', icon: <LuCircleCheck />, color: 'bg-green-500' },
+      { label: 'Пользователей', value: users.length, icon: <LuUsers />, variant: 'purple' as const },
+      { label: 'Курсов', value: courses.length, icon: <LuBookOpen />, variant: 'gold' as const },
+      { label: 'Организаций', value: organizations.length, icon: <LuBuilding />, variant: 'graphite' as const },
+      { label: 'Филиалов', value: branchesCount, icon: <LuBuilding2 />, variant: 'outline' as const },
+      { label: 'API endpoints', value: system?.endpoints_count || 0, icon: <LuCode />, variant: 'purple' as const },
+      { label: 'Ролей', value: 9, icon: <LuShield />, variant: 'gold' as const },
+      { label: 'Бэкапов', value: 1, icon: <LuDatabaseBackup />, variant: 'graphite' as const },
+      { label: 'Статус', value: 'OK', icon: <LuCircleCheck />, variant: 'outline' as const },
     ],
     [users.length, courses.length, organizations.length, branchesCount, system?.endpoints_count]
   )
@@ -154,15 +155,13 @@ export default function SystemCenterPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {stats.map((s) => (
-                <Card key={s.label} className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${s.color}`}>
-                    {s.icon}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-fox-dark">{s.value}</div>
-                    <div className="text-xs text-fox-gray">{s.label}</div>
-                  </div>
-                </Card>
+                <StatCard
+                  key={s.label}
+                  title={s.label}
+                  value={s.value}
+                  icon={s.icon}
+                  variant={s.variant}
+                />
               ))}
             </div>
 
@@ -422,15 +421,15 @@ function sumValues(obj: Record<string, number>) {
 }
 
 function colorForValue(value: number) {
-  if (value >= 80) return 'text-green-600'
-  if (value >= 60) return 'text-amber-500'
-  return 'text-red-500'
+  if (value >= 80) return 'text-emerald-600'
+  if (value >= 60) return 'text-fox-purple'
+  return 'text-fox-error'
 }
 
 function barColorForValue(value: number) {
-  if (value >= 80) return 'bg-green-500'
-  if (value >= 60) return 'bg-amber-500'
-  return 'bg-red-500'
+  if (value >= 80) return 'bg-emerald-500'
+  if (value >= 60) return 'bg-fox-purple'
+  return 'bg-fox-error'
 }
 
 function methodVariant(method: string): Parameters<typeof Badge>[0]['variant'] {

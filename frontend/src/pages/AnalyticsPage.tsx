@@ -2,11 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { analyticsApi } from '../api'
 import type { DashboardAnalytics } from '../types'
-import { LuChartBarBig } from 'react-icons/lu'
+import { LuChartBarBig, LuCoins, LuUsers, LuClipboardList, LuGraduationCap, LuHandshake, LuNotebookPen } from 'react-icons/lu'
 
-const STATUS_COLORS = ['bg-fox-purple', 'bg-fox-gold', 'bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-red-500', 'bg-pink-500', 'bg-teal-500']
+const STATUS_COLORS = [
+  'bg-fox-purple',
+  'bg-fox-gold',
+  'bg-fox-graphite',
+  'bg-fox-light border border-fox-border',
+  'bg-fox-purple/80',
+  'bg-fox-gold/80',
+  'bg-fox-graphite/80',
+  'bg-fox-light/80 border border-fox-border',
+]
 
 export default function AnalyticsPage() {
   const { showToast } = useToast()
@@ -19,16 +29,16 @@ export default function AnalyticsPage() {
       .then(setData)
       .catch((err) => showToast(getErrorMessage(err, 'Ошибка загрузки аналитики'), 'error'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [showToast])
 
   const metrics = useMemo(
     () => [
-      { label: 'Доход', value: formatMoney(data?.total_income_kopecks || 0), icon: '💰', color: 'bg-green-500' },
-      { label: 'Пользователей', value: sumValues(data?.users_by_role), icon: '👥', color: 'bg-fox-purple' },
-      { label: 'Лидов', value: sumValues(data?.leads_by_status), icon: '📋', color: 'bg-blue-500' },
-      { label: 'Зачислений', value: sumValues(data?.enrollments_by_status), icon: '🎓', color: 'bg-fox-gold text-fox-purple' },
-      { label: 'Сделок', value: sumValues(data?.deals_by_status), icon: '🤝', color: 'bg-pink-500' },
-      { label: 'Домашних заданий', value: sumValues(data?.homeworks_by_status), icon: '📝', color: 'bg-amber-500' },
+      { label: 'Доход', value: formatMoney(data?.total_income_kopecks || 0), icon: <LuCoins />, variant: 'purple' as const },
+      { label: 'Пользователей', value: sumValues(data?.users_by_role), icon: <LuUsers />, variant: 'gold' as const },
+      { label: 'Лидов', value: sumValues(data?.leads_by_status), icon: <LuClipboardList />, variant: 'graphite' as const },
+      { label: 'Зачислений', value: sumValues(data?.enrollments_by_status), icon: <LuGraduationCap />, variant: 'outline' as const },
+      { label: 'Сделок', value: sumValues(data?.deals_by_status), icon: <LuHandshake />, variant: 'purple' as const },
+      { label: 'Домашних заданий', value: sumValues(data?.homeworks_by_status), icon: <LuNotebookPen />, variant: 'gold' as const },
     ],
     [data]
   )
@@ -58,15 +68,13 @@ export default function AnalyticsPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {metrics.map((m) => (
-                <Card key={m.label} className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${m.color}`}>
-                    {m.icon}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-fox-dark">{m.value}</div>
-                    <div className="text-xs text-fox-gray">{m.label}</div>
-                  </div>
-                </Card>
+                <StatCard
+                  key={m.label}
+                  title={m.label}
+                  value={m.value}
+                  icon={m.icon}
+                  variant={m.variant}
+                />
               ))}
             </div>
 

@@ -3,6 +3,7 @@ import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useToast, Card, Badge, Loader, Button } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, usersApi, notificationsApi } from '../api'
 import type { Schedule, Homework, User } from '../types'
@@ -57,10 +58,10 @@ export default function TeacherDashboardPage() {
   )
 
   const widgets = [
-    { title: 'Ближайших занятий', value: upcomingLessons.length, icon: <LuCalendar />, color: 'bg-blue-500' },
-    { title: 'Мои задания', value: myHomeworks.length, icon: <LuNotebookPen />, color: 'bg-amber-500' },
-    { title: 'Учеников', value: students.length, icon: <LuGraduationCap />, color: 'bg-green-500' },
-    { title: 'Уведомлений', value: unreadCount, icon: <LuBell />, color: 'bg-red-500' },
+    { title: 'Ближайших занятий', value: upcomingLessons.length, icon: <LuCalendar />, variant: 'purple' as const },
+    { title: 'Мои задания', value: myHomeworks.length, icon: <LuNotebookPen />, variant: 'gold' as const },
+    { title: 'Учеников', value: students.length, icon: <LuGraduationCap />, variant: 'graphite' as const },
+    { title: 'Уведомлений', value: unreadCount, icon: <LuBell />, variant: 'outline' as const },
   ]
 
   return (
@@ -82,15 +83,13 @@ export default function TeacherDashboardPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {widgets.map((w) => (
-                <Card key={w.title} className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white ${w.color}`}>
-                    {w.icon}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-fox-dark">{w.value}</div>
-                    <div className="text-xs text-fox-gray">{w.title}</div>
-                  </div>
-                </Card>
+                <StatCard
+                  key={w.title}
+                  title={w.title}
+                  value={w.value}
+                  icon={w.icon}
+                  variant={w.variant}
+                />
               ))}
             </div>
 

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { financeApi, usersApi } from '../api'
 import type { Payment, Transaction, User } from '../types'
-import { LuRefreshCw, LuTrendingUp } from 'react-icons/lu'
+import { LuRefreshCw, LuTrendingUp, LuTrendingDown, LuWallet } from 'react-icons/lu'
 
 const METHODS = [
   { value: 'cash', label: 'Наличные' },
@@ -136,27 +137,9 @@ export default function FinancePage() {
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-500 text-white flex items-center justify-center text-xl">↗</div>
-            <div>
-              <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.income_kopecks)}</div>
-              <div className="text-xs text-fox-gray">Доходы</div>
-            </div>
-          </Card>
-          <Card className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-red-500 text-white flex items-center justify-center text-xl">↘</div>
-            <div>
-              <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.refund_kopecks)}</div>
-              <div className="text-xs text-fox-gray">Возвраты</div>
-            </div>
-          </Card>
-          <Card className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">💰</div>
-            <div>
-              <div className="text-2xl font-bold text-fox-dark">{formatMoney(analytics.net_kopecks)}</div>
-              <div className="text-xs text-fox-gray">Чистый доход</div>
-            </div>
-          </Card>
+          <StatCard title="Доходы" value={formatMoney(analytics.income_kopecks)} icon={<LuTrendingUp />} variant="purple" />
+          <StatCard title="Возвраты" value={formatMoney(analytics.refund_kopecks)} icon={<LuTrendingDown />} variant="gold" />
+          <StatCard title="Чистый доход" value={formatMoney(analytics.net_kopecks)} icon={<LuWallet />} variant="graphite" />
         </div>
 
         {/* Payments */}
@@ -252,7 +235,7 @@ export default function FinancePage() {
                       <Td>{formatDate(t.created_at)}</Td>
                       <Td>{studentName(users, t.user_id)}</Td>
                       <Td className="capitalize">{t.type}</Td>
-                      <Td className={t.amount >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      <Td className={t.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-fox-error font-semibold'}>
                         {formatMoney(t.amount)}
                       </Td>
                       <Td>{formatMoney(t.balance_after)}</Td>

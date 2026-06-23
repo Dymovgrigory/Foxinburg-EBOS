@@ -294,7 +294,7 @@ export default function HomeworksPage() {
                         Проверить
                       </Button>
                       <Button size="sm" variant="ghost" leftIcon={<LuPencil />} onClick={() => startEdit(h)} />
-                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" leftIcon={<LuTrash2 />} onClick={() => deleteHomework(h.id)} />
+                      <Button size="sm" variant="ghost" className="text-fox-error hover:text-fox-error" leftIcon={<LuTrash2 />} onClick={() => deleteHomework(h.id)} />
                     </div>
                   </Td>
                 </Tr>

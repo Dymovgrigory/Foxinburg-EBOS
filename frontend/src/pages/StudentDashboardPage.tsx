@@ -106,14 +106,14 @@ export default function StudentDashboardPage() {
                 icon={<LuCircleCheck />}
                 value={completedLessons}
                 label="Уроков завершено"
-                color="green"
+                color="graphite"
                 onClick={() => navigate('/progress')}
               />
               <StudentStatCard
                 icon={<LuBell />}
                 value={unreadCount}
                 label="Уведомлений"
-                color="red"
+                color="outline"
                 onClick={() => navigate('/notifications')}
               />
             </div>

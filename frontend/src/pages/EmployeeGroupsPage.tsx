@@ -246,7 +246,7 @@ export default function EmployeeGroupsPage() {
                     Зачислить на курс
                   </Button>
                   <Button size="sm" variant="ghost" leftIcon={<LuPencil />} onClick={() => setModal({ id: group.id, name: group.name, description: group.description, group_type: group.group_type })} />
-                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" leftIcon={<LuTrash2 />} onClick={() => handleDelete(group.id)} />
+                  <Button size="sm" variant="ghost" className="text-fox-error hover:text-fox-error" leftIcon={<LuTrash2 />} onClick={() => handleDelete(group.id)} />
                 </div>
               </Card>
             ))}
@@ -341,7 +341,7 @@ export default function EmployeeGroupsPage() {
                       <div className="text-xs text-fox-gray/70">{member.email} • {member.role}</div>
                     </div>
                     <button
-                      className="text-fox-gray/70 hover:text-red-500 p-1"
+                      className="text-fox-gray/70 hover:text-fox-error p-1"
                       onClick={() => handleRemoveMember(member.id)}
                       aria-label="Удалить"
                     >

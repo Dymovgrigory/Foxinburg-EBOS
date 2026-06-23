@@ -479,15 +479,15 @@ export default function TeacherAcademyPage() {
                       <Button
                         onClick={() => handleComplete(activeModule.id)}
                         loading={completing === activeModule.id}
-                        leftIcon="✓"
+                        leftIcon={<LuCircleCheck size={16} />}
                         className="self-start"
                       >
                         Завершить модуль
                       </Button>
                     )}
                     {progress && moduleStatus(activeModule.id) === 'completed' && (
-                      <span className="self-start px-4 py-2 text-sm font-semibold text-green-700 bg-green-50 rounded-xl">
-                        ✅ Модуль завершён
+                      <span className="self-start px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-xl">
+                        Модуль завершён
                       </span>
                     )}
                   </div>

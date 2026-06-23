@@ -12,10 +12,10 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 const variantClasses: Record<BadgeVariant, string> = {
   default: 'bg-fox-light text-fox-graphite',
-  success: 'bg-green-100 text-green-700',
-  warning: 'bg-amber-100 text-amber-700',
-  error: 'bg-red-100 text-red-700',
-  info: 'bg-blue-100 text-blue-700',
+  success: 'bg-emerald-50 text-emerald-700',
+  warning: 'bg-amber-50 text-amber-700',
+  error: 'bg-red-50 text-red-700',
+  info: 'bg-fox-purple/10 text-fox-purple',
   purple: 'bg-fox-purple/10 text-fox-purple',
 }
 

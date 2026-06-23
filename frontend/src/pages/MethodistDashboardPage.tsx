@@ -26,9 +26,9 @@ const TABS = [
 ]
 
 const RISK_LABELS: Record<string, { label: string; color: string }> = {
-  low: { label: 'Низкий', color: 'bg-green-100 text-green-700' },
-  medium: { label: 'Средний', color: 'bg-yellow-100 text-yellow-700' },
-  high: { label: 'Высокий', color: 'bg-red-100 text-red-700' },
+  low: { label: 'Низкий', color: 'bg-emerald-50 text-emerald-700' },
+  medium: { label: 'Средний', color: 'bg-amber-50 text-amber-700' },
+  high: { label: 'Высокий', color: 'bg-red-50 text-red-700' },
 }
 
 const ACADEMY_STATUS_LABELS: Record<string, string> = {
@@ -68,10 +68,18 @@ function formatDate(iso?: string | null) {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function KpiCard({ icon, value, label, color = 'bg-fox-purple/10 text-fox-purple' }: { icon: React.ReactNode; value: string | number; label: string; color?: string }) {
+const kpiVariants = {
+  purple: 'bg-fox-purple text-white',
+  gold: 'bg-fox-gold text-fox-purple',
+  graphite: 'bg-fox-graphite text-white',
+  outline: 'bg-fox-light text-fox-purple border border-fox-border',
+}
+type KpiVariant = keyof typeof kpiVariants
+
+function KpiCard({ icon, value, label, variant = 'purple' }: { icon: React.ReactNode; value: string | number; label: string; variant?: KpiVariant }) {
   return (
     <Card className="flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${kpiVariants[variant]}`}>{icon}</div>
       <div>
         <p className="text-2xl font-bold text-fox-dark">{value}</p>
         <p className="text-xs text-fox-gray">{label}</p>
@@ -85,7 +93,7 @@ function ProgressBar({ value, label, color = 'bg-fox-purple' }: { value: number;
   return (
     <div className="w-full">
       {label && <div className="flex justify-between text-xs mb-1"><span className="text-fox-gray">{label}</span><span className="font-medium text-fox-dark">{percent}%</span></div>}
-      <div className="h-2 w-full bg-fox-light rounded-full overflow-hidden">
+      <div className="h-2 w-full bg-fox-border rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -180,14 +188,14 @@ export default function MethodistDashboardPage() {
     if (!analytics) return []
     const o = analytics.overview
     return [
-      { icon: <LuBookOpen />, value: o.courses_count, label: 'Курсов', color: 'bg-fox-purple/10 text-fox-purple', path: '/courses' },
-      { icon: <LuUsersRound />, value: o.groups_count, label: 'Групп', color: 'bg-fox-gold/20 text-fox-dark', path: '/employee-groups' },
-      { icon: <LuGraduationCap />, value: o.students_count, label: 'Учеников', color: 'bg-green-100 text-green-700', path: '/students' },
-      { icon: <LuUsers />, value: o.teachers_count, label: 'Преподавателей', color: 'bg-blue-100 text-blue-700', path: '/employee-groups' },
-      { icon: <LuNotebookPen />, value: o.pending_homeworks_count, label: 'ДЗ на проверку', color: 'bg-orange-100 text-orange-700', path: '/homeworks' },
-      { icon: <LuClock />, value: o.overdue_homeworks_count, label: 'Просроченные ДЗ', color: 'bg-red-100 text-red-700', path: '/homeworks' },
-      { icon: <LuChartLine />, value: `${o.average_progress_percent}%`, label: 'Средний прогресс', color: 'bg-teal-100 text-teal-700' },
-      { icon: <LuCircleCheck />, value: `${o.average_attendance_percent}%`, label: 'Посещаемость', color: 'bg-indigo-100 text-indigo-700' },
+      { icon: <LuBookOpen />, value: o.courses_count, label: 'Курсов', variant: 'purple' as const, path: '/courses' },
+      { icon: <LuUsersRound />, value: o.groups_count, label: 'Групп', variant: 'gold' as const, path: '/employee-groups' },
+      { icon: <LuGraduationCap />, value: o.students_count, label: 'Учеников', variant: 'graphite' as const, path: '/students' },
+      { icon: <LuUsers />, value: o.teachers_count, label: 'Преподавателей', variant: 'outline' as const, path: '/employee-groups' },
+      { icon: <LuNotebookPen />, value: o.pending_homeworks_count, label: 'ДЗ на проверку', variant: 'purple' as const, path: '/homeworks' },
+      { icon: <LuClock />, value: o.overdue_homeworks_count, label: 'Просроченные ДЗ', variant: 'gold' as const, path: '/homeworks' },
+      { icon: <LuChartLine />, value: `${o.average_progress_percent}%`, label: 'Средний прогресс', variant: 'graphite' as const },
+      { icon: <LuCircleCheck />, value: `${o.average_attendance_percent}%`, label: 'Посещаемость', variant: 'outline' as const },
     ]
   }, [analytics])
 
@@ -216,10 +224,10 @@ export default function MethodistDashboardPage() {
     if (!analytics) return []
     const counts = analytics.homeworks_and_tests.homework_status_counts
     return [
-      { label: HOMEWORK_STATUS_LABELS.assigned, value: counts.assigned, color: '#9CA3AF' },
+      { label: HOMEWORK_STATUS_LABELS.assigned, value: counts.assigned, color: '#6B6B7B' },
       { label: HOMEWORK_STATUS_LABELS.submitted, value: counts.submitted, color: '#F59E0B' },
-      { label: HOMEWORK_STATUS_LABELS.reviewed, value: counts.reviewed, color: '#10B981' },
-      { label: HOMEWORK_STATUS_LABELS.revision, value: counts.revision, color: '#3B82F6' },
+      { label: HOMEWORK_STATUS_LABELS.reviewed, value: counts.reviewed, color: '#22C55E' },
+      { label: HOMEWORK_STATUS_LABELS.revision, value: counts.revision, color: '#3A2953' },
       { label: HOMEWORK_STATUS_LABELS.rejected, value: counts.rejected, color: '#EF4444' },
     ].filter((s) => s.value > 0)
   }, [analytics])
@@ -252,7 +260,7 @@ export default function MethodistDashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {overviewCards.map((card) => (
                     <div key={card.label} onClick={() => card.path && navigate(card.path)} className={card.path ? 'cursor-pointer' : ''}>
-                      <KpiCard icon={card.icon} value={card.value} label={card.label} color={card.color} />
+                      <KpiCard icon={card.icon} value={card.value} label={card.label} variant={card.variant} />
                     </div>
                   ))}
                 </div>
@@ -275,7 +283,7 @@ export default function MethodistDashboardPage() {
                       <ProgressBar
                         value={analytics.overview.published_courses_count && analytics.overview.courses_count ? Math.round((analytics.overview.published_courses_count / analytics.overview.courses_count) * 100) : 0}
                         label="Опубликовано курсов"
-                        color="bg-green-500"
+                        color="bg-emerald-500"
                       />
                     </div>
                   </Card>
@@ -414,11 +422,11 @@ export default function MethodistDashboardPage() {
                           </Td>
                           <Td>
                             <div className="text-xs">
-                              <span className="text-green-600">{student.homeworks_reviewed}</span>
+                              <span className="text-emerald-600">{student.homeworks_reviewed}</span>
                               {' / '}
-                              <span className="text-orange-600">{student.homeworks_submitted}</span>
+                              <span className="text-fox-warning">{student.homeworks_submitted}</span>
                               {student.homeworks_overdue > 0 && (
-                                <span className="ml-2 text-red-500">+{student.homeworks_overdue} проср.</span>
+                                <span className="ml-2 text-fox-error">+{student.homeworks_overdue} проср.</span>
                               )}
                             </div>
                           </Td>
@@ -447,8 +455,8 @@ export default function MethodistDashboardPage() {
                   <Card className="space-y-4">
                     <SectionHeader title="Тесты" />
                     <div className="grid grid-cols-2 gap-4">
-                      <KpiCard icon={<LuNotebookPen />} value={analytics.homeworks_and_tests.average_test_score} label="Средний балл" color="bg-fox-purple/10 text-fox-purple" />
-                      <KpiCard icon={<LuCircleCheck />} value={`${analytics.homeworks_and_tests.test_pass_rate_percent}%`} label="Проходной балл" color="bg-green-100 text-green-700" />
+                      <KpiCard icon={<LuNotebookPen />} value={analytics.homeworks_and_tests.average_test_score} label="Средний балл" variant="purple" />
+                      <KpiCard icon={<LuCircleCheck />} value={`${analytics.homeworks_and_tests.test_pass_rate_percent}%`} label="Проходной балл" variant="outline" />
                     </div>
                   </Card>
                   <Card className="space-y-4">
@@ -592,7 +600,7 @@ function PendingHomeworkRow({ homework }: { homework: PendingHomeworkItem }) {
       </div>
       <div className="text-right">
         <div className="text-xs text-fox-gray">{formatDateTime(homework.submitted_at)}</div>
-        {homework.is_overdue && <span className="text-xs text-red-500 font-medium">Просрочено</span>}
+        {homework.is_overdue && <span className="text-xs text-fox-error font-medium">Просрочено</span>}
       </div>
     </div>
   )

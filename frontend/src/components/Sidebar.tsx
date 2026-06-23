@@ -153,7 +153,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         <button
           onClick={handleLogout}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-fox-sidebar-muted hover:bg-red-50 hover:text-fox-error transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-fox-sidebar-muted hover:bg-fox-error/10 hover:text-fox-error transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={collapsed ? 'Выйти' : undefined}

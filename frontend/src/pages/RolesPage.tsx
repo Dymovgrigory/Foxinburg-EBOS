@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Card, Loader, EmptyState, Badge } from '../components/ui'
+import StatCard from '../components/ui/StatCard'
 import { systemApi } from '../api'
 import type { SystemPermissionsResponse } from '../types'
-import { LuShield } from 'react-icons/lu'
+import { LuShield, LuKeyRound, LuLink, LuCheck } from 'react-icons/lu'
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Владелец',
@@ -103,27 +104,9 @@ export default function RolesPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-fox-purple text-white flex items-center justify-center text-xl">🛡️</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{roles.length}</div>
-                  <div className="text-xs text-fox-gray">Ролей</div>
-                </div>
-              </Card>
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-fox-gold text-fox-purple flex items-center justify-center text-xl">🔑</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{permissions.length}</div>
-                  <div className="text-xs text-fox-gray">Разрешений</div>
-                </div>
-              </Card>
-              <Card className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center text-xl">🔗</div>
-                <div>
-                  <div className="text-2xl font-bold text-fox-dark">{data.endpoints_count}</div>
-                  <div className="text-xs text-fox-gray">Endpoint'ов</div>
-                </div>
-              </Card>
+              <StatCard title="Ролей" value={roles.length} icon={<LuShield />} variant="purple" />
+              <StatCard title="Разрешений" value={permissions.length} icon={<LuKeyRound />} variant="gold" />
+              <StatCard title="Endpoint'ов" value={data.endpoints_count} icon={<LuLink />} variant="graphite" />
             </div>
 
             <Card>
@@ -152,7 +135,7 @@ export default function RolesPage() {
                           return (
                             <td key={role} className="py-2 px-3 text-center">
                               {has ? (
-                                <Badge variant="success" size="sm">✓</Badge>
+                                <Badge variant="success" size="sm"><LuCheck size={10} /></Badge>
                               ) : (
                                 <span className="text-fox-gray/50">—</span>
                               )}

@@ -37,7 +37,14 @@ class UserUpdate(BaseModel):
 
 
 class UserTelegramLink(BaseModel):
-    telegram_chat_id: str
+    telegram_chat_id: Optional[str] = None
+    id: Optional[int] = None
+    hash: Optional[str] = None
+    auth_date: Optional[int] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 class UserResponse(UserBase):

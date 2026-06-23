@@ -61,8 +61,10 @@ export const authApi = {
       .then(unwrap),
   register: (data: { email: string; password: string; name: string }) =>
     api.post<ApiResponse<{ access_token: string; user: User }>>('/auth/register', data).then(unwrap),
-  linkTelegram: (telegram_chat_id: string) =>
-    api.patch<ApiResponse<User>>('/users/me/telegram', { telegram_chat_id }).then(unwrap),
+  getTelegramInfo: () =>
+    api.get<ApiResponse<{ bot_username: string; bot_link: string }>>('/users/me/telegram-info').then(unwrap),
+  linkTelegram: (data: { telegram_chat_id?: string; id?: number; hash?: string; auth_date?: number; first_name?: string; last_name?: string; username?: string; photo_url?: string }) =>
+    api.patch<ApiResponse<User>>('/users/me/telegram', data).then(unwrap),
   changePassword: (current_password: string, new_password: string) =>
     api.patch<ApiResponse<void>>('/auth/me/password', { current_password, new_password }).then(unwrap),
 }

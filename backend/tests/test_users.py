@@ -89,7 +89,6 @@ async def test_get_me_users_endpoint(client, user_factory):
     assert data["data"]["role"] == "admin"
 
 
-@pytest.mark.xfail(reason="/users/me/telegram смешивает сессии get_db и UoW: баг в роутере")
 async def test_link_telegram(client, user_factory):
     user = await user_factory(Role.STUDENT, "telegram_link@example.com")
     headers = {"Authorization": f"Bearer {create_access_token({'user_id': user.id, 'role': user.role})}"}

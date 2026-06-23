@@ -11,9 +11,11 @@ from app.schemas.finance import PayrollRequest
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
+from app.config import settings
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
 from app.services.finance_service import FinanceService
+from app.services.telegram_service import verify_telegram_widget
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -159,17 +161,51 @@ async def delete_user(
     return success_response(message="Пользователь деактивирован")
 
 
+@router.get("/me/telegram-info")
+async def get_telegram_info(current_user: User = Depends(require_active_user)):
+    if not settings.TELEGRAM_BOT_USERNAME:
+        return error_response("Telegram-бот не настроен", status_code=404)
+    return success_response(
+        data={
+            "bot_username": settings.TELEGRAM_BOT_USERNAME,
+            "bot_link": f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}",
+        },
+        message="Информация о Telegram-боте",
+    )
+
+
 @router.patch("/me/telegram")
 async def link_telegram(
     data: UserTelegramLink,
     current_user: User = Depends(require_active_user),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    current_user.telegram_chat_id = data.telegram_chat_id
+    chat_id = data.telegram_chat_id
+
+    # Если пришли данные от Telegram Login Widget — проверяем подпись
+    if data.hash is not None and data.id is not None:
+        widget_data = data.model_dump(exclude_none=True)
+        if not verify_telegram_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+            return error_response("Неверная подпись Telegram", status_code=400)
+        chat_id = str(data.id)
+
+    # Обновляем пользователя внутри той же сессии, что и UoW
+    result = await uow.session.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return error_response("Пользователь не найден", status_code=404)
+
+    if chat_id == "":
+        user.telegram_chat_id = None
+    elif chat_id:
+        user.telegram_chat_id = chat_id
+    else:
+        return error_response("Не передан Telegram ID", status_code=400)
+
     await uow.commit()
-    await uow.session.refresh(current_user)
+    await uow.session.refresh(user)
     return success_response(
-        data=UserResponse.model_validate(current_user).model_dump(),
+        data=UserResponse.model_validate(user).model_dump(),
         message="Telegram привязан",
     )
 

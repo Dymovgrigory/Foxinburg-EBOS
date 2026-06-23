@@ -1,3 +1,5 @@
+import hmac
+import hashlib
 import logging
 from typing import Optional
 
@@ -31,3 +33,32 @@ class TelegramService:
         except Exception as e:
             logger.exception("Ошибка отправки Telegram: %s", e)
             return False
+
+
+def verify_telegram_widget(data: dict, bot_token: str) -> bool:
+    """Проверяет подпись данных от Telegram Login Widget."""
+    if not bot_token:
+        return False
+
+    data = dict(data)
+    received_hash = data.pop("hash", None)
+    if not received_hash:
+        return False
+
+    # Собираем строку из отсортированных полей, исключая None-значения
+    data_check_arr = []
+    for key in sorted(data):
+        value = data[key]
+        if value is None:
+            continue
+        data_check_arr.append(f"{key}={value}")
+    data_check_string = "\n".join(data_check_arr)
+
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    computed_hash = hmac.new(
+        secret_key,
+        data_check_string.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+    return hmac.compare_digest(computed_hash, received_hash)

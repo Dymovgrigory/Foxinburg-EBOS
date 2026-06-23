@@ -77,6 +77,7 @@ class Settings(BaseSettings):
 
     # Telegram notifications
     TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_USERNAME: str = ""
 
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""

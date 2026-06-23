@@ -720,3 +720,46 @@ export interface MethodistAnalytics {
   teachers: MethodistTeacherStat[]
   upcoming_schedule: UpcomingScheduleItem[]
 }
+
+export interface SystemSettings {
+  id: number
+  school_name?: string | null
+  school_legal_name?: string | null
+  school_address?: string | null
+  school_phone?: string | null
+  school_email?: string | null
+  school_website?: string | null
+  school_logo_url?: string | null
+  school_timezone: string
+  school_currency: string
+
+  platform_default_language: string
+  platform_registration_enabled: boolean
+  platform_maintenance_mode: boolean
+  platform_max_file_size_mb: number
+
+  smtp_host?: string | null
+  smtp_port?: number | null
+  smtp_username?: string | null
+  smtp_password?: string | null
+  smtp_use_tls: boolean
+  smtp_sender_name?: string | null
+  smtp_sender_email?: string | null
+
+  sms_provider?: string | null
+  sms_api_key?: string | null
+  sms_sender_name?: string | null
+
+  telegram_bot_token?: string | null
+  telegram_channel_id?: string | null
+  telegram_notifications_enabled: boolean
+
+  yandex_client_id?: string | null
+  yandex_client_secret?: string | null
+  yandex_redirect_uri?: string | null
+  yandex_disk_enabled: boolean
+  yandex_calendar_enabled: boolean
+
+  created_at: string
+  updated_at: string
+}

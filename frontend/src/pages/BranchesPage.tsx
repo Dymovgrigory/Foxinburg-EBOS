@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Header from '../components/Header'
 import api from '../services/api'
+import { groupsApi } from '../api'
 import {
   useToast,
   Button,
@@ -27,6 +29,7 @@ import {
   LuTrash2,
   LuPower,
   LuMapPin,
+  LuUsers,
 } from 'react-icons/lu'
 
 interface Organization {
@@ -60,6 +63,7 @@ export default function BranchesPage() {
   const { showToast } = useToast()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
+  const [groupCounts, setGroupCounts] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showActive, setShowActive] = useState(true)
@@ -73,12 +77,19 @@ export default function BranchesPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [orgsRes, branchesRes] = await Promise.all([
+      const [orgsRes, branchesRes, groupsRes] = await Promise.all([
         api.get('/organizations'),
         api.get('/branches'),
+        groupsApi.list({ status: 'current' }).catch(() => []),
       ])
       setOrgs(orgsRes.data.data || [])
       setBranches(branchesRes.data.data || [])
+      const counts: Record<number, number> = {}
+      ;(groupsRes as { branch_id?: number | null }[]).forEach((g) => {
+        const id = g.branch_id || 0
+        counts[id] = (counts[id] || 0) + 1
+      })
+      setGroupCounts(counts)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Ошибка загрузки', 'error')
     } finally {
@@ -251,6 +262,7 @@ export default function BranchesPage() {
                   <Th>Город</Th>
                   <Th>Адрес</Th>
                   <Th>Телефон</Th>
+                  <Th>Группы</Th>
                   <Th>Аудитории</Th>
                   <Th>Действия</Th>
                 </tr>
@@ -269,6 +281,15 @@ export default function BranchesPage() {
                     <Td>{b.city || '—'}</Td>
                     <Td>{b.address || '—'}</Td>
                     <Td>{b.phone || '—'}</Td>
+                    <Td>
+                      <Link
+                        to={`/groups?branch_id=${b.id}`}
+                        className="inline-flex items-center gap-1 text-fox-purple hover:text-fox-purple-light hover:underline"
+                      >
+                        <LuUsers size={14} />
+                        {groupCounts[b.id] || 0}
+                      </Link>
+                    </Td>
                     <Td>
                       <span className="inline-flex items-center gap-1 text-fox-purple">
                         <LuMapPin size={14} />

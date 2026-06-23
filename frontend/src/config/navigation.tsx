@@ -58,7 +58,7 @@ export const adminGroups: MenuGroup[] = [
     collapsible: true,
     defaultOpen: true,
     items: [
-      { to: '/school-settings', label: 'Настройки школы', icon: <LuSchool /> },
+      { to: '/school-settings', label: 'Настройки системы', icon: <LuSchool /> },
       { to: '/branches', label: 'Филиалы', icon: <LuBuilding /> },
       { to: '/directories', label: 'Справочники', icon: <LuBookOpen /> },
       { to: '/reports', label: 'Отчеты', icon: <LuChartBarBig /> },
@@ -138,6 +138,15 @@ export const teacherGroups: MenuGroup[] = [
       { to: '/knowledge', label: 'База знаний', icon: <LuBrain /> },
       { to: '/library', label: 'Библиотека', icon: <LuLibrary /> },
       { to: '/certification', label: 'Сертификация', icon: <LuAward /> },
+    ],
+  },
+  {
+    title: 'Курсы',
+    collapsible: true,
+    defaultOpen: false,
+    items: [
+      { to: '/courses', label: 'Курсы', icon: <LuBookOpen /> },
+      { to: '/course-builder', label: 'Конструктор', icon: <LuPuzzle /> },
     ],
   },
   {

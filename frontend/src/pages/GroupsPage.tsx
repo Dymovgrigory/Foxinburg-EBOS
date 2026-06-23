@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
@@ -27,8 +28,9 @@ import {
   coursesApi,
   usersApi,
   schedulesApi,
+  organizationsApi,
 } from '../api'
-import type { Group, GroupMembership, GroupMembershipAdd, User, Branch, Course, Schedule } from '../types'
+import type { Group, GroupMembership, GroupMembershipAdd, User, Branch, Course, Schedule, Organization } from '../types'
 import {
   LuUsers,
   LuPlus,
@@ -118,6 +120,7 @@ export default function GroupsPage() {
 
   const [groups, setGroups] = useState<Group[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
+  const [orgs, setOrgs] = useState<Organization[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [teachers, setTeachers] = useState<User[]>([])
   const [students, setStudents] = useState<User[]>([])
@@ -125,9 +128,19 @@ export default function GroupsPage() {
 
   const [statusTab, setStatusTab] = useState('current')
   const [search, setSearch] = useState('')
+  const [orgFilter, setOrgFilter] = useState('')
   const [branchFilter, setBranchFilter] = useState('')
   const [teacherFilter, setTeacherFilter] = useState('')
   const [studyTypeFilter, setStudyTypeFilter] = useState('')
+
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const branchId = searchParams.get('branch_id')
+    if (branchId) {
+      setBranchFilter(branchId)
+    }
+  }, [searchParams])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<Group | null>(null)
@@ -150,7 +163,7 @@ export default function GroupsPage() {
 
       const requests: Promise<unknown>[] = [groupsApi.list(params)]
       if (!isTeacher) {
-        requests.push(branchesApi.list(), coursesApi.list(), usersApi.list())
+        requests.push(branchesApi.list(), organizationsApi.list(), coursesApi.list(), usersApi.list())
       }
       requests.push(usersApi.listStudents())
 
@@ -158,9 +171,10 @@ export default function GroupsPage() {
       setGroups(res[0] as Group[])
       if (!isTeacher) {
         setBranches(res[1] as Branch[])
-        setCourses(res[2] as Course[])
-        setTeachers(((res[3] as User[]) || []).filter((u: User) => u.role === 'teacher'))
-        setStudents((res[4] as User[]) || [])
+        setOrgs(res[2] as Organization[])
+        setCourses(res[3] as Course[])
+        setTeachers(((res[4] as User[]) || []).filter((u: User) => u.role === 'teacher'))
+        setStudents((res[5] as User[]) || [])
       } else {
         setStudents((res[1] as User[]) || [])
       }
@@ -171,17 +185,26 @@ export default function GroupsPage() {
     }
   }, [statusTab, branchFilter, teacherFilter, studyTypeFilter, search, isTeacher, user?.id, showToast])
 
+  const branchesForSelect = useMemo(() => {
+    if (!orgFilter) return branches
+    return branches.filter((b) => b.organization_id === Number(orgFilter))
+  }, [branches, orgFilter])
+
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
   const filteredGroups = useMemo(() => {
     let list = groups
+    if (orgFilter) {
+      const allowedBranchIds = new Set(branchesForSelect.map((b) => b.id))
+      list = list.filter((g) => g.branch_id != null && allowedBranchIds.has(g.branch_id))
+    }
     if (isTeacher && search) {
       list = list.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()))
     }
     return list
-  }, [groups, isTeacher, search])
+  }, [groups, branchesForSelect, orgFilter, isTeacher, search])
 
   const openCreate = () => {
     setEditingGroup(null)
@@ -259,9 +282,24 @@ export default function GroupsPage() {
             />
             {!isTeacher && (
               <>
+                <Select value={orgFilter} onChange={(e) => {
+                  const value = e.target.value
+                  setOrgFilter(value)
+                  if (value && branchFilter) {
+                    const branch = branches.find((b) => b.id === Number(branchFilter))
+                    if (branch && branch.organization_id !== Number(value)) {
+                      setBranchFilter('')
+                    }
+                  }
+                }} className="lg:max-w-xs">
+                  <option value="">Все организации</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </Select>
                 <Select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} className="lg:max-w-xs">
                   <option value="">Все филиалы</option>
-                  {branches.map((b) => (
+                  {branchesForSelect.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </Select>

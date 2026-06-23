@@ -491,3 +491,575 @@ class TestTeacherAcademyWrite:
         headers = await auth_headers_factory(role)
         response = await client.get("/api/v3/teacher-academy/access-log", headers=headers)
         assert response.status_code == 403
+_INVOICE_CREATE_PAYLOAD = {
+    "student_id": 1,
+    "group_id": 1,
+    "amount": 10000,
+    "due_date": "2026-07-01",
+    "period_start": "2026-06-01",
+    "period_end": "2026-06-30",
+}
+
+_INVOICE_UPDATE_PAYLOAD = {"amount": 20000}
+
+_EXPENSE_CREATE_PAYLOAD = {
+    "category": "marketing",
+    "amount": 5000,
+    "expense_date": "2026-06-01",
+    "description": "rbac expense",
+}
+
+_EXPENSE_UPDATE_PAYLOAD = {"amount": 6000}
+
+_SUBSCRIPTION_CREATE_PAYLOAD = {
+    "student_id": 1,
+    "group_id": 1,
+    "type": "lessons",
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-01",
+    "lessons_total": 8,
+}
+
+_SUBSCRIPTION_UPDATE_PAYLOAD = {"lessons_total": 10}
+
+_LEAVE_CREATE_PAYLOAD = {
+    "user_id": 1,
+    "leave_type": "vacation",
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-10",
+    "status": "approved",
+}
+
+_LEAVE_UPDATE_PAYLOAD = {"status": "pending"}
+
+_KPI_CREATE_PAYLOAD = {
+    "user_id": 1,
+    "period_start": "2026-06-01",
+    "period_end": "2026-06-30",
+    "metric": "lessons",
+    "target": 10,
+    "actual": 5,
+    "unit": "lessons",
+}
+
+_KPI_UPDATE_PAYLOAD = {"actual": 6}
+
+_ROLE_CONFIG_CREATE_PAYLOAD = {
+    "role": "rbac_test_role",
+    "label": "RBAC Test Role",
+    "permissions": ["user:read"],
+    "is_custom": True,
+}
+
+_ROLE_CONFIG_UPDATE_PAYLOAD = {"label": "Updated RBAC Role"}
+
+
+class TestFinanceInvoicesWrite:
+    """Управление счетами доступно OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    async def test_unauthorized_create_invoice_returns_401(self, client):
+        response = await client.post("/api/v3/finance/invoices", json=_INVOICE_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_invoice(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/invoices", json=_INVOICE_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_invoice_returns_401(self, client):
+        response = await client.patch("/api/v3/finance/invoices/1", json=_INVOICE_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_invoice(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/finance/invoices/1", json=_INVOICE_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_invoice_returns_401(self, client):
+        response = await client.delete("/api/v3/finance/invoices/1")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_invoice(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/finance/invoices/1", headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_generate_invoices_returns_401(self, client):
+        response = await client.post("/api/v3/finance/invoices/generate", json={
+            "group_id": 1,
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+        })
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_generate_invoices(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/invoices/generate", json={
+            "group_id": 1,
+            "period_start": "2026-06-01",
+            "period_end": "2026-06-30",
+        }, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_pay_invoice_returns_401(self, client):
+        response = await client.post("/api/v3/finance/invoices/1/pay", json={"amount": 10000})
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_pay_invoice(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/invoices/1/pay", json={"amount": 10000}, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_download_invoice_pdf_returns_401(self, client):
+        response = await client.get("/api/v3/finance/invoices/1/pdf")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_download_invoice_pdf(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/finance/invoices/1/pdf", headers=headers)
+        assert response.status_code == 403
+
+
+class TestFinanceExpensesWrite:
+    """Управление расходами доступно OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    async def test_unauthorized_create_expense_returns_401(self, client):
+        response = await client.post("/api/v3/finance/expenses", json=_EXPENSE_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_expense(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/expenses", json=_EXPENSE_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_expense_returns_401(self, client):
+        response = await client.patch("/api/v3/finance/expenses/1", json=_EXPENSE_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_expense(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/finance/expenses/1", json=_EXPENSE_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_expense_returns_401(self, client):
+        response = await client.delete("/api/v3/finance/expenses/1")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_expense(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/finance/expenses/1", headers=headers)
+        assert response.status_code == 403
+
+
+class TestFinancePayrollWrite:
+    """Расчёт и начисление зарплат доступно OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    async def test_unauthorized_get_payroll_returns_401(self, client):
+        response = await client.get("/api/v3/finance/payroll?teacher_id=1&from_date=2026-06-01&to_date=2026-06-30")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_payroll(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/finance/payroll?teacher_id=1&from_date=2026-06-01&to_date=2026-06-30", headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_run_payroll_returns_401(self, client):
+        response = await client.post("/api/v3/finance/payroll/run", json={
+            "teacher_id": 1,
+            "from_date": "2026-06-01",
+            "to_date": "2026-06-30",
+        })
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_run_payroll(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/payroll/run", json={
+            "teacher_id": 1,
+            "from_date": "2026-06-01",
+            "to_date": "2026-06-30",
+        }, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_get_pnl_returns_401(self, client):
+        response = await client.get("/api/v3/finance/pnl?from_date=2026-06-01&to_date=2026-06-30")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_pnl(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/finance/pnl?from_date=2026-06-01&to_date=2026-06-30", headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_download_payment_act_pdf_returns_401(self, client):
+        response = await client.get("/api/v3/finance/payments/1/act/pdf")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_download_payment_act_pdf(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/finance/payments/1/act/pdf", headers=headers)
+        assert response.status_code == 403
+
+
+class TestFinanceSubscriptionsWrite:
+    """Управление абонементами доступно OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    async def test_unauthorized_create_subscription_returns_401(self, client):
+        response = await client.post("/api/v3/finance/subscriptions", json=_SUBSCRIPTION_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/subscriptions", json=_SUBSCRIPTION_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_subscription_returns_401(self, client):
+        response = await client.patch("/api/v3/finance/subscriptions/1", json=_SUBSCRIPTION_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/finance/subscriptions/1", json=_SUBSCRIPTION_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_subscription_returns_401(self, client):
+        response = await client.delete("/api/v3/finance/subscriptions/1")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/finance/subscriptions/1", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_renew_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/subscriptions/1/renew", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_freeze_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/subscriptions/1/freeze", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_cancel_subscription(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/finance/subscriptions/1/cancel", headers=headers)
+        assert response.status_code == 403
+
+
+class TestHrLeavesWrite:
+    """Управление отпусками доступно OWNER/SUPER_ADMIN/ADMIN."""
+
+    async def test_unauthorized_create_leave_returns_401(self, client):
+        response = await client.post("/api/v3/hr/leaves", json=_LEAVE_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_leave(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/hr/leaves", json=_LEAVE_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_leave_returns_401(self, client):
+        response = await client.patch("/api/v3/hr/leaves/1", json=_LEAVE_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_leave(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/hr/leaves/1", json=_LEAVE_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_leave_returns_401(self, client):
+        response = await client.delete("/api/v3/hr/leaves/1")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_leave(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/hr/leaves/1", headers=headers)
+        assert response.status_code == 403
+
+
+class TestHrKpisWrite:
+    """Управление KPI доступно OWNER/SUPER_ADMIN/ADMIN."""
+
+    async def test_unauthorized_create_kpi_returns_401(self, client):
+        response = await client.post("/api/v3/hr/kpis", json=_KPI_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_kpi(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/hr/kpis", json=_KPI_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_kpi_returns_401(self, client):
+        response = await client.patch("/api/v3/hr/kpis/1", json=_KPI_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_kpi(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/hr/kpis/1", json=_KPI_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_kpi_returns_401(self, client):
+        response = await client.delete("/api/v3/hr/kpis/1")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_kpi(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/hr/kpis/1", headers=headers)
+        assert response.status_code == 403
+
+
+class TestRoleConfigWrite:
+    """Управление ролями доступно OWNER/SUPER_ADMIN."""
+
+    async def test_unauthorized_create_role_config_returns_401(self, client):
+        response = await client.post("/api/v3/system/roles", json=_ROLE_CONFIG_CREATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.ADMIN, Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_create_role_config(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.post("/api/v3/system/roles", json=_ROLE_CONFIG_CREATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_update_role_config_returns_401(self, client):
+        response = await client.patch("/api/v3/system/roles/guest", json=_ROLE_CONFIG_UPDATE_PAYLOAD)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.ADMIN, Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_update_role_config(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.patch("/api/v3/system/roles/guest", json=_ROLE_CONFIG_UPDATE_PAYLOAD, headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_delete_role_config_returns_401(self, client):
+        response = await client.delete("/api/v3/system/roles/guest")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.ADMIN, Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.MANAGER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_delete_role_config(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/system/roles/guest", headers=headers)
+        assert response.status_code == 403
+
+
+class TestReportsRead:
+    """Отчёты доступны OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    _REPORT_TYPES = [
+        "manager", "sales", "teachers", "students_payments",
+        "students_subscriptions", "contracts", "accounts",
+        "pnl", "payroll", "expenses", "debtors",
+    ]
+
+    async def test_unauthorized_get_reports_types_returns_401(self, client):
+        response = await client.get("/api/v3/reports/types")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_reports_types(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/reports/types", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    async def test_unauthorized_get_report_returns_401(self, client, report_type):
+        response = await client.get(f"/api/v3/reports/{report_type}")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_report(self, client, auth_headers_factory, report_type, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get(f"/api/v3/reports/{report_type}", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    async def test_unauthorized_export_csv_returns_401(self, client, report_type):
+        response = await client.get(f"/api/v3/reports/{report_type}/export.csv")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_export_csv(self, client, auth_headers_factory, report_type, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get(f"/api/v3/reports/{report_type}/export.csv", headers=headers)
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    async def test_unauthorized_export_pdf_returns_401(self, client, report_type):
+        response = await client.get(f"/api/v3/reports/{report_type}/export.pdf")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("report_type", _REPORT_TYPES)
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_export_pdf(self, client, auth_headers_factory, report_type, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get(f"/api/v3/reports/{report_type}/export.pdf", headers=headers)
+        assert response.status_code == 403
+
+
+class TestUsersHrEndpoints:
+    """Кадровые endpoint'ы пользователей доступны OWNER/SUPER_ADMIN/ADMIN/MANAGER/METHODIST."""
+
+    async def test_unauthorized_get_user_documents_returns_401(self, client):
+        response = await client.get("/api/v3/users/1/documents")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_user_documents(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/users/1/documents", headers=headers)
+        assert response.status_code == 403
+
+    async def test_unauthorized_get_user_payroll_returns_401(self, client):
+        response = await client.get("/api/v3/users/1/payroll?from_date=2026-06-01&to_date=2026-06-30")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_user_payroll(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/users/1/payroll?from_date=2026-06-01&to_date=2026-06-30", headers=headers)
+        assert response.status_code == 403
+
+
+class TestSystemPermissionsRead:
+    """Просмотр системных разрешений доступен OWNER/SUPER_ADMIN/ADMIN/MANAGER."""
+
+    async def test_unauthorized_get_system_permissions_returns_401(self, client):
+        response = await client.get("/api/v3/system/permissions")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "role",
+        [Role.STUDENT, Role.TEACHER, Role.METHODIST, Role.PARENT, Role.GUEST],
+    )
+    async def test_low_privilege_user_cannot_get_system_permissions(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.get("/api/v3/system/permissions", headers=headers)
+        assert response.status_code == 403

@@ -19,7 +19,7 @@ from app.models import (
     EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction, Invoice, Expense, Subscription,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
-    Task, Directory, StaffLeave, StaffKpi,
+    Task, Directory, StaffLeave, StaffKpi, SystemSettings,
 )
 
 from app.routers import (
@@ -28,6 +28,7 @@ from app.routers import (
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
     role_config,
+    # system_settings is part of system router
 )
 from app.admin import setup_admin
 

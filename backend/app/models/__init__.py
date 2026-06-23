@@ -22,6 +22,7 @@ from .directory import Directory
 from .survey import Survey, SurveyQuestion, SurveyResponse, SurveyAnswer
 from .hr import StaffLeave, StaffKpi
 from .role_config import RoleConfig
+from .system_settings import SystemSettings
 
 __all__ = [
     "Base",
@@ -71,4 +72,5 @@ __all__ = [
     "StaffLeave",
     "StaffKpi",
     "RoleConfig",
+    "SystemSettings",
 ]

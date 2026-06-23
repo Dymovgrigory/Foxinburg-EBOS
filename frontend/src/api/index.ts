@@ -42,6 +42,7 @@ import type {
   DashboardAnalytics,
   FinanceAnalytics,
   MethodistAnalytics,
+  SystemSettings,
 } from '../types'
 
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
@@ -440,6 +441,12 @@ export interface SystemPermissionsResponse {
 
 export const systemApi = {
   permissions: () => api.get<ApiResponse<SystemPermissionsResponse>>('/system/permissions').then(unwrap),
+}
+
+export const systemSettingsApi = {
+  get: () => api.get<ApiResponse<SystemSettings>>('/system/settings').then(unwrap),
+  update: (data: Partial<SystemSettings>) =>
+    api.patch<ApiResponse<SystemSettings>>('/system/settings', data).then(unwrap),
 }
 
 export const aiApi = {

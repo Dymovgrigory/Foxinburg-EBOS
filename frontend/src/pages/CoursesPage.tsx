@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
-import { useToast, Button, Card, Badge, Modal, Input, EmptyState, Loader } from '../components/ui'
-import { LuBookOpen } from 'react-icons/lu'
+import { useToast, Button, Card, Badge, Modal, Input, Select, Textarea, EmptyState, Loader, PageShell } from '../components/ui'
+import { LuBookOpen, LuChevronUp, LuChevronDown } from 'react-icons/lu'
 
 interface Lesson {
   id: number
@@ -105,36 +105,47 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Курсы" subtitle="Управление учебными программами" icon={<LuBookOpen />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <Card>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <div
+            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+            style={{
+              backgroundImage: 'url(/brand/swirl-2.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'top right',
+            }}
+          />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-fox-dark">Все курсы</h2>
-              <p className="text-xs text-fox-gray mt-0.5">{filteredCourses.length} из {courses.length} курсов</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Учебные курсы</h2>
+              <p className="text-fox-gray">{filteredCourses.length} из {courses.length} курсов</p>
             </div>
-            <Button onClick={() => setShowForm(true)} leftIcon="+">Новый курс</Button>
+            <Button onClick={() => setShowForm(true)} leftIcon={<span className="text-lg leading-none">+</span>}>Новый курс</Button>
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-5">
+        <Card>
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               placeholder="Поиск по названию или описанию"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="sm:max-w-sm"
             />
-            <select
+            <Select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="sm:max-w-xs"
             >
               <option value="">Все типы</option>
               {uniqueTypes.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </Card>
 
@@ -172,7 +183,7 @@ export default function CoursesPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setExpanded(isExpanded ? null : course.id)}
-                      rightIcon={isExpanded ? '▲' : '▼'}
+                      rightIcon={isExpanded ? <LuChevronUp size={14} /> : <LuChevronDown size={14} />}
                     >
                       {isExpanded ? 'Скрыть модули' : 'Показать модули'}
                     </Button>
@@ -235,15 +246,12 @@ export default function CoursesPage() {
             value={form.short_description}
             onChange={(e) => setForm({ ...form, short_description: e.target.value })}
           />
-          <div>
-            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Полное описание</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={3}
-              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
-            />
-          </div>
+          <Textarea
+            label="Полное описание"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            rows={3}
+          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Проходной балл"
@@ -251,17 +259,14 @@ export default function CoursesPage() {
               value={form.passing_score}
               onChange={(e) => setForm({ ...form, passing_score: Number(e.target.value) })}
             />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Тип курса</label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                <option value="academy">Academy</option>
-                <option value="world">World</option>
-              </select>
-            </div>
+            <Select
+              label="Тип курса"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
+              <option value="academy">Academy</option>
+              <option value="world">World</option>
+            </Select>
           </div>
           <label className="flex items-center gap-2 text-sm text-fox-graphite">
             <input
@@ -283,6 +288,6 @@ export default function CoursesPage() {
           </label>
         </form>
       </Modal>
-    </div>
+    </PageShell>
   )
 }

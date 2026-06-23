@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
-import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Button, Card, Badge, Input, Select, Textarea, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { LuCalendar, LuX } from 'react-icons/lu'
 
@@ -163,15 +163,24 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Расписание" subtitle={`Занятий: ${filtered.length}`} icon={<LuCalendar />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <Card>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <div
+            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+            style={{
+              backgroundImage: 'url(/brand/wave.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'top right',
+            }}
+          />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-fox-dark">Список занятий</h2>
-              <p className="text-xs text-fox-gray mt-0.5">{filtered.length} из {schedules.length}</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Расписание занятий</h2>
+              <p className="text-fox-gray">{filtered.length} из {schedules.length} занятий</p>
             </div>
             {canManage && (
               <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
@@ -179,24 +188,26 @@ export default function SchedulePage() {
               </Button>
             )}
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-5">
+        <Card>
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               placeholder="Поиск по названию"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="sm:max-w-xs"
             />
-            <select
+            <Select
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
-              className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+              className="sm:max-w-xs"
             >
               <option value="">Все группы</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </Card>
 
@@ -210,28 +221,26 @@ export default function SchedulePage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
-              <select
+              <Select
                 required
                 value={form.group_id}
                 onChange={(e) => setForm({ ...form, group_id: e.target.value })}
-                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Группа</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
-              </select>
-              <select
+              </Select>
+              <Select
                 required
                 value={form.teacher_id}
                 onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
-                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="">Преподаватель</option>
                 {teachers.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-              </select>
+              </Select>
               <Input
                 placeholder="Аудитория / ссылка"
                 value={form.room}
@@ -251,37 +260,34 @@ export default function SchedulePage() {
                 value={form.end_time}
                 onChange={(e) => setForm({ ...form, end_time: e.target.value })}
               />
-              <select
+              <Select
                 value={form.recurrence}
                 onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 {Object.entries(recurrenceLabels).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
-              </select>
+              </Select>
               <Input
                 type="datetime-local"
                 label="Повторять до"
                 value={form.recurrence_end}
                 onChange={(e) => setForm({ ...form, recurrence_end: e.target.value })}
               />
-              <select
+              <Select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="px-4 py-2.5 border border-fox-border rounded-xl text-sm text-fox-graphite focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
               >
                 <option value="scheduled">Запланировано</option>
                 <option value="confirmed">Подтверждено</option>
                 <option value="cancelled">Отменено</option>
-              </select>
+              </Select>
               <div className="md:col-span-2">
-                <textarea
+                <Textarea
                   placeholder="Описание"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
-                  className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
                 />
               </div>
               <div className="flex items-end">
@@ -339,6 +345,6 @@ export default function SchedulePage() {
           </Card>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }

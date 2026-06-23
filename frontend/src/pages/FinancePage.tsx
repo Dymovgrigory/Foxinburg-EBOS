@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Button, Card, Badge, Modal, Input, Select, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
 import StatCard from '../components/ui/StatCard'
 import { financeApi, usersApi } from '../api'
 import type { Payment, Transaction, User } from '../types'
@@ -131,10 +131,31 @@ export default function FinancePage() {
   const formatDate = (s: string) => new Date(s).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Финансы" subtitle="Финансовая аналитика и управление" icon={<LuTrendingUp />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <div
+            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+            style={{
+              backgroundImage: 'url(/brand/swirl-1.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'top right',
+            }}
+          />
+          <div className="relative z-10 flex items-start gap-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-fox-purple text-fox-gold shadow-md flex-shrink-0">
+              <LuTrendingUp size={28} />
+            </div>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Финансовая аналитика</h2>
+              <p className="text-fox-gray max-w-xl">Учёт платежей, транзакций и чистого дохода школы.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard title="Доходы" value={formatMoney(analytics.income_kopecks)} icon={<LuTrendingUp />} variant="purple" />
@@ -149,7 +170,7 @@ export default function FinancePage() {
               <h2 className="text-lg font-bold text-fox-dark">Платежи</h2>
               <p className="text-xs text-fox-gray mt-0.5">{payments.length} записей</p>
             </div>
-            <Button onClick={openCreate} leftIcon="+">Новый платёж</Button>
+            <Button onClick={openCreate} leftIcon={<span className="text-lg leading-none">+</span>}>Новый платёж</Button>
           </div>
 
           {loading ? (
@@ -235,7 +256,7 @@ export default function FinancePage() {
                       <Td>{formatDate(t.created_at)}</Td>
                       <Td>{studentName(users, t.user_id)}</Td>
                       <Td className="capitalize">{t.type}</Td>
-                      <Td className={t.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-fox-error font-semibold'}>
+                      <Td className={t.amount >= 0 ? 'text-fox-success font-semibold' : 'text-fox-error font-semibold'}>
                         {formatMoney(t.amount)}
                       </Td>
                       <Td>{formatMoney(t.balance_after)}</Td>
@@ -264,20 +285,17 @@ export default function FinancePage() {
         }
       >
         <form id="payment-form" onSubmit={handleSubmit} className="grid gap-4">
-          <div>
-            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Ученик</label>
-            <select
-              required
-              value={form.student_id}
-              onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-            >
-              <option value="">Выберите ученика</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Ученик"
+            required
+            value={form.student_id}
+            onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+          >
+            <option value="">Выберите ученика</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </Select>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Сумма (₽)"
@@ -287,43 +305,34 @@ export default function FinancePage() {
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Тип</label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value as 'income' | 'refund' })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                <option value="income">Доход</option>
-                <option value="refund">Возврат</option>
-              </select>
-            </div>
+            <Select
+              label="Тип"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value as 'income' | 'refund' })}
+            >
+              <option value="income">Доход</option>
+              <option value="refund">Возврат</option>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Способ</label>
-              <select
-                value={form.method}
-                onChange={(e) => setForm({ ...form, method: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                {METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Способ"
+              value={form.method}
+              onChange={(e) => setForm({ ...form, method: e.target.value })}
+            >
+              {METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </Select>
+            <Select
+              label="Статус"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              {STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </Select>
           </div>
           <Input
             label="Описание"
@@ -332,7 +341,7 @@ export default function FinancePage() {
           />
         </form>
       </Modal>
-    </div>
+    </PageShell>
   )
 }
 

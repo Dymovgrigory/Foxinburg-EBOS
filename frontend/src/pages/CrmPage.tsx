@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Button, Card, Badge, Modal, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Button, Card, Badge, Modal, Input, Select, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell, Tabs } from '../components/ui'
 import { crmApi, usersApi } from '../api'
 import type { Lead, Deal, User } from '../types'
-import { LuClipboardList, LuHandshake } from 'react-icons/lu'
+import { LuClipboardList, LuHandshake, LuFilter } from 'react-icons/lu'
 
 const LEAD_STATUSES = [
   { value: 'new', label: 'Новый' },
@@ -204,36 +204,45 @@ export default function CrmPage() {
   const formatMoney = (kopecks: number) => new Intl.NumberFormat('ru-RU').format(kopecks / 100) + ' ₽'
   const formatDate = (s: string) => new Date(s).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
 
+  const tabs = [
+    { id: 'pipeline', label: 'Воронка', icon: <LuFilter size={16} /> },
+    { id: 'leads', label: 'Лиды', icon: <LuClipboardList size={16} /> },
+    { id: 'deals', label: 'Сделки', icon: <LuHandshake size={16} /> },
+  ]
+
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="CRM" subtitle="Лиды, сделки и воронка продаж" icon={<LuClipboardList />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <Card>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex bg-fox-light rounded-xl p-1 border border-fox-border/50">
-              {(['pipeline', 'leads', 'deals'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={[
-                    'px-4 py-2 rounded-lg text-sm font-medium transition',
-                    activeTab === t ? 'bg-fox-purple text-white shadow-sm' : 'text-fox-gray hover:bg-white',
-                  ].join(' ')}
-                >
-                  {t === 'pipeline' ? 'Воронка' : t === 'leads' ? 'Лиды' : 'Сделки'}
-                </button>
-              ))}
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <div
+            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+            style={{
+              backgroundImage: 'url(/brand/swirl-1.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'top right',
+            }}
+          />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Воронка продаж</h2>
+              <p className="text-fox-gray">Управление лидами и сделками FOXINBURG.</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="secondary" size="sm" onClick={openLeadCreate}>
-                + Лид
+              <Button variant="secondary" size="sm" onClick={openLeadCreate} leftIcon={<span className="text-lg leading-none">+</span>}>
+                Лид
               </Button>
-              <Button size="sm" onClick={openDealCreate}>
-                + Сделка
+              <Button size="sm" onClick={openDealCreate} leftIcon={<span className="text-lg leading-none">+</span>}>
+                Сделка
               </Button>
             </div>
           </div>
+        </div>
+
+        <Card>
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={(id) => setActiveTab(id as typeof activeTab)} />
         </Card>
 
         {loading ? (
@@ -369,32 +378,26 @@ export default function CrmPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Источник" value={leadForm.source} onChange={(e) => setLeadForm({ ...leadForm, source: e.target.value })} />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
-              <select
-                value={leadForm.status}
-                onChange={(e) => setLeadForm({ ...leadForm, status: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Менеджер</label>
-            <select
-              value={leadForm.manager_id}
-              onChange={(e) => setLeadForm({ ...leadForm, manager_id: e.target.value })}
-              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+            <Select
+              label="Статус"
+              value={leadForm.status}
+              onChange={(e) => setLeadForm({ ...leadForm, status: e.target.value })}
             >
-              <option value="">Без менеджера</option>
-              {managers.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+              {LEAD_STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
+          <Select
+            label="Менеджер"
+            value={leadForm.manager_id}
+            onChange={(e) => setLeadForm({ ...leadForm, manager_id: e.target.value })}
+          >
+            <option value="">Без менеджера</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </Select>
           <Input label="Комментарий" value={leadForm.comment} onChange={(e) => setLeadForm({ ...leadForm, comment: e.target.value })} />
         </form>
       </Modal>
@@ -412,39 +415,33 @@ export default function CrmPage() {
         }
       >
         <form id="deal-form" onSubmit={handleDealSubmit} className="grid gap-4">
-          <div>
-            <label className="block text-sm font-medium text-fox-graphite mb-1.5">Лид</label>
-            <select
-              required
-              value={dealForm.lead_id}
-              onChange={(e) => setDealForm({ ...dealForm, lead_id: e.target.value })}
-              className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-            >
-              <option value="">Выберите лид</option>
-              {leads.map((l) => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Лид"
+            required
+            value={dealForm.lead_id}
+            onChange={(e) => setDealForm({ ...dealForm, lead_id: e.target.value })}
+          >
+            <option value="">Выберите лид</option>
+            {leads.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </Select>
           <Input label="Название сделки" required value={dealForm.title} onChange={(e) => setDealForm({ ...dealForm, title: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Сумма (₽)" type="number" step="0.01" required value={dealForm.amount} onChange={(e) => setDealForm({ ...dealForm, amount: e.target.value })} />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
-              <select
-                value={dealForm.status}
-                onChange={(e) => setDealForm({ ...dealForm, status: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                {DEAL_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Статус"
+              value={dealForm.status}
+              onChange={(e) => setDealForm({ ...dealForm, status: e.target.value })}
+            >
+              {DEAL_STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </Select>
           </div>
         </form>
       </Modal>
-    </div>
+    </PageShell>
   )
 }
 

@@ -159,6 +159,34 @@ export default function SystemCenterPage() {
           <Loader text="Загрузка System Center..." />
         ) : (
           <>
+            <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+              <div
+                className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+                style={{
+                  backgroundImage: 'url(/brand/wave.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'top right',
+                }}
+              />
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-fox-purple text-fox-gold shadow-md flex-shrink-0">
+                  <LuSettings size={28} />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fox-purple/10 text-fox-purple text-xs font-semibold mb-2">
+                    Администратор
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+                    System Center
+                  </h2>
+                  <p className="text-fox-gray max-w-xl">
+                    Управление операционной системой школы: модули, роли, API и база данных.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {stats.map((s) => (
@@ -415,13 +443,13 @@ function sumValues(obj: Record<string, number>) {
 }
 
 function colorForValue(value: number) {
-  if (value >= 80) return 'text-emerald-600'
+  if (value >= 80) return 'text-fox-success'
   if (value >= 60) return 'text-fox-purple'
   return 'text-fox-error'
 }
 
 function barColorForValue(value: number) {
-  if (value >= 80) return 'bg-emerald-500'
+  if (value >= 80) return 'bg-fox-success'
   if (value >= 60) return 'bg-fox-purple'
   return 'bg-fox-error'
 }

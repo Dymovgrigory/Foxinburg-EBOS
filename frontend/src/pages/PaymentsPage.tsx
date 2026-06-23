@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Card, Loader, EmptyState, Badge, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
 import StatCard from '../components/ui/StatCard'
 import { financeApi } from '../api'
 import type { Payment, Transaction } from '../types'
@@ -62,7 +62,7 @@ export default function PaymentsPage() {
   const formatDate = (s: string) => new Date(s).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Оплата" subtitle="История платежей и баланс" icon={<LuCreditCard />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -70,6 +70,27 @@ export default function PaymentsPage() {
           <Loader text="Загрузка платежей..." />
         ) : (
           <>
+            <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+              <div
+                className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+                style={{
+                  backgroundImage: 'url(/brand/swirl-2.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'top right',
+                }}
+              />
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-fox-gold text-fox-purple shadow-md flex-shrink-0">
+                  <LuCreditCard size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">История платежей</h2>
+                  <p className="text-fox-gray max-w-xl">Баланс, оплаты и возвраты по вашему аккаунту.</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard title="Текущий баланс" value={formatMoney(balance?.balance || 0)} icon={<LuWallet />} variant="purple" />
               <StatCard title="Оплачено" value={formatMoney(totalPaid)} icon={<LuTrendingUp />} variant="gold" />
@@ -135,7 +156,7 @@ export default function PaymentsPage() {
                         <Tr key={t.id}>
                           <Td>{formatDate(t.created_at)}</Td>
                           <Td className="capitalize">{t.type}</Td>
-                          <Td className={t.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-fox-error font-semibold'}>
+                          <Td className={t.amount >= 0 ? 'text-fox-success font-semibold' : 'text-fox-error font-semibold'}>
                             {formatMoney(t.amount)}
                           </Td>
                           <Td>{formatMoney(t.balance_after)}</Td>
@@ -150,7 +171,7 @@ export default function PaymentsPage() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 

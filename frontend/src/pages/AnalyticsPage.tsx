@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Card, Loader, EmptyState } from '../components/ui'
+import { useToast, Card, Loader, EmptyState, PageShell } from '../components/ui'
 import StatCard from '../components/ui/StatCard'
 import { analyticsApi } from '../api'
 import type { DashboardAnalytics } from '../types'
@@ -11,11 +11,11 @@ const STATUS_COLORS = [
   'bg-fox-purple',
   'bg-fox-gold',
   'bg-fox-graphite',
-  'bg-fox-light border border-fox-border',
-  'bg-fox-purple/80',
-  'bg-fox-gold/80',
-  'bg-fox-graphite/80',
-  'bg-fox-light/80 border border-fox-border',
+  'bg-fox-purple-light',
+  'bg-fox-purple-dark',
+  'bg-fox-gold-dark',
+  'bg-fox-dark',
+  'bg-fox-gray',
 ]
 
 export default function AnalyticsPage() {
@@ -56,7 +56,7 @@ export default function AnalyticsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Аналитика" subtitle="Обзор ключевых метрик платформы" icon={<LuChartBarBig />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -66,6 +66,27 @@ export default function AnalyticsPage() {
           <EmptyState icon={<LuChartBarBig />} title="Не удалось загрузить аналитику" description="Попробуй обновить страницу." />
         ) : (
           <>
+            <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+              <div
+                className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+                style={{
+                  backgroundImage: 'url(/brand/blob.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'top right',
+                }}
+              />
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-fox-gold text-fox-purple shadow-md flex-shrink-0">
+                  <LuChartBarBig size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Аналитика платформы</h2>
+                  <p className="text-fox-gray max-w-xl">Ключевые метрики FOXINBURG EBOS в одном месте.</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {metrics.map((m) => (
                 <StatCard
@@ -86,7 +107,7 @@ export default function AnalyticsPage() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 

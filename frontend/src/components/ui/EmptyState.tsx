@@ -17,7 +17,7 @@ export default function EmptyState({
   description,
   actionLabel,
   onAction,
-  mascot = true,
+  mascot = false,
 }: EmptyStateProps) {
   return (
     <div

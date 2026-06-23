@@ -18,8 +18,11 @@ import {
   Tbody,
   Tr,
   Td,
+  PageShell,
+  Select,
+  Textarea,
 } from '../components/ui'
-import { LuNotebookPen, LuPencil, LuTrash2 } from 'react-icons/lu'
+import { LuNotebookPen, LuPencil, LuTrash2, LuRefreshCw } from 'react-icons/lu'
 
 interface Homework {
   id: number
@@ -205,16 +208,13 @@ export default function HomeworksPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-fox-graphite mb-1.5">Текст ответа</label>
-                    <textarea
-                      value={studentAnswer}
-                      onChange={(e) => setStudentAnswer(e.target.value)}
-                      rows={4}
-                      className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
-                      placeholder="Напишите ответ на задание..."
-                    />
-                  </div>
+                  <Textarea
+                    label="Текст ответа"
+                    value={studentAnswer}
+                    onChange={(e) => setStudentAnswer(e.target.value)}
+                    rows={4}
+                    placeholder="Напишите ответ на задание..."
+                  />
                   <Input
                     label="Ссылки на файлы (JSON-массив)"
                     placeholder='["https://example.com/file.pdf"]'
@@ -329,29 +329,23 @@ export default function HomeworksPage() {
               value={editForm.student_id ?? ''}
               onChange={(e) => setEditForm({ ...editForm, student_id: Number(e.target.value) })}
             />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Содержание</label>
-              <textarea
-                value={editForm.content || ''}
-                onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                rows={4}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус</label>
-              <select
-                value={editForm.status || ''}
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                <option value="assigned">Назначено</option>
-                <option value="submitted">Сдано</option>
-                <option value="reviewed">Проверено</option>
-                <option value="revision">Доработка</option>
-                <option value="rejected">Отклонено</option>
-              </select>
-            </div>
+            <Textarea
+              label="Содержание"
+              value={editForm.content || ''}
+              onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+              rows={4}
+            />
+            <Select
+              label="Статус"
+              value={editForm.status || ''}
+              onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+            >
+              <option value="assigned">Назначено</option>
+              <option value="submitted">Сдано</option>
+              <option value="reviewed">Проверено</option>
+              <option value="revision">Доработка</option>
+              <option value="rejected">Отклонено</option>
+            </Select>
           </form>
         )}
       </Modal>
@@ -379,18 +373,15 @@ export default function HomeworksPage() {
                 {selected.content || 'Текстовое решение отсутствует'}
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Статус проверки</label>
-              <select
-                value={review.status}
-                onChange={(e) => setReview({ ...review, status: e.target.value })}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
-              >
-                <option value="approved">Принято</option>
-                <option value="revision">На доработку</option>
-                <option value="rejected">Отклонено</option>
-              </select>
-            </div>
+            <Select
+              label="Статус проверки"
+              value={review.status}
+              onChange={(e) => setReview({ ...review, status: e.target.value })}
+            >
+              <option value="approved">Принято</option>
+              <option value="revision">На доработку</option>
+              <option value="rejected">Отклонено</option>
+            </Select>
             <Input
               label="Балл"
               type="number"
@@ -398,15 +389,12 @@ export default function HomeworksPage() {
               value={review.score}
               onChange={(e) => setReview({ ...review, score: e.target.value })}
             />
-            <div>
-              <label className="block text-sm font-medium text-fox-graphite mb-1.5">Комментарий</label>
-              <textarea
-                value={review.comment}
-                onChange={(e) => setReview({ ...review, comment: e.target.value })}
-                rows={3}
-                className="w-full rounded-xl border border-fox-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold"
-              />
-            </div>
+            <Textarea
+              label="Комментарий"
+              value={review.comment}
+              onChange={(e) => setReview({ ...review, comment: e.target.value })}
+              rows={3}
+            />
           </form>
         )}
       </Modal>
@@ -414,23 +402,32 @@ export default function HomeworksPage() {
   )
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Домашние задания" subtitle={isReviewer ? 'Выдача и проверка ДЗ' : 'Мои домашние задания'} icon={<LuNotebookPen />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <Card>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <div
+            className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+            style={{
+              backgroundImage: 'url(/brand/blob.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'top right',
+            }}
+          />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-fox-dark">
-                {isReviewer ? 'Список заданий' : 'Мои задания'}
+              <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+                {isReviewer ? 'Проверка заданий' : 'Мои задания'}
               </h2>
-              <p className="text-xs text-fox-gray mt-0.5">{homeworks.length} заданий</p>
+              <p className="text-fox-gray">{homeworks.length} заданий</p>
             </div>
-            <Button onClick={() => fetchHomeworks()} variant="secondary" leftIcon="↻">
+            <Button onClick={() => fetchHomeworks()} variant="secondary" leftIcon={<LuRefreshCw size={16} />}>
               Обновить
             </Button>
           </div>
-        </Card>
+        </div>
 
         {loading ? (
           <Loader text="Загрузка заданий..." />
@@ -446,6 +443,6 @@ export default function HomeworksPage() {
           renderStudentView()
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }

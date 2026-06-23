@@ -74,22 +74,31 @@ export default function TeacherDashboardPage() {
         ) : (
           <>
             <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
-              <img
-                src="/brand/mascot-hero.png"
-                alt=""
-                className="absolute -right-6 -bottom-10 w-40 h-56 object-contain opacity-15 pointer-events-none select-none"
+              <div
+                className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"
+                style={{
+                  backgroundImage: 'url(/brand/swirl-1.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'top right',
+                }}
               />
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fox-gold/20 text-fox-purple text-xs font-semibold mb-3">
-                  {roleLabel(user?.role)}
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-fox-gold text-fox-purple shadow-md flex-shrink-0">
+                  <LuHouse size={28} />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
-                  Добро пожаловать, {user?.name}!
-                </h2>
-                <p className="text-fox-gray max-w-xl">
-                  У вас <span className="text-fox-purple font-semibold">{myHomeworks.length}</span> активных домашних заданий
-                  и <span className="text-fox-purple font-semibold">{upcomingLessons.length}</span> ближайших занятий.
-                </p>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fox-gold/20 text-fox-purple text-xs font-semibold mb-2">
+                    {roleLabel(user?.role)}
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+                    Добро пожаловать, {user?.name}!
+                  </h2>
+                  <p className="text-fox-gray max-w-xl">
+                    У вас <span className="text-fox-purple font-semibold">{myHomeworks.length}</span> активных домашних заданий
+                    и <span className="text-fox-purple font-semibold">{upcomingLessons.length}</span> ближайших занятий.
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -79,6 +79,22 @@ async def _scheduled_payroll_run():
         logging.getLogger(__name__).exception("Scheduled payroll run failed")
 
 
+async def _scheduled_class_reminders():
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.schedule_reminder_service import ScheduleReminderService
+
+    try:
+        async with UnitOfWork() as uow:
+            service = ScheduleReminderService(uow)
+            counters = await service.process_all_reminders()
+            await uow.commit()
+            import logging
+            logging.getLogger(__name__).info("Class reminders sent: %s", counters)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Scheduled class reminders failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # В development используем create_all для удобства;
@@ -116,6 +132,15 @@ async def lifespan(app: FastAPI):
         hour=3,
         minute=0,
         id="payroll_run",
+        replace_existing=True,
+    )
+
+    # Напоминания о предстоящих занятиях (за сутки и за час)
+    scheduler.add_job(
+        _scheduled_class_reminders,
+        "interval",
+        minutes=5,
+        id="class_reminders",
         replace_existing=True,
     )
 

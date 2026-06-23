@@ -15,6 +15,7 @@ from .notification import Notification
 from .achievement import Achievement, UserAchievement
 from .file import File
 from .schedule import Schedule, Attendance, ScheduleException
+from .schedule_reminder_log import ScheduleReminderLog
 from .chat import ChatRoom, ChatParticipant, ChatMessage
 from .knowledge import KnowledgeArticle
 from .task import Task
@@ -60,6 +61,7 @@ __all__ = [
     "Schedule",
     "Attendance",
     "ScheduleException",
+    "ScheduleReminderLog",
     "ChatRoom",
     "ChatParticipant",
     "ChatMessage",

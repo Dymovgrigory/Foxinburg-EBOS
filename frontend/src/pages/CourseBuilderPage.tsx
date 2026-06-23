@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Input, Loader, EmptyState, Modal, ModalFooterActions } from '../components/ui'
 import { coursesApi, modulesApi, lessonsApi, testsApi, homeworksApi, groupsApi } from '../api'
 import type { Course, Module, Lesson, Test, TestQuestion, Group } from '../types'
-import { LuBookOpen, LuWrench, LuPencil, LuTrash2 } from 'react-icons/lu'
+import { LuBookOpen, LuWrench, LuPencil, LuTrash2, LuFileText, LuVideo, LuClipboardList, LuHouse } from 'react-icons/lu'
 
 interface EditableItem {
   id?: number
@@ -273,22 +273,22 @@ export default function CourseBuilderPage() {
   }
 
   const LESSON_TYPE_OPTIONS: { value: string; label: string }[] = [
-    { value: 'text', label: '📄 Текст / Документ' },
-    { value: 'video', label: '🎥 Видео' },
-    { value: 'test', label: '📝 Тест' },
-    { value: 'homework', label: '🏠 Домашнее задание' },
+    { value: 'text', label: 'Текст / Документ' },
+    { value: 'video', label: 'Видео' },
+    { value: 'test', label: 'Тест' },
+    { value: 'homework', label: 'Домашнее задание' },
   ]
 
   const lessonTypeIcon = (type?: string) => {
     switch (type) {
       case 'video':
-        return '🎥'
+        return <LuVideo size={14} />
       case 'test':
-        return '📝'
+        return <LuClipboardList size={14} />
       case 'homework':
-        return '🏠'
+        return <LuHouse size={14} />
       default:
-        return '📄'
+        return <LuFileText size={14} />
     }
   }
 
@@ -617,7 +617,7 @@ export default function CourseBuilderPage() {
                             ].join(' ')}
                             onClick={() => setSelectedLessonId(lesson.id)}
                           >
-                            <span className="mr-2">{lessonTypeIcon(lesson.lesson_type)}</span>
+                            <span className="mr-2 inline-flex items-center">{lessonTypeIcon(lesson.lesson_type)}</span>
                             <span className="truncate">{lesson.title}</span>
                             <div className="flex gap-1">
                               {index > 0 && (
@@ -707,8 +707,10 @@ export default function CourseBuilderPage() {
                     <div className="bg-fox-light/50 p-3 rounded-xl">
                       <span className="text-fox-gray/70">Тип</span>
                       <p className="font-medium text-fox-dark">
-                        {lessonTypeIcon(selectedLesson.lesson_type)}{' '}
-                        {LESSON_TYPE_OPTIONS.find((o) => o.value === selectedLesson.lesson_type)?.label || selectedLesson.lesson_type}
+                        <span className="inline-flex items-center gap-1.5">
+                          {lessonTypeIcon(selectedLesson.lesson_type)}
+                          {LESSON_TYPE_OPTIONS.find((o) => o.value === selectedLesson.lesson_type)?.label || selectedLesson.lesson_type}
+                        </span>
                       </p>
                     </div>
                     <div className="bg-fox-light/50 p-3 rounded-xl">
@@ -727,7 +729,7 @@ export default function CourseBuilderPage() {
 
                 <Card>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-fox-dark">📝 Тест урока</h3>
+                    <h3 className="font-bold text-fox-dark flex items-center gap-2"><LuClipboardList size={16} /> Тест урока</h3>
                   </div>
                   {lessonTests.length > 0 ? (
                     <div className="space-y-2 mb-4">
@@ -835,7 +837,7 @@ export default function CourseBuilderPage() {
                 </Card>
 
                 <Card>
-                  <h3 className="font-bold text-fox-dark mb-4">🏠 Домашнее задание</h3>
+                  <h3 className="font-bold text-fox-dark mb-4 flex items-center gap-2"><LuHouse size={16} /> Домашнее задание</h3>
                   {lessonHomeworks.length > 0 ? (
                     <p className="text-sm text-fox-gray mb-4">
                       Назначено {lessonHomeworks.length} ученикам

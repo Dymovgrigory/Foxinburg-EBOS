@@ -188,7 +188,7 @@ export default function SystemCenterPage() {
                 {activeTab === 'Обзор' && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-lg font-bold text-fox-dark mb-4">🧩 Готовность модулей</h3>
+                      <h3 className="text-lg font-bold text-fox-dark mb-4">Готовность модулей</h3>
                       <div className="space-y-4">
                         {MODULE_READINESS.map((m) => (
                           <div key={m.name}>
@@ -208,7 +208,7 @@ export default function SystemCenterPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-bold text-fox-dark mb-4">📜 Конституция EBOS</h3>
+                      <h3 className="text-lg font-bold text-fox-dark mb-4">Конституция EBOS</h3>
                       <div className="bg-fox-gold/10 rounded-2xl p-5 border border-fox-gold/30">
                         <ol className="space-y-4">
                           {CONSTITUTION_LAWS.map((law, idx) => (

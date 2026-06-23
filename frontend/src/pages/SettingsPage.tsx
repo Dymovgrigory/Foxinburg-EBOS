@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Input, Badge } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../api'
-import { LuBell, LuLock, LuUser, LuWrench } from 'react-icons/lu'
+import { LuBell, LuLock, LuUser, LuWrench, LuSave, LuKeyRound } from 'react-icons/lu'
 
 export default function SettingsPage() {
   const { user, login } = useAuth()
@@ -79,7 +79,7 @@ export default function SettingsPage() {
             {activeTab === 'profile' && (
               <Card>
                 <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
-                  <span className="text-fox-gold">👤</span> Профиль
+                  <LuUser className="text-fox-gold" /> Профиль
                 </h2>
                 <form onSubmit={handleProfileSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <Input
@@ -109,8 +109,8 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Button type="submit" loading={loading}>
-                      💾 Сохранить профиль
+                    <Button type="submit" loading={loading} leftIcon={<LuSave size={16} />}>
+                      Сохранить профиль
                     </Button>
                   </div>
                 </form>
@@ -120,7 +120,7 @@ export default function SettingsPage() {
             {activeTab === 'security' && (
               <Card>
                 <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
-                  <span className="text-fox-gold">🔒</span> Безопасность
+                  <LuLock className="text-fox-gold" /> Безопасность
                 </h2>
                 <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <Input
@@ -146,8 +146,8 @@ export default function SettingsPage() {
                     onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                   />
                   <div className="md:col-span-2">
-                    <Button type="submit" loading={loading}>
-                      🔑 Изменить пароль
+                    <Button type="submit" loading={loading} leftIcon={<LuKeyRound size={16} />}>
+                      Изменить пароль
                     </Button>
                   </div>
                 </form>
@@ -157,7 +157,7 @@ export default function SettingsPage() {
             {activeTab === 'notifications' && (
               <Card>
                 <h2 className="text-lg font-bold text-fox-dark mb-6 flex items-center gap-2">
-                  <span className="text-fox-gold">🔔</span> Уведомления
+                  <LuBell className="text-fox-gold" /> Уведомления
                 </h2>
                 <div className="space-y-4">
                   <NotificationRow title="Email-уведомления" description="Получать важные уведомления на email." />

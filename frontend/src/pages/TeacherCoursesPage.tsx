@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast, Button, Card, Loader, EmptyState, Badge } from '../components/ui'
-import { LuBookOpen } from 'react-icons/lu'
+import { LuBookOpen, LuUsers } from 'react-icons/lu'
 
 interface TeacherGroup {
   id: number
@@ -68,7 +68,7 @@ export default function TeacherCoursesPage() {
                   {g.description && <p className="text-sm text-fox-gray mt-1">{g.description}</p>}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-fox-gray">
-                  <span>👥 {g.students_count} / {g.max_students}</span>
+                  <span className="inline-flex items-center gap-1"><LuUsers size={14} /> {g.students_count} / {g.max_students}</span>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => navigate(`/calendar?group_id=${g.id}`)}>

@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import { useToast, Card, Button, Loader, Badge } from '../components/ui'
 import { teacherAcademyApi } from '../api'
 import { getErrorMessage } from '../utils/error'
-import { LuAward } from 'react-icons/lu'
+import { LuAward, LuGraduationCap, LuMedal } from 'react-icons/lu'
 
 interface ProgressData {
   enrollment_id: number
@@ -63,7 +63,13 @@ export default function CertificationPage() {
         ) : (
           <>
             <Card className="text-center p-10">
-              <div className="text-5xl mb-4">{completed ? '🎓' : '🏅'}</div>
+              <div className="flex justify-center mb-4">
+                {completed ? (
+                  <LuGraduationCap className="w-16 h-16 text-fox-purple" />
+                ) : (
+                  <LuMedal className="w-16 h-16 text-fox-gold" />
+                )}
+              </div>
               <h2 className="text-2xl font-bold text-fox-dark mb-2">
                 {completed ? 'Сертификат Академии педагогов' : 'Сертификация'}
               </h2>

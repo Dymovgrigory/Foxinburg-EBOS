@@ -294,6 +294,7 @@ export interface Payment {
   id: number
   student_id: number
   invoice_id?: number | null
+  group_id?: number | null
   amount: number
   type: 'income' | 'refund'
   method: string
@@ -356,12 +357,14 @@ export interface PayrollLessonItem {
 export interface PayrollResponse {
   teacher_id: number
   teacher_name: string
+  salary_type?: string
   period_start: string
   period_end: string
   rate_kopecks: number
   total_academic_hours: number
   total_amount_kopecks: number
   lessons: PayrollLessonItem[]
+  expense_id?: number | null
 }
 
 export interface StaffLeave {
@@ -580,6 +583,25 @@ export interface PnLResponse {
   refund_kopecks: number
   expense_kopecks: number
   net_kopecks: number
+}
+
+export interface Subscription {
+  id: number
+  student_id: number
+  group_id: number
+  membership_id?: number | null
+  type: 'lessons' | 'monthly' | 'unlimited'
+  status: 'active' | 'frozen' | 'expired' | 'cancelled'
+  start_date: string
+  end_date?: string | null
+  lessons_total: number
+  lessons_used: number
+  frozen_at?: string | null
+  frozen_until?: string | null
+  auto_renew: boolean
+  monthly_fee: number
+  created_at: string
+  updated_at: string
 }
 
 export interface SystemPermissionsResponse {

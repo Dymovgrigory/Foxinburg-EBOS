@@ -1,23 +1,28 @@
+import io
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.finance import Payment, Transaction, Invoice, Expense
+from app.models.group import Group
 from app.models.user import User
 from app.schemas.finance import (
     PaymentCreate, PaymentUpdate, PaymentResponse, TransactionCreate, TransactionResponse,
     InvoiceCreate, InvoiceUpdate, InvoiceResponse, InvoiceGenerateRequest, InvoicePayRequest,
     ExpenseCreate, ExpenseUpdate, ExpenseResponse,
     PayrollRequest, PnLResponse,
+    SubscriptionCreate, SubscriptionUpdate, SubscriptionResponse,
 )
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
 from app.core.permissions import Permission
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.finance_service import FinanceService
+from app.services.pdf_service import generate_invoice_pdf, generate_payment_act_pdf
 
 router = APIRouter(prefix="/finance", tags=["finance"])
 
@@ -48,8 +53,15 @@ async def create_payment(
     if not student:
         return error_response("Ученик не найден", status_code=404)
 
-    payment = Payment(**data.model_dump())
+    payment_data = data.model_dump()
+    payment = Payment(**payment_data)
     uow.session.add(payment)
+
+    # Привязываем платёж к группе счёта
+    if data.invoice_id and not payment.group_id:
+        invoice_for_group = await service.get_invoice(data.invoice_id)
+        if invoice_for_group:
+            payment.group_id = invoice_for_group.group_id
 
     delta = data.amount if data.type == "income" else -data.amount
     new_balance = (student.balance or 0) + delta
@@ -435,6 +447,191 @@ async def teacher_payroll(
         return success_response(data=result, message="Расчёт зарплаты")
     except ValueError as e:
         return error_response(str(e), status_code=400)
+
+
+@router.post("/payroll/run")
+async def run_teacher_payroll(
+    data: PayrollRequest,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    try:
+        result = await service.run_teacher_payroll(
+            data.teacher_id or 0,
+            data.from_date,
+            data.to_date,
+            created_by_id=current_user.id,
+        )
+        await uow.commit()
+        return success_response(data=result, message="Зарплата начислена", status_code=201)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+
+# ---------- Subscriptions ----------
+
+@router.get("/subscriptions")
+async def list_subscriptions(
+    student_id: Optional[int] = None,
+    group_id: Optional[int] = None,
+    status: Optional[str] = None,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscriptions = await service.list_subscriptions(student_id=student_id, group_id=group_id, status=status)
+    return success_response(
+        data=[SubscriptionResponse.model_validate(s).model_dump() for s in subscriptions],
+        message="Список абонементов",
+    )
+
+
+@router.post("/subscriptions")
+async def create_subscription(
+    data: SubscriptionCreate,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.create_subscription(data.model_dump())
+    await uow.commit()
+    return success_response(
+        data=SubscriptionResponse.model_validate(subscription).model_dump(),
+        message="Абонемент создан",
+        status_code=201,
+    )
+
+
+@router.get("/subscriptions/{subscription_id}")
+async def get_subscription(
+    subscription_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    return success_response(data=SubscriptionResponse.model_validate(subscription).model_dump())
+
+
+@router.patch("/subscriptions/{subscription_id}")
+async def update_subscription(
+    subscription_id: int,
+    data: SubscriptionUpdate,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    updated = await service.update_subscription(subscription, data.model_dump(exclude_unset=True))
+    await uow.commit()
+    return success_response(data=SubscriptionResponse.model_validate(updated).model_dump(), message="Абонемент обновлён")
+
+
+@router.delete("/subscriptions/{subscription_id}")
+async def delete_subscription(
+    subscription_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    await service.delete_subscription(subscription)
+    await uow.commit()
+    return success_response(message="Абонемент удалён")
+
+
+@router.post("/subscriptions/{subscription_id}/renew")
+async def renew_subscription(
+    subscription_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    updated = await service.renew_subscription(subscription)
+    await uow.commit()
+    return success_response(data=SubscriptionResponse.model_validate(updated).model_dump(), message="Абонемент продлён")
+
+
+@router.post("/subscriptions/{subscription_id}/freeze")
+async def freeze_subscription(
+    subscription_id: int,
+    frozen_until: Optional[date] = None,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    updated = await service.freeze_subscription(subscription, frozen_until)
+    await uow.commit()
+    return success_response(data=SubscriptionResponse.model_validate(updated).model_dump(), message="Абонемент заморожен")
+
+
+@router.post("/subscriptions/{subscription_id}/cancel")
+async def cancel_subscription(
+    subscription_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = FinanceService(uow)
+    subscription = await service.get_subscription(subscription_id)
+    if not subscription:
+        return error_response("Абонемент не найден", status_code=404)
+    updated = await service.cancel_subscription(subscription)
+    await uow.commit()
+    return success_response(data=SubscriptionResponse.model_validate(updated).model_dump(), message="Абонемент отменён")
+
+
+# ---------- PDF ----------
+
+@router.get("/invoices/{invoice_id}/pdf")
+async def download_invoice_pdf(
+    invoice_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    invoice = await db.get(Invoice, invoice_id)
+    if not invoice:
+        return error_response("Счёт не найден", status_code=404)
+    student = await db.get(User, invoice.student_id)
+    group = await db.get(Group, invoice.group_id) if invoice.group_id else None
+    pdf_bytes = generate_invoice_pdf(invoice, student, group)
+    filename = f"invoice_{invoice_id}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/payments/{payment_id}/act/pdf")
+async def download_payment_act_pdf(
+    payment_id: int,
+    current_user=Depends(require_permission(Permission.FINANCE_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    payment = await db.get(Payment, payment_id)
+    if not payment:
+        return error_response("Платёж не найден", status_code=404)
+    student = await db.get(User, payment.student_id)
+    pdf_bytes = generate_payment_act_pdf(payment, student)
+    filename = f"payment_act_{payment_id}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ---------- P&L ----------

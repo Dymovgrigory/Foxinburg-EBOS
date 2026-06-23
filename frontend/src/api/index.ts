@@ -22,6 +22,7 @@ import type {
   Transaction,
   Invoice,
   Expense,
+  Subscription,
   PayrollResponse,
   PnLResponse,
   StaffLeave,
@@ -289,8 +290,28 @@ export const financeApi = {
   deleteExpense: (id: number) => api.delete<ApiResponse<void>>(`/finance/expenses/${id}`).then(unwrap),
   payroll: (params: { teacher_id: number; from_date: string; to_date: string }) =>
     api.get<ApiResponse<PayrollResponse>>('/finance/payroll', { params }).then(unwrap),
+  runPayroll: (data: { teacher_id: number; from_date: string; to_date: string }) =>
+    api.post<ApiResponse<PayrollResponse>>('/finance/payroll/run', data).then(unwrap),
   pnl: (params: { from_date: string; to_date: string; branch_id?: number }) =>
     api.get<ApiResponse<PnLResponse>>('/finance/pnl', { params }).then(unwrap),
+  downloadInvoicePdf: (id: number) =>
+    api.get(`/finance/invoices/${id}/pdf`, { responseType: 'blob' }),
+  downloadPaymentActPdf: (id: number) =>
+    api.get(`/finance/payments/${id}/act/pdf`, { responseType: 'blob' }),
+  subscriptions: (params?: { student_id?: number; group_id?: number; status?: string }) =>
+    api.get<ApiResponse<Subscription[]>>('/finance/subscriptions', { params }).then(unwrap),
+  createSubscription: (data: Partial<Subscription>) =>
+    api.post<ApiResponse<Subscription>>('/finance/subscriptions', data).then(unwrap),
+  updateSubscription: (id: number, data: Partial<Subscription>) =>
+    api.patch<ApiResponse<Subscription>>(`/finance/subscriptions/${id}`, data).then(unwrap),
+  deleteSubscription: (id: number) =>
+    api.delete<ApiResponse<void>>(`/finance/subscriptions/${id}`).then(unwrap),
+  renewSubscription: (id: number) =>
+    api.post<ApiResponse<Subscription>>(`/finance/subscriptions/${id}/renew`).then(unwrap),
+  freezeSubscription: (id: number, frozen_until?: string) =>
+    api.post<ApiResponse<Subscription>>(`/finance/subscriptions/${id}/freeze`, null, { params: { frozen_until } }).then(unwrap),
+  cancelSubscription: (id: number) =>
+    api.post<ApiResponse<Subscription>>(`/finance/subscriptions/${id}/cancel`).then(unwrap),
 }
 
 export const hrApi = {
@@ -405,6 +426,8 @@ export const reportsApi = {
     api.get<ApiResponse<unknown>>(`/reports/${type}`, { params }).then(unwrap),
   exportCsv: (type: string, params?: { branch_id?: number; date_from?: string; date_to?: string }) =>
     api.get(`/reports/${type}/export.csv`, { params, responseType: 'blob' }),
+  exportPdf: (type: string, params?: { branch_id?: number; date_from?: string; date_to?: string }) =>
+    api.get(`/reports/${type}/export.pdf`, { params, responseType: 'blob' }),
 }
 
 export interface SystemPermissionsResponse {

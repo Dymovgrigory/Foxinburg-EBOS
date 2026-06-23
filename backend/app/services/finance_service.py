@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 from sqlalchemy import select, func, and_
 
-from app.models.finance import Payment, Transaction, Invoice, Expense
+from app.models.finance import Payment, Transaction, Invoice, Expense, Subscription
 from app.models.user import User
 from app.models.group import Group, GroupMembership
 from app.models.schedule import Schedule, Attendance
@@ -125,6 +125,7 @@ class FinanceService(BaseService[Payment]):
         payment = Payment(
             student_id=invoice.student_id,
             invoice_id=invoice.id,
+            group_id=invoice.group_id,
             amount=amount,
             type="income",
             method=method,
@@ -227,7 +228,10 @@ class FinanceService(BaseService[Payment]):
         if not teacher:
             raise ValueError("Преподаватель не найден")
 
+        salary_type = teacher.salary_type or "hourly"
         rate = teacher.salary_rate or 0
+
+        # Common: list completed lessons for reference
         schedules_result = await self.uow.session.execute(
             select(Schedule, Group)
             .join(Group, Schedule.group_id == Group.id, isouter=True)
@@ -242,14 +246,11 @@ class FinanceService(BaseService[Payment]):
 
         lessons = []
         total_hours = 0.0
-        total_amount = 0
         for schedule, group in schedules_result.all():
             academic_minutes = group.academic_hour_minutes if group else 45
             duration_minutes = (schedule.end_time - schedule.start_time).total_seconds() / 60
             hours = duration_minutes / academic_minutes
-            amount = int(hours * rate)
             total_hours += hours
-            total_amount += amount
             lessons.append({
                 "schedule_id": schedule.id,
                 "title": schedule.title,
@@ -257,12 +258,43 @@ class FinanceService(BaseService[Payment]):
                 "start_time": schedule.start_time,
                 "end_time": schedule.end_time,
                 "academic_hours": round(hours, 2),
-                "amount_kopecks": amount,
+                "amount_kopecks": 0,
             })
+
+        total_amount = 0
+        if salary_type == "hourly":
+            total_amount = int(total_hours * rate)
+            for lesson in lessons:
+                lesson["amount_kopecks"] = int(lesson["academic_hours"] * rate)
+        elif salary_type == "fixed":
+            total_amount = rate
+        elif salary_type == "percent":
+            # Revenue from teacher's groups in period
+            group_ids = list({lesson["group_name"] for lesson in lessons if lesson.get("group_name")})
+            # Fetch actual group ids from schedules
+            schedule_ids = [lesson["schedule_id"] for lesson in lessons]
+            group_id_rows = await self.uow.session.execute(
+                select(Schedule.group_id).where(Schedule.id.in_(schedule_ids))
+            )
+            group_ids = [row[0] for row in group_id_rows.all() if row[0]]
+            revenue = 0
+            if group_ids:
+                revenue_result = await self.uow.session.execute(
+                    select(func.sum(Payment.amount)).where(
+                        Payment.type == "income",
+                        Payment.status == "completed",
+                        Payment.group_id.in_(group_ids),
+                        func.date(Payment.created_at) >= from_date,
+                        func.date(Payment.created_at) <= to_date,
+                    )
+                )
+                revenue = revenue_result.scalar() or 0
+            total_amount = int(revenue * rate / 100)
 
         return {
             "teacher_id": teacher.id,
             "teacher_name": teacher.name,
+            "salary_type": salary_type,
             "period_start": from_date,
             "period_end": to_date,
             "rate_kopecks": rate,
@@ -360,3 +392,108 @@ class FinanceService(BaseService[Payment]):
         self.uow.session.add(transaction)
         await self.uow.session.flush()
         return transaction
+
+    # ---------- Subscriptions ----------
+
+    async def create_subscription(self, data: dict) -> Subscription:
+        subscription = Subscription(**data)
+        self.uow.session.add(subscription)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    async def list_subscriptions(
+        self,
+        *,
+        student_id: Optional[int] = None,
+        group_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[Subscription]:
+        query = select(Subscription)
+        filters = []
+        if student_id:
+            filters.append(Subscription.student_id == student_id)
+        if group_id:
+            filters.append(Subscription.group_id == group_id)
+        if status:
+            filters.append(Subscription.status == status)
+        if filters:
+            query = query.where(and_(*filters))
+        result = await self.uow.session.execute(query.order_by(Subscription.created_at.desc()))
+        return list(result.scalars().all())
+
+    async def get_subscription(self, subscription_id: int) -> Optional[Subscription]:
+        result = await self.uow.session.execute(select(Subscription).where(Subscription.id == subscription_id))
+        return result.scalar_one_or_none()
+
+    async def update_subscription(self, subscription: Subscription, data: dict) -> Subscription:
+        for field, value in data.items():
+            setattr(subscription, field, value)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    async def delete_subscription(self, subscription: Subscription) -> None:
+        await self.uow.session.delete(subscription)
+        await self.uow.session.flush()
+
+    async def renew_subscription(self, subscription: Subscription) -> Subscription:
+        if subscription.type == "monthly":
+            current_end = subscription.end_date or date.today()
+            subscription.end_date = current_end + timedelta(days=30)
+        elif subscription.type == "lessons":
+            subscription.lessons_total += subscription.lessons_total or 8
+        subscription.status = "active"
+        subscription.frozen_at = None
+        subscription.frozen_until = None
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    async def freeze_subscription(self, subscription: Subscription, frozen_until: Optional[date] = None) -> Subscription:
+        subscription.status = "frozen"
+        subscription.frozen_at = utc_now()
+        subscription.frozen_until = frozen_until
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    async def cancel_subscription(self, subscription: Subscription) -> Subscription:
+        subscription.status = "cancelled"
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    async def deduct_lesson(self, subscription_id: int) -> Optional[Subscription]:
+        subscription = await self.get_subscription(subscription_id)
+        if not subscription or subscription.status != "active" or subscription.type != "lessons":
+            return subscription
+        subscription.lessons_used += 1
+        if subscription.lessons_used >= subscription.lessons_total:
+            subscription.status = "expired"
+        await self.uow.session.flush()
+        await self.uow.session.refresh(subscription)
+        return subscription
+
+    # ---------- Payroll run ----------
+
+    async def run_teacher_payroll(
+        self,
+        teacher_id: int,
+        from_date: date,
+        to_date: date,
+        created_by_id: Optional[int] = None,
+    ) -> dict:
+        payroll = await self.calculate_teacher_payroll(teacher_id, from_date, to_date)
+        expense = Expense(
+            category="salary",
+            amount=payroll["total_amount_kopecks"],
+            expense_date=date.today(),
+            description=f"Зарплата {payroll['teacher_name']} за {from_date:%d.%m.%Y} – {to_date:%d.%m.%Y}",
+            created_by_id=created_by_id,
+        )
+        self.uow.session.add(expense)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(expense)
+        payroll["expense_id"] = expense.id
+        return payroll

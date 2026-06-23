@@ -3,7 +3,7 @@ import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Select, Loader, EmptyState, Tabs, StatCard, PageShell } from '../components/ui'
 import { financeApi, usersApi, groupsApi, branchesApi } from '../api'
-import type { Payment, Transaction, Invoice, Expense, PayrollResponse, PnLResponse, User, Group, Branch } from '../types'
+import type { Payment, Transaction, Invoice, Expense, Subscription, PayrollResponse, PnLResponse, User, Group, Branch } from '../types'
 import {
   LuTrendingUp,
   LuTrendingDown,
@@ -13,11 +13,14 @@ import {
   LuCalculator,
   LuUsers,
   LuPlus,
+  LuDownload,
+  LuCalendar,
 } from 'react-icons/lu'
 
 const TABS = [
   { id: 'invoices', label: 'Счета', icon: <LuFileText /> },
   { id: 'payments', label: 'Платежи', icon: <LuDollarSign /> },
+  { id: 'subscriptions', label: 'Абонементы', icon: <LuCalendar /> },
   { id: 'transactions', label: 'Транзакции', icon: <LuTrendingUp /> },
   { id: 'debtors', label: 'Должники', icon: <LuTriangle /> },
   { id: 'expenses', label: 'Расходы', icon: <LuTrendingDown /> },
@@ -76,17 +79,20 @@ export default function FinancePage() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [showPayrollModal, setShowPayrollModal] = useState(false)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [payrollResult, setPayrollResult] = useState<PayrollResponse | null>(null)
   const [pnlResult, setPnlResult] = useState<PnLResponse | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [paymentsRes, transactionsRes, invoicesRes, expensesRes, debtorsRes, analyticsRes, usersRes, groupsRes, branchesRes] = await Promise.all([
+      const [paymentsRes, transactionsRes, invoicesRes, subscriptionsRes, expensesRes, debtorsRes, analyticsRes, usersRes, groupsRes, branchesRes] = await Promise.all([
         financeApi.payments(),
         financeApi.transactions(),
         financeApi.invoices(),
+        financeApi.subscriptions(),
         financeApi.expenses(),
         financeApi.debtors(),
         financeApi.analytics(),
@@ -97,6 +103,7 @@ export default function FinancePage() {
       setPayments(paymentsRes)
       setTransactions(transactionsRes)
       setInvoices(invoicesRes)
+      setSubscriptions(subscriptionsRes)
       setExpenses(expensesRes)
       setDebtors(debtorsRes)
       setAnalytics(analyticsRes)
@@ -172,12 +179,50 @@ export default function FinancePage() {
     }
   }
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadInvoicePdf = async (invoice: Invoice) => {
+    try {
+      const res = await financeApi.downloadInvoicePdf(invoice.id)
+      downloadBlob(res.data, `invoice_${invoice.id}.pdf`)
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки PDF'), 'error')
+    }
+  }
+
+  const handleDownloadPaymentActPdf = async (payment: Payment) => {
+    try {
+      const res = await financeApi.downloadPaymentActPdf(payment.id)
+      downloadBlob(res.data, `payment_act_${payment.id}.pdf`)
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки PDF'), 'error')
+    }
+  }
+
   const handleCalculatePayroll = async (teacherId: number, fromDate: string, toDate: string) => {
     try {
       const res = await financeApi.payroll({ teacher_id: teacherId, from_date: fromDate, to_date: toDate })
       setPayrollResult(res)
     } catch (err: unknown) {
       showToast(getErrorMessage(err, 'Ошибка расчёта'), 'error')
+    }
+  }
+
+  const handleRunPayroll = async (teacherId: number, fromDate: string, toDate: string) => {
+    try {
+      const res = await financeApi.runPayroll({ teacher_id: teacherId, from_date: fromDate, to_date: toDate })
+      setPayrollResult(res)
+      showToast('Зарплата начислена и сохранена как расход', 'success')
+      await fetchData()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка начисления'), 'error')
     }
   }
 
@@ -216,6 +261,9 @@ export default function FinancePage() {
               {activeTab === 'expenses' && (
                 <Button leftIcon={<LuPlus />} onClick={() => setShowExpenseModal(true)}>Новый расход</Button>
               )}
+              {activeTab === 'subscriptions' && (
+                <Button leftIcon={<LuPlus />} onClick={() => setShowSubscriptionModal(true)}>Новый абонемент</Button>
+              )}
               {activeTab === 'payroll' && (
                 <Button leftIcon={<LuCalculator />} onClick={() => setShowPayrollModal(true)}>Рассчитать ЗП</Button>
               )}
@@ -234,10 +282,14 @@ export default function FinancePage() {
                 groups={groups}
                 onPay={handlePayInvoice}
                 onDelete={handleDeleteInvoice}
+                onDownloadPdf={handleDownloadInvoicePdf}
               />
             )}
             {activeTab === 'payments' && (
-              <PaymentsTab payments={payments} users={users} onDelete={handleDeletePayment} />
+              <PaymentsTab payments={payments} users={users} groups={groups} onDelete={handleDeletePayment} onDownloadAct={handleDownloadPaymentActPdf} />
+            )}
+            {activeTab === 'subscriptions' && (
+              <SubscriptionsTab subscriptions={subscriptions} users={users} groups={groups} onChange={fetchData} />
             )}
             {activeTab === 'transactions' && (
               <TransactionsTab transactions={transactions} users={users} />
@@ -258,15 +310,17 @@ export default function FinancePage() {
         )}
       </div>
 
-      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} users={users} onSaved={fetchData} />
+      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} users={users} groups={groups} onSaved={fetchData} />
       <InvoiceModal isOpen={showInvoiceModal} onClose={() => setShowInvoiceModal(false)} users={users} groups={groups} onSaved={fetchData} />
       <GenerateInvoicesModal isOpen={showGenerateModal} onClose={() => setShowGenerateModal(false)} groups={groups} onSaved={fetchData} />
       <ExpenseModal isOpen={showExpenseModal} onClose={() => setShowExpenseModal(false)} branches={branches} onSaved={fetchData} />
+      <SubscriptionModal isOpen={showSubscriptionModal} onClose={() => setShowSubscriptionModal(false)} users={users} groups={groups} onSaved={fetchData} />
       <PayrollModal
         isOpen={showPayrollModal}
         onClose={() => { setShowPayrollModal(false); setPayrollResult(null) }}
         users={users}
         onCalculate={handleCalculatePayroll}
+        onRun={handleRunPayroll}
         payrollResult={payrollResult}
         formatMoney={formatMoney}
       />
@@ -280,12 +334,14 @@ function InvoicesTab({
   groups,
   onPay,
   onDelete,
+  onDownloadPdf,
 }: {
   invoices: Invoice[]
   users: User[]
   groups: Group[]
   onPay: (invoice: Invoice) => void
   onDelete: (id: number) => void
+  onDownloadPdf: (invoice: Invoice) => void
 }) {
   const userName = (id?: number | null) => users.find((u) => u.id === id)?.name || `ID ${id}`
   const groupName = (id?: number | null) => groups.find((g) => g.id === id)?.name || `ID ${id}`
@@ -336,6 +392,7 @@ function InvoicesTab({
                   {inv.status !== 'paid' && inv.status !== 'cancelled' && (
                     <Button size="sm" onClick={() => onPay(inv)}>Оплатить</Button>
                   )}
+                  <Button size="sm" variant="secondary" leftIcon={<LuDownload size={14} />} onClick={() => onDownloadPdf(inv)}>PDF</Button>
                   <Button size="sm" variant="danger" onClick={() => onDelete(inv.id)}>Удалить</Button>
                 </div>
               </td>
@@ -347,25 +404,91 @@ function InvoicesTab({
   )
 }
 
-function PaymentsTab({ payments, users, onDelete }: { payments: Payment[]; users: User[]; onDelete: (id: number) => void }) {
+function PaymentsTab({ payments, users, groups, onDelete, onDownloadAct }: { payments: Payment[]; users: User[]; groups: Group[]; onDelete: (id: number) => void; onDownloadAct: (payment: Payment) => void }) {
   const userName = (id?: number) => users.find((u) => u.id === id)?.name || `ID ${id}`
+  const groupName = (id?: number | null) => groups.find((g) => g.id === id)?.name || `ID ${id}`
   const formatMoney = (k: number) => new Intl.NumberFormat('ru-RU').format(k / 100) + ' ₽'
   const formatDate = (s: string) => new Date(s).toLocaleDateString('ru-RU')
   if (payments.length === 0) return <EmptyState icon={<LuDollarSign />} title="Платежей пока нет" description="Создайте первый платёж." />
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-fox-light/60 text-fox-graphite"><tr><th className="text-left py-3 px-4 font-semibold">Дата</th><th className="text-left py-3 px-4 font-semibold">Ученик</th><th className="text-left py-3 px-4 font-semibold">Тип</th><th className="text-left py-3 px-4 font-semibold">Способ</th><th className="text-left py-3 px-4 font-semibold">Сумма</th><th className="text-left py-3 px-4 font-semibold">Статус</th><th className="text-left py-3 px-4 font-semibold">Действия</th></tr></thead>
+        <thead className="bg-fox-light/60 text-fox-graphite"><tr><th className="text-left py-3 px-4 font-semibold">Дата</th><th className="text-left py-3 px-4 font-semibold">Ученик</th><th className="text-left py-3 px-4 font-semibold">Группа</th><th className="text-left py-3 px-4 font-semibold">Тип</th><th className="text-left py-3 px-4 font-semibold">Способ</th><th className="text-left py-3 px-4 font-semibold">Сумма</th><th className="text-left py-3 px-4 font-semibold">Статус</th><th className="text-left py-3 px-4 font-semibold">Действия</th></tr></thead>
         <tbody>
           {payments.map((p) => (
             <tr key={p.id} className="border-t border-fox-border/50">
               <td className="py-3 px-4 whitespace-nowrap">{formatDate(p.created_at)}</td>
               <td className="py-3 px-4">{userName(p.student_id)}</td>
+              <td className="py-3 px-4">{groupName(p.group_id)}</td>
               <td className="py-3 px-4"><Badge variant={p.type === 'income' ? 'success' : 'error'}>{p.type === 'income' ? 'Доход' : 'Возврат'}</Badge></td>
               <td className="py-3 px-4 capitalize">{p.method}</td>
               <td className="py-3 px-4 font-semibold text-fox-dark">{formatMoney(p.amount)}</td>
               <td className="py-3 px-4"><Badge variant={p.status === 'completed' ? 'success' : p.status === 'pending' ? 'warning' : 'error'}>{p.status}</Badge></td>
-              <td className="py-3 px-4"><Button size="sm" variant="danger" onClick={() => onDelete(p.id)}>Удалить</Button></td>
+              <td className="py-3 px-4">
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="secondary" leftIcon={<LuDownload size={14} />} onClick={() => onDownloadAct(p)}>Акт</Button>
+                  <Button size="sm" variant="danger" onClick={() => onDelete(p.id)}>Удалить</Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function SubscriptionsTab({ subscriptions, users, groups, onChange }: { subscriptions: Subscription[]; users: User[]; groups: Group[]; onChange: () => void }) {
+  const { showToast } = useToast()
+  const userName = (id?: number) => users.find((u) => u.id === id)?.name || `ID ${id}`
+  const groupName = (id?: number) => groups.find((g) => g.id === id)?.name || `ID ${id}`
+  const formatDate = (s?: string | null) => (s ? new Date(s).toLocaleDateString('ru-RU') : '—')
+  const typeLabel = (t: string) => ({ lessons: 'По занятиям', monthly: 'Месячный', unlimited: 'Безлимит' }[t] || t)
+  const statusVariant = (status: string): Parameters<typeof Badge>[0]['variant'] => {
+    const map: Record<string, Parameters<typeof Badge>[0]['variant']> = { active: 'success', frozen: 'info', expired: 'warning', cancelled: 'default' }
+    return map[status] || 'default'
+  }
+  const statusLabel = (s: string) => ({ active: 'Активен', frozen: 'Заморожен', expired: 'Истёк', cancelled: 'Отменён' }[s] || s)
+
+  const handleRenew = async (id: number) => {
+    try { await financeApi.renewSubscription(id); showToast('Абонемент продлён', 'success'); onChange() } catch (err: unknown) { showToast(getErrorMessage(err, 'Ошибка'), 'error') }
+  }
+  const handleFreeze = async (id: number) => {
+    const until = window.prompt('Заморозить до (YYYY-MM-DD):', new Date().toISOString().slice(0, 10))
+    if (!until) return
+    try { await financeApi.freezeSubscription(id, until); showToast('Абонемент заморожен', 'success'); onChange() } catch (err: unknown) { showToast(getErrorMessage(err, 'Ошибка'), 'error') }
+  }
+  const handleCancel = async (id: number) => {
+    if (!confirm('Отменить абонемент?')) return
+    try { await financeApi.cancelSubscription(id); showToast('Абонемент отменён', 'success'); onChange() } catch (err: unknown) { showToast(getErrorMessage(err, 'Ошибка'), 'error') }
+  }
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить абонемент?')) return
+    try { await financeApi.deleteSubscription(id); showToast('Абонемент удалён', 'success'); onChange() } catch (err: unknown) { showToast(getErrorMessage(err, 'Ошибка'), 'error') }
+  }
+
+  if (subscriptions.length === 0) return <EmptyState icon={<LuCalendar />} title="Абонементов пока нет" description="Создайте абонемент для ученика." />
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-fox-light/60 text-fox-graphite"><tr><th className="text-left py-3 px-4 font-semibold">Ученик</th><th className="text-left py-3 px-4 font-semibold">Группа</th><th className="text-left py-3 px-4 font-semibold">Тип</th><th className="text-left py-3 px-4 font-semibold">Период</th><th className="text-left py-3 px-4 font-semibold">Занятий</th><th className="text-left py-3 px-4 font-semibold">Статус</th><th className="text-left py-3 px-4 font-semibold">Действия</th></tr></thead>
+        <tbody>
+          {subscriptions.map((s) => (
+            <tr key={s.id} className="border-t border-fox-border/50">
+              <td className="py-3 px-4">{userName(s.student_id)}</td>
+              <td className="py-3 px-4">{groupName(s.group_id)}</td>
+              <td className="py-3 px-4">{typeLabel(s.type)}</td>
+              <td className="py-3 px-4 whitespace-nowrap">{formatDate(s.start_date)} – {formatDate(s.end_date)}</td>
+              <td className="py-3 px-4">{s.type === 'lessons' ? `${s.lessons_used}/${s.lessons_total}` : '—'}</td>
+              <td className="py-3 px-4"><Badge variant={statusVariant(s.status)}>{statusLabel(s.status)}</Badge></td>
+              <td className="py-3 px-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button size="sm" onClick={() => handleRenew(s.id)}>Продлить</Button>
+                  {s.status === 'active' && <Button size="sm" variant="secondary" onClick={() => handleFreeze(s.id)}>Заморозить</Button>}
+                  {s.status !== 'cancelled' && <Button size="sm" variant="danger" onClick={() => handleCancel(s.id)}>Отменить</Button>}
+                  <Button size="sm" variant="danger" onClick={() => handleDelete(s.id)}>Удалить</Button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -497,10 +620,10 @@ function PnLTab({ pnl, formatMoney }: { pnl: PnLResponse | null; formatMoney: (k
 
 // ---------- Modals ----------
 
-function PaymentModal({ isOpen, onClose, users, onSaved }: { isOpen: boolean; onClose: () => void; users: User[]; onSaved: () => void }) {
+function PaymentModal({ isOpen, onClose, users, groups, onSaved }: { isOpen: boolean; onClose: () => void; users: User[]; groups: Group[]; onSaved: () => void }) {
   const { showToast } = useToast()
   const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState({ student_id: '', amount: '', type: 'income' as 'income' | 'refund', method: 'cash', status: 'completed', description: '', invoice_id: '' })
+  const [form, setForm] = useState({ student_id: '', amount: '', type: 'income' as 'income' | 'refund', method: 'cash', status: 'completed', description: '', invoice_id: '', group_id: '' })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -514,6 +637,7 @@ function PaymentModal({ isOpen, onClose, users, onSaved }: { isOpen: boolean; on
         status: form.status,
         description: form.description,
         invoice_id: form.invoice_id ? Number(form.invoice_id) : undefined,
+        group_id: form.group_id ? Number(form.group_id) : undefined,
       })
       showToast('Платёж создан', 'success')
       onClose()
@@ -549,7 +673,13 @@ function PaymentModal({ isOpen, onClose, users, onSaved }: { isOpen: boolean; on
             <option value="cancelled">Отменён</option>
           </Select>
         </div>
-        <Input label="Счёт ID (опционально)" value={form.invoice_id} onChange={(e) => setForm({ ...form, invoice_id: e.target.value })} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Счёт ID (опционально)" value={form.invoice_id} onChange={(e) => setForm({ ...form, invoice_id: e.target.value })} />
+          <Select label="Группа (опционально)" value={form.group_id} onChange={(e) => setForm({ ...form, group_id: e.target.value })}>
+            <option value="">Без группы</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </Select>
+        </div>
         <Input label="Описание" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
       </form>
     </Modal>
@@ -696,11 +826,77 @@ function ExpenseModal({ isOpen, onClose, branches, onSaved }: { isOpen: boolean;
   )
 }
 
+function SubscriptionModal({ isOpen, onClose, users, groups, onSaved }: { isOpen: boolean; onClose: () => void; users: User[]; groups: Group[]; onSaved: () => void }) {
+  const { showToast } = useToast()
+  const [submitting, setSubmitting] = useState(false)
+  const today = new Date().toISOString().slice(0, 10)
+  const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1)
+  const [form, setForm] = useState({
+    student_id: '', group_id: '', type: 'lessons', start_date: today, end_date: nextMonth.toISOString().slice(0, 10),
+    lessons_total: '8', monthly_fee: '', auto_renew: false,
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await financeApi.createSubscription({
+        student_id: Number(form.student_id),
+        group_id: Number(form.group_id),
+        type: form.type as 'lessons' | 'monthly' | 'unlimited',
+        start_date: form.start_date,
+        end_date: form.end_date,
+        lessons_total: form.type === 'lessons' ? Number(form.lessons_total) : 0,
+        monthly_fee: form.type === 'monthly' ? Math.round(Number(form.monthly_fee) * 100) : 0,
+        auto_renew: form.auto_renew,
+      })
+      showToast('Абонемент создан', 'success')
+      onClose()
+      onSaved()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка создания абонемента'), 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Новый абонемент" footer={<><Button variant="ghost" onClick={onClose}>Отмена</Button><Button type="submit" form="subscription-form" loading={submitting}>Создать</Button></>}>
+      <form id="subscription-form" onSubmit={handleSubmit} className="grid gap-4">
+        <Select label="Ученик" required value={form.student_id} onChange={(e) => setForm({ ...form, student_id: e.target.value })}>
+          <option value="">Выберите</option>
+          {users.filter((u) => u.role === 'student').map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </Select>
+        <Select label="Группа" required value={form.group_id} onChange={(e) => setForm({ ...form, group_id: e.target.value })}>
+          <option value="">Выберите</option>
+          {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </Select>
+        <Select label="Тип" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+          <option value="lessons">По занятиям</option>
+          <option value="monthly">Месячный</option>
+          <option value="unlimited">Безлимит</option>
+        </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="С" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+          <Input label="По" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+        </div>
+        {form.type === 'lessons' && <Input label="Количество занятий" type="number" value={form.lessons_total} onChange={(e) => setForm({ ...form, lessons_total: e.target.value })} />}
+        {form.type === 'monthly' && <Input label="Сумма в месяц (₽)" type="number" step="0.01" value={form.monthly_fee} onChange={(e) => setForm({ ...form, monthly_fee: e.target.value })} />}
+        <label className="flex items-center gap-2 text-sm text-fox-graphite">
+          <input type="checkbox" checked={form.auto_renew} onChange={(e) => setForm({ ...form, auto_renew: e.target.checked })} />
+          Автопродление
+        </label>
+      </form>
+    </Modal>
+  )
+}
+
 function PayrollModal({
   isOpen,
   onClose,
   users,
   onCalculate,
+  onRun,
   payrollResult,
   formatMoney,
 }: {
@@ -708,6 +904,7 @@ function PayrollModal({
   onClose: () => void
   users: User[]
   onCalculate: (teacherId: number, from: string, to: string) => void
+  onRun: (teacherId: number, from: string, to: string) => void
   payrollResult: PayrollResponse | null
   formatMoney: (k: number) => string
 }) {
@@ -717,8 +914,16 @@ function PayrollModal({
   const [fromDate, setFromDate] = useState(firstDay.toISOString().slice(0, 10))
   const [toDate, setToDate] = useState(today)
 
+  const typeLabel = (t?: string) => ({ hourly: 'Почасовая', fixed: 'Фиксированная', percent: 'Процент от выручки' }[t || ''] || t || '—')
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Расчёт зарплаты" size="lg" footer={<><Button variant="ghost" onClick={onClose}>Закрыть</Button><Button onClick={() => onCalculate(Number(teacherId), fromDate, toDate)} disabled={!teacherId}>Рассчитать</Button></>}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Расчёт зарплаты" size="lg" footer={
+      <>
+        <Button variant="ghost" onClick={onClose}>Закрыть</Button>
+        <Button onClick={() => onCalculate(Number(teacherId), fromDate, toDate)} disabled={!teacherId}>Рассчитать</Button>
+        {payrollResult && <Button variant="secondary" onClick={() => onRun(Number(teacherId), fromDate, toDate)}>Начислить ЗП</Button>}
+      </>
+    }>
       <div className="grid gap-4 mb-4">
         <Select label="Преподаватель" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
           <option value="">Выберите</option>
@@ -735,7 +940,7 @@ function PayrollModal({
             <span className="font-bold text-fox-dark">{payrollResult.teacher_name}</span>
             <span className="font-bold text-fox-purple text-lg">{formatMoney(payrollResult.total_amount_kopecks)}</span>
           </div>
-          <div className="text-sm text-fox-gray">Часов: {payrollResult.total_academic_hours} · Ставка: {formatMoney(payrollResult.rate_kopecks)}</div>
+          <div className="text-sm text-fox-gray">Тип: {typeLabel(payrollResult.salary_type)} · Часов: {payrollResult.total_academic_hours} · Ставка: {formatMoney(payrollResult.rate_kopecks)}</div>
           <div className="max-h-64 overflow-y-auto space-y-2">
             {payrollResult.lessons.map((l) => (
               <div key={l.schedule_id} className="flex justify-between text-sm py-2 border-t border-fox-border/40">

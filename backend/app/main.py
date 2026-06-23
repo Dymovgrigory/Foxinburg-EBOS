@@ -16,7 +16,7 @@ from app.services.redis_client import get_redis
 from app.models import (
     User, Organization, Branch, Course, Module, Lesson, LessonContent,
     Test, TestQuestion, TestAttempt, Homework, HomeworkReview, Group,
-    EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction, Invoice, Expense,
+    EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction, Invoice, Expense, Subscription,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
     Task, Directory, StaffLeave, StaffKpi,
@@ -49,6 +49,35 @@ async def _scheduled_academy_sync():
         logging.getLogger(__name__).exception("Scheduled academy sync failed")
 
 
+async def _scheduled_payroll_run():
+    from datetime import date, timedelta
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.finance_service import FinanceService
+    from app.models.user import User
+    from sqlalchemy import select
+
+    try:
+        today = date.today()
+        # предыдущий месяц
+        first_current = today.replace(day=1)
+        last_prev = first_current - timedelta(days=1)
+        first_prev = last_prev.replace(day=1)
+        async with UnitOfWork() as uow:
+            result = await uow.session.execute(select(User.id).where(User.role == "teacher"))
+            teacher_ids = [row[0] for row in result.all()]
+            service = FinanceService(uow)
+            for teacher_id in teacher_ids:
+                try:
+                    await service.run_teacher_payroll(teacher_id, first_prev, last_prev)
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).exception(f"Scheduled payroll failed for teacher {teacher_id}")
+            await uow.commit()
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Scheduled payroll run failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # В development используем create_all для удобства;
@@ -77,6 +106,19 @@ async def lifespan(app: FastAPI):
             id="academy_sync",
             replace_existing=True,
         )
+
+    # Автоматическое начисление зарплат преподавателям 1-го числа за прошлый месяц
+    scheduler.add_job(
+        _scheduled_payroll_run,
+        "cron",
+        day=1,
+        hour=3,
+        minute=0,
+        id="payroll_run",
+        replace_existing=True,
+    )
+
+    if scheduler.get_jobs():
         scheduler.start()
 
     yield

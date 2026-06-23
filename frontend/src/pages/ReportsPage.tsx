@@ -96,6 +96,25 @@ export default function ReportsPage() {
     }
   }
 
+  const exportPdf = async () => {
+    try {
+      const params: { branch_id?: number; date_from?: string; date_to?: string } = {}
+      if (branchId) params.branch_id = Number(branchId)
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
+      const res = await reportsApi.exportPdf(type, params)
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report_${type}.pdf`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка экспорта PDF'), 'error')
+    }
+  }
+
   const rows = useMemo(() => {
     if (!data) return []
     if (Array.isArray(data)) return data
@@ -157,7 +176,10 @@ export default function ReportsPage() {
                 Применить
               </Button>
               <Button variant="secondary" onClick={exportCsv} leftIcon={<LuDownload size={16} />}>
-                Экспорт
+                CSV
+              </Button>
+              <Button variant="secondary" onClick={exportPdf} leftIcon={<LuDownload size={16} />}>
+                PDF
               </Button>
             </div>
           </div>

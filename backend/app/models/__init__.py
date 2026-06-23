@@ -9,7 +9,7 @@ from .group import Group, GroupMembership
 from .employee_group import EmployeeGroup, employee_group_members
 from .enrollment import Enrollment, LessonProgress
 from .crm import Lead, Deal
-from .finance import Payment, Transaction, Invoice, Expense
+from .finance import Payment, Transaction, Invoice, Expense, Subscription
 from .event import SystemEvent, AuditLog
 from .notification import Notification
 from .achievement import Achievement, UserAchievement
@@ -49,6 +49,7 @@ __all__ = [
     "Transaction",
     "Invoice",
     "Expense",
+    "Subscription",
     "SystemEvent",
     "AuditLog",
     "Notification",

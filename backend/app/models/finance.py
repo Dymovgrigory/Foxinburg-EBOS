@@ -12,6 +12,7 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
 
     amount = Column(Integer, nullable=False)  # в копейках
     type = Column(String, default="income")  # income, refund
@@ -26,6 +27,7 @@ class Payment(Base):
 
     student = relationship("User", back_populates="payments")
     invoice = relationship("Invoice", back_populates="payments")
+    group = relationship("Group")
 
     def __repr__(self):
         return f"<Payment {self.amount} {self.status}>"
@@ -99,3 +101,37 @@ class Expense(Base):
 
     def __repr__(self):
         return f"<Expense {self.category} {self.amount}>"
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    membership_id = Column(Integer, ForeignKey("group_memberships.id"), nullable=True)
+
+    type = Column(String, default="lessons", nullable=False)  # lessons, monthly, unlimited
+    status = Column(String, default="active", nullable=False)  # active, frozen, expired, cancelled
+
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=True)
+
+    lessons_total = Column(Integer, default=0, nullable=False)
+    lessons_used = Column(Integer, default=0, nullable=False)
+
+    frozen_at = Column(DateTime, nullable=True)
+    frozen_until = Column(Date, nullable=True)
+    auto_renew = Column(Boolean, default=False, nullable=False)
+
+    monthly_fee = Column(Integer, default=0, nullable=False)  # копеек, для monthly
+
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    student = relationship("User", foreign_keys=[student_id])
+    group = relationship("Group")
+    membership = relationship("GroupMembership")
+
+    def __repr__(self):
+        return f"<Subscription {self.type} {self.status}>"

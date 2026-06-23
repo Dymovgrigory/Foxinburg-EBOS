@@ -10,6 +10,7 @@ class PaymentBase(BaseModel):
     method: Optional[str] = "cash"
     status: Optional[str] = "completed"
     invoice_id: Optional[int] = None
+    group_id: Optional[int] = None
     period_start: Optional[date] = None
     period_end: Optional[date] = None
     description: Optional[str] = None
@@ -26,6 +27,7 @@ class PaymentUpdate(BaseModel):
     method: Optional[str] = None
     status: Optional[str] = None
     invoice_id: Optional[int] = None
+    group_id: Optional[int] = None
     period_start: Optional[date] = None
     period_end: Optional[date] = None
     description: Optional[str] = None
@@ -164,12 +166,14 @@ class PayrollLessonItem(BaseModel):
 class PayrollResponse(BaseModel):
     teacher_id: int
     teacher_name: str
+    salary_type: Optional[str] = "hourly"
     period_start: date
     period_end: date
     rate_kopecks: int
     total_academic_hours: float
     total_amount_kopecks: int
     lessons: List[PayrollLessonItem]
+    expense_id: Optional[int] = None
 
 
 class PnLResponse(BaseModel):
@@ -179,3 +183,46 @@ class PnLResponse(BaseModel):
     refund_kopecks: int
     expense_kopecks: int
     net_kopecks: int
+
+
+class SubscriptionBase(BaseModel):
+    student_id: int
+    group_id: int
+    membership_id: Optional[int] = None
+    type: Optional[str] = "lessons"  # lessons, monthly, unlimited
+    status: Optional[str] = "active"  # active, frozen, expired, cancelled
+    start_date: date
+    end_date: Optional[date] = None
+    lessons_total: Optional[int] = 0
+    lessons_used: Optional[int] = 0
+    frozen_until: Optional[date] = None
+    auto_renew: Optional[bool] = False
+    monthly_fee: Optional[int] = 0
+
+
+class SubscriptionCreate(SubscriptionBase):
+    pass
+
+
+class SubscriptionUpdate(BaseModel):
+    student_id: Optional[int] = None
+    group_id: Optional[int] = None
+    membership_id: Optional[int] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    lessons_total: Optional[int] = None
+    lessons_used: Optional[int] = None
+    frozen_until: Optional[date] = None
+    auto_renew: Optional[bool] = None
+    monthly_fee: Optional[int] = None
+
+
+class SubscriptionResponse(SubscriptionBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    frozen_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime

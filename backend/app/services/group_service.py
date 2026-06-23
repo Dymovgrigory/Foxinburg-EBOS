@@ -44,6 +44,7 @@ class GroupService(BaseService[Group]):
         teacher_id: Optional[int] = None,
         course_id: Optional[int] = None,
         max_students: int = 12,
+        status: Optional[str] = "current",
         schedule: Optional[str] = None,
     ) -> Group:
         group = Group(
@@ -53,6 +54,7 @@ class GroupService(BaseService[Group]):
             teacher_id=teacher_id,
             course_id=course_id,
             max_students=max_students,
+            status=status,
             schedule=schedule,
         )
         await self.add(group)

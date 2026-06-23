@@ -10,6 +10,7 @@ class GroupBase(BaseModel):
     teacher_id: Optional[int] = None
     course_id: Optional[int] = None
     max_students: int = 12
+    status: Optional[str] = "current"
     schedule: Optional[str] = None
 
 
@@ -23,6 +24,7 @@ class GroupUpdate(BaseModel):
     teacher_id: Optional[int] = None
     course_id: Optional[int] = None
     max_students: Optional[int] = None
+    status: Optional[str] = None
     schedule: Optional[str] = None
 
 
@@ -32,3 +34,5 @@ class GroupResponse(GroupBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    students_count: Optional[int] = None
+    course_title: Optional[str] = None

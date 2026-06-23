@@ -63,6 +63,7 @@ async def create_group(
         teacher_id=data.teacher_id,
         course_id=data.course_id,
         max_students=data.max_students,
+        status=data.status,
         schedule=data.schedule,
     )
     return success_response(

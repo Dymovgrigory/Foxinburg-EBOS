@@ -18,6 +18,7 @@ class Group(Base):
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
 
     max_students = Column(Integer, default=12)
+    status = Column(String, default="current", nullable=False)  # current / planned / closed
     schedule = Column(Text, nullable=True)  # JSON schedule
 
     created_at = Column(DateTime, default=utc_now)

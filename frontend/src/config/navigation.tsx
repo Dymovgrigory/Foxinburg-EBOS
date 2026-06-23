@@ -25,21 +25,27 @@ import {
   LuUsersRound,
   LuCreditCard,
   LuBrain,
+  LuListChecks,
 } from 'react-icons/lu'
 import NotificationBadge from '../components/NotificationBadge'
 import HomeworkBadge from '../components/HomeworkBadge'
 
 export interface MenuItem {
-  to: string
+  to?: string
   label: string
-  icon: React.ReactNode
+  icon?: React.ReactNode
   badge?: number | React.ReactNode
   roles?: string[]
+  children?: MenuItem[]
+  defaultOpen?: boolean
 }
 
 export interface MenuGroup {
   title?: string
+  icon?: React.ReactNode
   items: MenuItem[]
+  collapsible?: boolean
+  defaultOpen?: boolean
 }
 
 const badgeNotification = <NotificationBadge key="notifications" />
@@ -81,15 +87,35 @@ export const teacherGroups: MenuGroup[] = [
   {
     items: [
       { to: '/teacher-dashboard', label: 'Главная', icon: <LuHouse /> },
-      { to: '/my-courses', label: 'Мои курсы', icon: <LuBookOpen /> },
+      { to: '/tasks', label: 'Задачи', icon: <LuListChecks />, badge: badgeHomework },
+    ],
+  },
+  {
+    title: 'Учебный процесс',
+    collapsible: true,
+    defaultOpen: true,
+    items: [
+      { to: '/groups', label: 'Группы', icon: <LuUsers /> },
+      { to: '/calendar', label: 'Расписание', icon: <LuCalendar /> },
+    ],
+  },
+  {
+    title: 'Академия педагогов',
+    collapsible: true,
+    defaultOpen: false,
+    items: [
+      { to: '/academy', label: 'Академия', icon: <LuSchool /> },
       { to: '/knowledge', label: 'База знаний', icon: <LuBrain /> },
-      { to: '/homeworks', label: 'Домашние задания', icon: <LuNotebookPen />, badge: badgeHomework },
-      { to: '/academy', label: 'Академия педагогов', icon: <LuSchool /> },
+      { to: '/library', label: 'Библиотека', icon: <LuLibrary /> },
       { to: '/certification', label: 'Сертификация', icon: <LuAward /> },
+    ],
+  },
+  {
+    items: [
+      { to: '/homeworks', label: 'Домашние задания', icon: <LuNotebookPen />, badge: badgeHomework },
+      { to: '/my-courses', label: 'Мои курсы', icon: <LuBookOpen /> },
       { to: '/progress', label: 'Мой прогресс', icon: <LuChartLine /> },
       { to: '/ai', label: 'AI Помощник', icon: <LuSparkles /> },
-      { to: '/library', label: 'Библиотека', icon: <LuLibrary /> },
-      { to: '/calendar', label: 'Календарь', icon: <LuCalendar /> },
       { to: '/chats', label: 'Чаты', icon: <LuMessageSquare /> },
       { to: '/notifications', label: 'Уведомления', icon: <LuBell />, badge: badgeNotification },
       { to: '/settings', label: 'Настройки', icon: <LuSettings /> },

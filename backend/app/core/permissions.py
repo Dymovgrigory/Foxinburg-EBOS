@@ -55,6 +55,12 @@ class Permission(str, Enum):
     # Homework
     HOMEWORK_REVIEW = "homework:review"
 
+    # Tasks
+    TASK_READ = "task:read"
+    TASK_CREATE = "task:create"
+    TASK_UPDATE = "task:update"
+    TASK_DELETE = "task:delete"
+
     # CRM / finance / analytics
     CRM_MANAGE = "crm:manage"
     FINANCE_MANAGE = "finance:manage"
@@ -113,6 +119,7 @@ ROLE_PERMISSIONS = {
         Permission.LESSON_CREATE, Permission.LESSON_READ, Permission.LESSON_UPDATE, Permission.LESSON_DELETE,
         Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.HOMEWORK_REVIEW, Permission.ATTENDANCE_MANAGE,
+        Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
         Permission.NOTIFICATION_READ, Permission.NOTIFICATION_SEND,
         Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
@@ -125,6 +132,7 @@ ROLE_PERMISSIONS = {
         Permission.HOMEWORK_REVIEW,
         Permission.GROUP_READ, Permission.GROUP_MANAGE, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.ATTENDANCE_MANAGE,
+        Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.NOTIFICATION_READ,
         Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
     ],
@@ -133,6 +141,7 @@ ROLE_PERMISSIONS = {
         Permission.MODULE_READ, Permission.LESSON_READ,
         Permission.GROUP_READ, Permission.PROGRESS_READ,
         Permission.ATTENDANCE_MANAGE,
+        Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.NOTIFICATION_READ,
         Permission.MESSAGE_READ, Permission.MESSAGE_SEND,
     ],
@@ -140,6 +149,7 @@ ROLE_PERMISSIONS = {
         Permission.USER_READ, Permission.NOTIFICATION_SEND,
         Permission.COURSE_READ,
         Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
+        Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
         Permission.NOTIFICATION_READ,
     ],

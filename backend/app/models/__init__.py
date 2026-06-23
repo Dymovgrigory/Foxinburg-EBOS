@@ -17,6 +17,7 @@ from .file import File
 from .schedule import Schedule, Attendance
 from .chat import ChatRoom, ChatParticipant, ChatMessage
 from .knowledge import KnowledgeArticle
+from .task import Task
 
 __all__ = [
     "Base",
@@ -53,4 +54,5 @@ __all__ = [
     "ChatParticipant",
     "ChatMessage",
     "KnowledgeArticle",
+    "Task",
 ]

@@ -1,13 +1,71 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { FiChevronLeft, FiChevronRight, FiLogOut, FiMoon, FiSun } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiLogOut, FiMoon, FiSun } from 'react-icons/fi'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { groupsForRole, roleLabel } from '../config/navigation'
+import type { MenuGroup, MenuItem } from '../config/navigation'
 
 interface SidebarProps {
   mobileOpen: boolean
   onCloseMobile: () => void
+}
+
+function SidebarItem({
+  item,
+  collapsed,
+  active,
+  onNavigate,
+}: {
+  item: MenuItem
+  collapsed: boolean
+  active: boolean
+  onNavigate: () => void
+}) {
+  const content = (
+    <>
+      {item.icon && <span className="text-lg">{item.icon}</span>}
+      {!collapsed && <span className="flex-1">{item.label}</span>}
+      {!collapsed && item.badge && (
+        <span className="flex-shrink-0">
+          {typeof item.badge === 'number' ? (
+            <span className="bg-fox-purple text-fox-gold text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {item.badge}
+            </span>
+          ) : (
+            item.badge
+          )}
+        </span>
+      )}
+    </>
+  )
+
+  const className = [
+    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+    active
+      ? 'bg-fox-sidebar-active-bg text-fox-sidebar-active-text shadow-sm'
+      : 'text-fox-sidebar-muted hover:bg-fox-sidebar-hover-bg hover:text-fox-purple',
+    collapsed && 'justify-center',
+  ].join(' ')
+
+  if (item.to) {
+    return (
+      <Link
+        to={item.to}
+        onClick={onNavigate}
+        className={className}
+        title={collapsed ? item.label : undefined}
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={className} title={collapsed ? item.label : undefined}>
+      {content}
+    </div>
+  )
 }
 
 export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
@@ -19,7 +77,34 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const [userOpen, setUserOpen] = useState(false)
 
   const groups = groupsForRole(user?.role || 'owner')
-  const isActive = (path: string) => location.pathname === path
+  const [openGroups, setOpenGroups] = useState<Record<number, boolean>>(() => {
+    const initial: Record<number, boolean> = {}
+    groups.forEach((g, idx) => {
+      initial[idx] = g.collapsible ? (g.defaultOpen ?? groupHasActive(g)) : true
+    })
+    return initial
+  })
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev }
+      let changed = false
+      groups.forEach((g, idx) => {
+        if (g.collapsible && groupHasActive(g) && !next[idx]) {
+          next[idx] = true
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }, [groups, location.pathname])
+  const isActive = (path?: string) => !!path && location.pathname === path
+  const itemOrChildActive = (item: MenuItem): boolean => {
+    if (isActive(item.to)) return true
+    if (item.children) return item.children.some((c) => itemOrChildActive(c))
+    return false
+  }
+  const groupHasActive = (group: MenuGroup) => group.items.some((i) => itemOrChildActive(i))
 
   const handleLogout = () => {
     logout()
@@ -95,50 +180,52 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       )}
 
       {/* Menu */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        {groups.map((group, gi) => (
-          <div key={gi}>
-            {!collapsed && group.title && (
-              <div className="px-3 mb-2 text-[10px] font-semibold text-fox-sidebar-muted uppercase tracking-wider">
-                {group.title}
-              </div>
-            )}
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                const active = isActive(item.to)
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={onCloseMobile}
-                    className={[
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                      active
-                        ? 'bg-fox-sidebar-active-bg text-fox-sidebar-active-text shadow-sm'
-                        : 'text-fox-sidebar-muted hover:bg-fox-sidebar-hover-bg hover:text-fox-purple',
-                      collapsed && 'justify-center',
-                    ].join(' ')}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <span className="text-lg">{item.icon}</span>
-                    {!collapsed && <span className="flex-1">{item.label}</span>}
-                    {!collapsed && item.badge && (
-                      <span className="flex-shrink-0">
-                        {typeof item.badge === 'number' ? (
-                          <span className="bg-fox-purple text-fox-gold text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                            {item.badge}
-                          </span>
-                        ) : (
-                          item.badge
-                        )}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
+        {groups.map((group, gi) => {
+          const hasActive = groupHasActive(group)
+          const isOpen = collapsed ? true : (openGroups[gi] ?? !group.collapsible)
+          const canCollapse = !collapsed && group.collapsible && group.title
+          return (
+            <div key={gi}>
+              {group.title && !collapsed && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    canCollapse
+                      ? setOpenGroups((prev) => ({ ...prev, [gi]: !isOpen }))
+                      : undefined
+                  }
+                  className={[
+                    'w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition',
+                    canCollapse ? 'cursor-pointer hover:text-fox-purple' : 'cursor-default',
+                    hasActive ? 'text-fox-purple' : 'text-fox-sidebar-muted',
+                  ].join(' ')}
+                >
+                  {group.icon && <span className="text-base">{group.icon}</span>}
+                  <span className="flex-1 text-left">{group.title}</span>
+                  {canCollapse && (
+                    <span className="text-fox-sidebar-muted">
+                      {isOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                    </span>
+                  )}
+                </button>
+              )}
+              {(!group.collapsible || collapsed || isOpen) && (
+                <div className="space-y-1">
+                  {group.items.map((item) => (
+                    <SidebarItem
+                      key={item.to || item.label}
+                      item={item}
+                      collapsed={collapsed}
+                      active={isActive(item.to)}
+                      onNavigate={onCloseMobile}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </nav>
 
       {/* Bottom */}

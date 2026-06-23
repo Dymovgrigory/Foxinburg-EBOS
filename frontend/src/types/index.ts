@@ -106,7 +106,10 @@ export interface Group {
   teacher_id?: number
   branch_id?: number
   level?: string
-  status?: string
+  max_students?: number
+  status?: 'current' | 'planned' | 'closed'
+  students_count?: number
+  course_title?: string | null
   created_at?: string
 }
 
@@ -132,6 +135,23 @@ export interface Homework {
   status: string
   submitted_at?: string
   created_at: string
+}
+
+export interface Task {
+  id: number
+  title: string
+  description?: string | null
+  assignee_id?: number | null
+  creator_id?: number | null
+  contact_id?: number | null
+  assignee_name?: string | null
+  creator_name?: string | null
+  contact_name?: string | null
+  status: 'planned' | 'completed' | 'overdue'
+  type?: string | null
+  due_date?: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Test {

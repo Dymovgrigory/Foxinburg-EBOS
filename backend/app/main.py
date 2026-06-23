@@ -19,13 +19,14 @@ from app.models import (
     EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
+    Task,
 )
 
 from app.routers import (
     auth, users, seed, courses, modules, lessons, groups, employee_groups, enrollments,
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
-    chats, chat_ws, teacher_academy, knowledge, methodists, system, ai,
+    chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks,
 )
 from app.admin import setup_admin
 
@@ -132,6 +133,7 @@ app.include_router(methodists.router, prefix="/api/v3")
 app.include_router(analytics.router, prefix="/api/v3")
 app.include_router(system.router, prefix="/api/v3")
 app.include_router(ai.router, prefix="/api/v3")
+app.include_router(tasks.router, prefix="/api/v3")
 
 setup_admin(app)
 

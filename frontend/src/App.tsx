@@ -33,6 +33,8 @@ import AIAssistantPage from './pages/AIAssistantPage'
 import CourseBuilderPage from './pages/CourseBuilderPage'
 import CoursePlayerPage from './pages/CoursePlayerPage'
 import EmployeeGroupsPage from './pages/EmployeeGroupsPage'
+import TeacherGroupsPage from './pages/TeacherGroupsPage'
+import TasksPage from './pages/TasksPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -65,6 +67,8 @@ function App() {
         <Route path="crm" element={<RoleProtected path="/crm"><CrmPage /></RoleProtected>} />
         <Route path="courses" element={<RoleProtected path="/courses"><CoursesPage /></RoleProtected>} />
         <Route path="calendar" element={<RoleProtected path="/calendar"><SchedulePage /></RoleProtected>} />
+        <Route path="groups" element={<RoleProtected path="/groups"><TeacherGroupsPage /></RoleProtected>} />
+        <Route path="tasks" element={<RoleProtected path="/tasks"><TasksPage /></RoleProtected>} />
         <Route path="homeworks" element={<RoleProtected path="/homeworks"><HomeworksPage /></RoleProtected>} />
         <Route path="chats" element={<Protected><ChatPage /></Protected>} />
         <Route path="notifications" element={<Protected><NotificationsPage /></Protected>} />

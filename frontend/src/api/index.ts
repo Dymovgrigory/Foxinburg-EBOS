@@ -11,6 +11,7 @@ import type {
   EmployeeGroup,
   Homework,
   HomeworkReview,
+  Task,
   Test,
   TestQuestion,
   TestAttempt,
@@ -91,6 +92,7 @@ export const employeeGroupsApi = {
 
 export const groupsApi = {
   list: () => api.get<ApiResponse<Group[]>>('/groups').then(unwrap),
+  my: () => api.get<ApiResponse<Group[]>>('/groups/my').then(unwrap),
   create: (data: Partial<Group>) => api.post<ApiResponse<Group>>('/groups', data).then(unwrap),
   update: (id: number, data: Partial<Group>) => api.patch<ApiResponse<Group>>(`/groups/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/groups/${id}`).then(unwrap),
@@ -117,6 +119,21 @@ export const attendanceApi = {
     api.post<ApiResponse<Attendance>>('/attendance', data).then(unwrap),
   update: (id: number, data: { status?: string; notes?: string }) =>
     api.patch<ApiResponse<Attendance>>(`/attendance/${id}`, data).then(unwrap),
+}
+
+export const tasksApi = {
+  list: (params?: {
+    status?: string
+    type?: string
+    assignee_id?: number
+    creator_id?: number
+    due_from?: string
+    due_to?: string
+    search?: string
+  }) => api.get<ApiResponse<Task[]>>('/tasks', { params }).then(unwrap),
+  create: (data: Partial<Task>) => api.post<ApiResponse<Task>>('/tasks', data).then(unwrap),
+  update: (id: number, data: Partial<Task>) => api.patch<ApiResponse<Task>>(`/tasks/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/tasks/${id}`).then(unwrap),
 }
 
 export const modulesApi = {

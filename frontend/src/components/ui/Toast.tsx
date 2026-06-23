@@ -39,8 +39,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const colorByType: Record<ToastType, string> = {
     success: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    error: 'bg-red-50 text-red-800 border-red-200',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200',
+    error: 'bg-fox-error/10 text-fox-error border-fox-error/20',
+    warning: 'bg-fox-warning/10 text-fox-warning border-fox-warning/20',
     info: 'bg-fox-purple/10 text-fox-purple border-fox-border',
   }
 

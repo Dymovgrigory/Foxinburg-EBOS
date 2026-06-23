@@ -27,8 +27,8 @@ const TABS = [
 
 const RISK_LABELS: Record<string, { label: string; color: string }> = {
   low: { label: 'Низкий', color: 'bg-emerald-50 text-emerald-700' },
-  medium: { label: 'Средний', color: 'bg-amber-50 text-amber-700' },
-  high: { label: 'Высокий', color: 'bg-red-50 text-red-700' },
+  medium: { label: 'Средний', color: 'bg-fox-warning/10 text-fox-warning' },
+  high: { label: 'Высокий', color: 'bg-fox-error/10 text-fox-error' },
 }
 
 const ACADEMY_STATUS_LABELS: Record<string, string> = {

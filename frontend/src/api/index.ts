@@ -7,6 +7,7 @@ import type {
   Lesson,
   Schedule,
   ScheduleOccurrence,
+  ScheduleException,
   Attendance,
   Group,
   GroupMembership,
@@ -160,6 +161,17 @@ export const schedulesApi = {
   delete: (id: number) => api.delete<ApiResponse<void>>(`/schedules/${id}`).then(unwrap),
 }
 
+export const scheduleExceptionsApi = {
+  list: (scheduleId: number) =>
+    api.get<ApiResponse<ScheduleException[]>>(`/schedules/${scheduleId}/exceptions`).then(unwrap),
+  create: (scheduleId: number, data: Partial<ScheduleException>) =>
+    api.post<ApiResponse<ScheduleException>>(`/schedules/${scheduleId}/exceptions`, data).then(unwrap),
+  update: (scheduleId: number, exceptionDate: string, data: Partial<ScheduleException>) =>
+    api.patch<ApiResponse<ScheduleException>>(`/schedules/${scheduleId}/exceptions/${exceptionDate}`, data).then(unwrap),
+  delete: (scheduleId: number, exceptionDate: string) =>
+    api.delete<ApiResponse<void>>(`/schedules/${scheduleId}/exceptions/${exceptionDate}`).then(unwrap),
+}
+
 export const branchesApi = {
   list: () => api.get<ApiResponse<Branch[]>>('/branches').then(unwrap),
   create: (data: Partial<Branch>) => api.post<ApiResponse<Branch>>('/branches', data).then(unwrap),
@@ -168,9 +180,11 @@ export const branchesApi = {
 }
 
 export const attendanceApi = {
-  listBySchedule: (scheduleId: number) =>
-    api.get<ApiResponse<Attendance[]>>(`/attendance/schedule/${scheduleId}`).then(unwrap),
-  mark: (data: { schedule_id: number; student_id: number; status: string; notes?: string }) =>
+  listBySchedule: (scheduleId: number, occurrenceDate?: string) =>
+    api.get<ApiResponse<Attendance[]>>(`/attendance/schedule/${scheduleId}`, {
+      params: occurrenceDate ? { occurrence_date: occurrenceDate } : {},
+    }).then(unwrap),
+  mark: (data: { schedule_id: number; student_id: number; occurrence_date: string; status: string; notes?: string }) =>
     api.post<ApiResponse<Attendance>>('/attendance', data).then(unwrap),
   update: (id: number, data: { status?: string; notes?: string }) =>
     api.patch<ApiResponse<Attendance>>(`/attendance/${id}`, data).then(unwrap),

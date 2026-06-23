@@ -19,7 +19,7 @@ from app.models import (
     EmployeeGroup, Enrollment, LessonProgress, Lead, Deal, Payment, Transaction, Invoice, Expense, Subscription,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
-    Task, Directory, StaffLeave, StaffKpi, SystemSettings,
+    Task, Directory, StaffLeave, StaffKpi, SystemSettings, ScheduleException,
 )
 
 from app.routers import (

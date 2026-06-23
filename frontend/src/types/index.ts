@@ -101,6 +101,8 @@ export interface Schedule {
 }
 
 export interface ScheduleOccurrence {
+  occurrence_id: string
+  occurrence_date: string
   schedule_id: number
   title: string
   topic?: string | null
@@ -119,16 +121,32 @@ export interface ScheduleOccurrence {
   is_online?: boolean
   recurrence?: string
   is_exception?: boolean
+  is_cancelled?: boolean
 }
 
 export interface Attendance {
   id: number
   schedule_id: number
   student_id: number
+  occurrence_date: string
   status: 'present' | 'absent' | 'late' | 'excused'
   notes?: string | null
   marked_by_id?: number | null
   marked_at: string
+}
+
+export interface ScheduleException {
+  id: number
+  schedule_id: number
+  exception_date: string
+  is_cancelled: boolean
+  start_time?: string | null
+  end_time?: string | null
+  room?: string | null
+  teacher_id?: number | null
+  replacement_teacher_id?: number | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Group {

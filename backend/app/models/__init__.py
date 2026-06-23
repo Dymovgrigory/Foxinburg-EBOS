@@ -14,7 +14,7 @@ from .event import SystemEvent, AuditLog
 from .notification import Notification
 from .achievement import Achievement, UserAchievement
 from .file import File
-from .schedule import Schedule, Attendance
+from .schedule import Schedule, Attendance, ScheduleException
 from .chat import ChatRoom, ChatParticipant, ChatMessage
 from .knowledge import KnowledgeArticle
 from .task import Task
@@ -59,6 +59,7 @@ __all__ = [
     "File",
     "Schedule",
     "Attendance",
+    "ScheduleException",
     "ChatRoom",
     "ChatParticipant",
     "ChatMessage",

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import { useToast, Button, Card, Loader, EmptyState, Tabs, PageShell } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
-import { schedulesApi, groupsApi, usersApi, branchesApi, attendanceApi } from '../api'
+import { schedulesApi, groupsApi, branchesApi, attendanceApi } from '../api'
 import AttendanceModal from '../components/AttendanceModal'
 import ScheduleCalendar, { type CalendarView } from '../components/schedule/ScheduleCalendar'
 import ScheduleFilters, { type FilterState } from '../components/schedule/ScheduleFilters'
@@ -22,9 +22,7 @@ const VIEW_TABS = [
 export default function SchedulePage() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const isTeacher = user?.role === 'teacher'
-  const isStudent = user?.role === 'student'
-  const canManage = !isTeacher && !isStudent
+  const canManage = ['owner', 'super_admin', 'admin', 'methodist'].includes(user?.role || '')
   const canConduct = ['teacher', 'methodist', 'admin', 'super_admin', 'owner'].includes(user?.role || '')
 
   const [view, setView] = useState<CalendarView>('week')
@@ -55,15 +53,13 @@ export default function SchedulePage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [groupsRes, usersRes, branchesRes] = await Promise.all([
+      const [groupsRes, branchesRes] = await Promise.all([
         canManage ? groupsApi.list({ status: 'current' }) : groupsApi.my(),
-        canManage ? usersApi.list() : Promise.resolve([]),
         branchesApi.list().catch(() => []),
       ])
       setGroups(groupsRes)
       setBranches(branchesRes)
-      const teacherList = (usersRes as User[]).filter((u) => u.role === 'teacher')
-      setTeachers(teacherList)
+      setTeachers([])
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Ошибка загрузки справочников', 'error')
     }
@@ -141,11 +137,14 @@ export default function SchedulePage() {
     setConductSchedule(occurrence)
     setConductLoading(true)
     try {
-      const [studentsRes, attendancesRes] = await Promise.all([
-        usersApi.listStudents(),
-        attendanceApi.listBySchedule(occurrence.schedule_id),
+      const [membershipsRes, attendancesRes] = await Promise.all([
+        groupsApi.listStudents(occurrence.group_id),
+        attendanceApi.listBySchedule(occurrence.schedule_id, occurrence.occurrence_date),
       ])
-      const roster = (studentsRes as User[]).filter((u) => u.group_id === occurrence.group_id)
+      const roster = membershipsRes
+        .filter((m) => m.status === 'active')
+        .map((m) => m.student)
+        .filter(Boolean) as User[]
       setConductStudents(roster)
       setConductAttendances(attendancesRes)
     } catch (err: any) {
@@ -262,6 +261,7 @@ export default function SchedulePage() {
               } as any)
             : null
         }
+        occurrenceDate={conductSchedule?.occurrence_date}
         students={conductStudents}
         initialAttendances={conductAttendances}
         loading={conductLoading}

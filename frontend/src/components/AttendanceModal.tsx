@@ -11,6 +11,7 @@ interface AttendanceModalProps {
   isOpen: boolean
   onClose: () => void
   schedule: Schedule | null
+  occurrenceDate?: string
   students: User[]
   initialAttendances: Attendance[]
   onSaved: () => void
@@ -50,6 +51,7 @@ export default function AttendanceModal({
   isOpen,
   onClose,
   schedule,
+  occurrenceDate,
   students,
   initialAttendances,
   onSaved,
@@ -106,6 +108,7 @@ export default function AttendanceModal({
 
   const handleSave = async () => {
     if (!schedule) return
+    const effectiveOccurrenceDate = occurrenceDate || schedule.start_time.slice(0, 10)
     setSaving(true)
     try {
       await Promise.all(
@@ -113,6 +116,7 @@ export default function AttendanceModal({
           attendanceApi.mark({
             schedule_id: schedule.id,
             student_id: s.id,
+            occurrence_date: effectiveOccurrenceDate,
             status: records[s.id]?.status || 'present',
             notes: records[s.id]?.notes,
           })

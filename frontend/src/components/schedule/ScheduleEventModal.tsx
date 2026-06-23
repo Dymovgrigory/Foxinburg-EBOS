@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal, Button, Input, Select, Textarea, Badge, Loader } from '../ui'
 import type { Schedule, ScheduleOccurrence, Group, User, Branch } from '../../types'
-import { schedulesApi } from '../../api'
+import { schedulesApi, scheduleExceptionsApi } from '../../api'
 import { useToast } from '../ui'
 import { formatTime, formatDate, statusLabel, statusVariant, recurrenceLabel } from './utils'
-import { LuCheck, LuTrash2, LuPencil } from 'react-icons/lu'
+import { LuCheck, LuTrash2, LuPencil, LuX } from 'react-icons/lu'
 
 interface Props {
   isOpen: boolean
@@ -104,6 +104,34 @@ export default function ScheduleEventModal({
     }
   }
 
+  const handleCancel = async () => {
+    if (!schedule || !occurrence) return
+    const isRecurring = schedule.recurrence && schedule.recurrence !== 'none'
+    let scope: 'this' | 'series' | null = 'this'
+    if (isRecurring) {
+      const choice = confirm(
+        'Отменить только это занятие?\nНажмите «ОК» — только это вхождение, «Отмена» — отменить всю серию.'
+      )
+      scope = choice ? 'this' : 'series'
+    }
+    try {
+      if (scope === 'this') {
+        await scheduleExceptionsApi.create(schedule.id, {
+          exception_date: occurrence.occurrence_date,
+          is_cancelled: true,
+        })
+        showToast('Занятие отменено', 'success')
+      } else {
+        await schedulesApi.update(schedule.id, { status: 'cancelled' })
+        showToast('Серия занятий отменена', 'success')
+      }
+      onSaved()
+      onClose()
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Ошибка отмены занятия', 'error')
+    }
+  }
+
   const handleConduct = () => {
     if (occurrence && onConduct) onConduct(occurrence)
   }
@@ -119,6 +147,9 @@ export default function ScheduleEventModal({
             <>
               <Button variant="danger" leftIcon={<LuTrash2 size={16} />} onClick={handleDelete}>
                 Удалить
+              </Button>
+              <Button variant="danger" leftIcon={<LuX size={16} />} onClick={handleCancel}>
+                {schedule?.recurrence && schedule.recurrence !== 'none' ? 'Отменить…' : 'Отменить'}
               </Button>
               <Button variant="secondary" leftIcon={<LuPencil size={16} />} onClick={() => setMode('edit')}>
                 Редактировать

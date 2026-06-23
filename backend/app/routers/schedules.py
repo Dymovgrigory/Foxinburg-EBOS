@@ -5,7 +5,10 @@ from fastapi import APIRouter, Depends
 from app.core.dependencies import require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.schemas.schedule import ScheduleCreate, ScheduleUpdate, ScheduleResponse
+from app.schemas.schedule import (
+    ScheduleCreate, ScheduleUpdate, ScheduleResponse,
+    ScheduleExceptionCreate, ScheduleExceptionUpdate, ScheduleExceptionResponse,
+)
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.schedule_service import ScheduleService
 
@@ -52,7 +55,7 @@ async def calendar_schedules(
     current_user=Depends(require_permission(Permission.GROUP_READ)),
     uow: UnitOfWork = Depends(get_uow),
 ):
-    """Развёрнутые события для календаря (с учётом recurrence)."""
+    """Развёрнутые события для календаря (с учётом recurrence и исключений)."""
     if not from_date:
         from_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     if not to_date:
@@ -69,7 +72,7 @@ async def calendar_schedules(
     )
     occurrences = []
     for schedule in schedules:
-        occurrences.extend(service.generate_occurrences(schedule, from_date, to_date))
+        occurrences.extend(await service.generate_occurrences(schedule, from_date, to_date))
     occurrences.sort(key=lambda x: x["start_time"])
     return success_response(
         data=occurrences,
@@ -164,3 +167,94 @@ async def delete_schedule(
         return error_response("Занятие не найдено", status_code=404)
     await uow.commit()
     return success_response(data=None, message="Занятие удалено")
+
+
+# ---------- Schedule exceptions ----------
+
+@router.get("/{schedule_id}/exceptions")
+async def list_schedule_exceptions(
+    schedule_id: int,
+    current_user=Depends(require_permission(Permission.GROUP_READ)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = ScheduleService(uow)
+    schedule = await service.get_by_id(schedule_id)
+    if not schedule:
+        return error_response("Занятие не найдено", status_code=404)
+    exceptions = await service.list_exceptions(schedule_id)
+    return success_response(
+        data=[ScheduleExceptionResponse.model_validate(e).model_dump() for e in exceptions],
+        message="Исключения расписания",
+    )
+
+
+@router.post("/{schedule_id}/exceptions")
+async def create_schedule_exception(
+    schedule_id: int,
+    data: ScheduleExceptionCreate,
+    current_user=Depends(require_permission(Permission.GROUP_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = ScheduleService(uow)
+    schedule = await service.get_by_id(schedule_id)
+    if not schedule:
+        return error_response("Занятие не найдено", status_code=404)
+    try:
+        exception = await service.create_or_update_exception(
+            schedule_id=schedule_id,
+            exception_date=data.exception_date,
+            data=data.model_dump(exclude={"exception_date"}, exclude_unset=True),
+        )
+        await uow.commit()
+        await uow.session.refresh(exception)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+    return success_response(
+        data=ScheduleExceptionResponse.model_validate(exception).model_dump(),
+        message="Исключение создано",
+        status_code=201,
+    )
+
+
+@router.patch("/{schedule_id}/exceptions/{exception_date}")
+async def update_schedule_exception(
+    schedule_id: int,
+    exception_date: str,
+    data: ScheduleExceptionUpdate,
+    current_user=Depends(require_permission(Permission.GROUP_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    from datetime import date as dt_date
+    parsed_date = dt_date.fromisoformat(exception_date)
+    service = ScheduleService(uow)
+    try:
+        exception = await service.create_or_update_exception(
+            schedule_id=schedule_id,
+            exception_date=parsed_date,
+            data=data.model_dump(exclude_unset=True),
+        )
+        await uow.commit()
+        await uow.session.refresh(exception)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+    return success_response(
+        data=ScheduleExceptionResponse.model_validate(exception).model_dump(),
+        message="Исключение обновлено",
+    )
+
+
+@router.delete("/{schedule_id}/exceptions/{exception_date}")
+async def delete_schedule_exception(
+    schedule_id: int,
+    exception_date: str,
+    current_user=Depends(require_permission(Permission.GROUP_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    from datetime import date as dt_date
+    parsed_date = dt_date.fromisoformat(exception_date)
+    service = ScheduleService(uow)
+    deleted = await service.delete_exception(schedule_id, parsed_date)
+    if not deleted:
+        return error_response("Исключение не найдено", status_code=404)
+    await uow.commit()
+    return success_response(data=None, message="Исключение удалено")

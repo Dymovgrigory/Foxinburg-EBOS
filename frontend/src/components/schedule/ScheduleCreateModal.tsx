@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Modal, Button, Input, Select, Textarea } from '../ui'
 import { useToast } from '../ui'
-import type { Schedule, Group, User, Branch } from '../../types'
-import { schedulesApi } from '../../api'
+import type { Schedule, Group, User, Branch, Course, Lesson } from '../../types'
+import { schedulesApi, coursesApi } from '../../api'
 
 interface Props {
   isOpen: boolean
@@ -38,9 +38,20 @@ export default function ScheduleCreateModal({ isOpen, onClose, initialDate, grou
     return d
   }, [defaultStart])
 
+  const [courses, setCourses] = useState<Course[]>([])
+
+  useEffect(() => {
+    coursesApi
+      .list()
+      .then(setCourses)
+      .catch((err) => showToast(err?.response?.data?.message || 'Ошибка загрузки курсов', 'error'))
+  }, [showToast])
+
   const [form, setForm] = useState<Partial<Schedule>>({
     title: '',
     group_id: undefined,
+    course_id: undefined,
+    lesson_id: undefined,
     teacher_id: undefined,
     branch_id: undefined,
     room: '',
@@ -55,6 +66,12 @@ export default function ScheduleCreateModal({ isOpen, onClose, initialDate, grou
     description: '',
   })
 
+  const selectedCourse = useMemo(() => courses.find((c) => c.id === Number(form.course_id)), [courses, form.course_id])
+  const selectedLessons = useMemo<Lesson[]>(() => {
+    if (!selectedCourse) return []
+    return selectedCourse.modules.flatMap((m) => m.lessons || [])
+  }, [selectedCourse])
+
   const selectedGroup = groups.find((g) => g.id === Number(form.group_id))
 
   const setField = <K extends keyof Schedule>(key: K, value: Schedule[K]) => {
@@ -67,6 +84,8 @@ export default function ScheduleCreateModal({ isOpen, onClose, initialDate, grou
     setForm((prev) => ({
       ...prev,
       group_id: groupId,
+      course_id: group.course_id || prev.course_id,
+      lesson_id: undefined,
       teacher_id: group.teacher_id || prev.teacher_id,
       branch_id: group.branch_id || prev.branch_id,
       room: group.room || prev.room,
@@ -112,6 +131,22 @@ export default function ScheduleCreateModal({ isOpen, onClose, initialDate, grou
           {groups.map((g) => (
             <option key={g.id} value={g.id}>
               {g.name}
+            </option>
+          ))}
+        </Select>
+        <Select label="Курс" value={String(form.course_id || '')} onChange={(e) => setForm((prev) => ({ ...prev, course_id: Number(e.target.value) || undefined, lesson_id: undefined }))}>
+          <option value="">Без курса</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </Select>
+        <Select label="Урок" value={String(form.lesson_id || '')} onChange={(e) => setField('lesson_id', e.target.value ? Number(e.target.value) : undefined)}>
+          <option value="">Без урока</option>
+          {selectedLessons.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.title}
             </option>
           ))}
         </Select>

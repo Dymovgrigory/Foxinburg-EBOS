@@ -347,7 +347,13 @@ class FinanceService(BaseService[Payment]):
 
     # ---------- Auto balance deduction per lesson ----------
 
-    async def charge_for_lesson(self, schedule: Schedule, student_id: int, attendance_status: str) -> Optional[Transaction]:
+    async def charge_for_lesson(
+        self,
+        schedule: Schedule,
+        student_id: int,
+        attendance_status: str,
+        occurrence_date: Optional[date] = None,
+    ) -> Optional[Transaction]:
         """Списываем с баланса ученика стоимость занятия (если статус present/late)."""
         if attendance_status in ("absent", "excused"):
             return None
@@ -369,9 +375,35 @@ class FinanceService(BaseService[Payment]):
         )
         membership = membership_result.scalar_one_or_none()
 
+        # Определяем фактическое начало/конец вхождения с учётом исключений
+        from app.models.schedule import ScheduleException
+
+        start_time = schedule.start_time
+        end_time = schedule.end_time
+        if occurrence_date and occurrence_date != schedule.start_time.date():
+            exception_result = await self.uow.session.execute(
+                select(ScheduleException).where(
+                    ScheduleException.schedule_id == schedule.id,
+                    ScheduleException.exception_date == occurrence_date,
+                )
+            )
+            exception = exception_result.scalar_one_or_none()
+            if exception:
+                if exception.start_time:
+                    start_time = exception.start_time
+                else:
+                    start_time = start_time.replace(year=occurrence_date.year, month=occurrence_date.month, day=occurrence_date.day)
+                if exception.end_time:
+                    end_time = exception.end_time
+                else:
+                    end_time = end_time.replace(year=occurrence_date.year, month=occurrence_date.month, day=occurrence_date.day)
+            else:
+                start_time = start_time.replace(year=occurrence_date.year, month=occurrence_date.month, day=occurrence_date.day)
+                end_time = end_time.replace(year=occurrence_date.year, month=occurrence_date.month, day=occurrence_date.day)
+
         rate = (membership.individual_hourly_rate if membership else None) or group.hourly_rate or 0
         academic_minutes = group.academic_hour_minutes
-        duration_minutes = (schedule.end_time - schedule.start_time).total_seconds() / 60
+        duration_minutes = (end_time - start_time).total_seconds() / 60
         hours = duration_minutes / academic_minutes
         discount = membership.discount_percent if membership else 0
         amount = -int(hours * rate * (100 - discount) / 100)
@@ -387,7 +419,7 @@ class FinanceService(BaseService[Payment]):
             amount=amount,
             type="lesson_charge",
             balance_after=new_balance,
-            description=f"Списание за занятие {schedule.title} ({schedule.start_time:%d.%m.%Y})",
+            description=f"Списание за занятие {schedule.title} ({start_time:%d.%m.%Y})",
         )
         self.uow.session.add(transaction)
         await self.uow.session.flush()

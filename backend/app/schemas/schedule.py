@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
@@ -55,9 +55,66 @@ class ScheduleResponse(ScheduleBase):
     updated_at: datetime
 
 
+class ScheduleOccurrence(BaseModel):
+    occurrence_id: str
+    occurrence_date: date
+    schedule_id: int
+    title: str
+    topic: Optional[str] = None
+    description: Optional[str] = None
+    group_id: int
+    teacher_id: int
+    replacement_teacher_id: Optional[int] = None
+    branch_id: Optional[int] = None
+    course_id: Optional[int] = None
+    lesson_id: Optional[int] = None
+    room: Optional[str] = None
+    start_time: datetime
+    end_time: datetime
+    status: str
+    color: Optional[str] = None
+    is_online: bool
+    recurrence: str
+    is_exception: bool
+    is_cancelled: bool = False
+
+
+class ScheduleExceptionBase(BaseModel):
+    exception_date: date
+    is_cancelled: bool = False
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    room: Optional[str] = None
+    teacher_id: Optional[int] = None
+    replacement_teacher_id: Optional[int] = None
+
+
+class ScheduleExceptionCreate(ScheduleExceptionBase):
+    pass
+
+
+class ScheduleExceptionUpdate(BaseModel):
+    is_cancelled: Optional[bool] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    room: Optional[str] = None
+    teacher_id: Optional[int] = None
+    replacement_teacher_id: Optional[int] = None
+
+
+class ScheduleExceptionResponse(ScheduleExceptionBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    schedule_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class AttendanceBase(BaseModel):
     schedule_id: int
     student_id: int
+    occurrence_date: date
     status: str
     notes: Optional[str] = None
 

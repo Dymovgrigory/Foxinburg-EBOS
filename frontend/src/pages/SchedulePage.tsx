@@ -3,7 +3,10 @@ import Header from '../components/Header'
 import api from '../services/api'
 import { useToast, Button, Card, Badge, Input, Select, Textarea, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
-import { LuCalendar, LuX } from 'react-icons/lu'
+import { usersApi, attendanceApi } from '../api'
+import AttendanceModal from '../components/AttendanceModal'
+import type { User, Attendance } from '../types'
+import { LuCalendar, LuX, LuCheck } from 'react-icons/lu'
 
 interface Group {
   id: number
@@ -47,6 +50,7 @@ const statusMeta: Record<string, { label: string; variant: Parameters<typeof Bad
   scheduled: { label: 'Запланировано', variant: 'info' },
   confirmed: { label: 'Подтверждено', variant: 'success' },
   cancelled: { label: 'Отменено', variant: 'error' },
+  completed: { label: 'Проведено', variant: 'default' },
 }
 
 function formatDateTime(iso?: string) {
@@ -81,6 +85,31 @@ export default function SchedulePage() {
     recurrence_end: '',
     status: 'scheduled',
   })
+
+  const [conductSchedule, setConductSchedule] = useState<Schedule | null>(null)
+  const [conductStudents, setConductStudents] = useState<User[]>([])
+  const [conductAttendances, setConductAttendances] = useState<Attendance[]>([])
+  const [conductLoading, setConductLoading] = useState(false)
+
+  const canConduct = ['teacher', 'methodist', 'admin', 'super_admin', 'owner'].includes(user?.role || '')
+
+  const openConduct = async (schedule: Schedule) => {
+    setConductSchedule(schedule)
+    setConductLoading(true)
+    try {
+      const [studentsRes, attendancesRes] = await Promise.all([
+        usersApi.listStudents(),
+        attendanceApi.listBySchedule(schedule.id),
+      ])
+      const roster = studentsRes.filter((u) => u.group_id === schedule.group_id)
+      setConductStudents(roster)
+      setConductAttendances(attendancesRes)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Ошибка загрузки данных для занятия', 'error')
+    } finally {
+      setConductLoading(false)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -322,11 +351,14 @@ export default function SchedulePage() {
                   <Th>Аудитория</Th>
                   <Th>Повторение</Th>
                   <Th>Статус</Th>
+                  {canConduct && <Th>Действия</Th>}
                 </tr>
               </Thead>
               <Tbody>
                 {filtered.map((s) => {
                   const meta = statusMeta[s.status] || { label: s.status, variant: 'default' as const }
+                  const isOwnLesson = s.teacher_id === user?.id
+                  const showConduct = canConduct && (user?.role !== 'teacher' || isOwnLesson)
                   return (
                     <Tr key={s.id}>
                       <Td className="font-medium text-fox-dark">{s.title}</Td>
@@ -337,6 +369,22 @@ export default function SchedulePage() {
                       <Td>{s.room || '—'}</Td>
                       <Td>{recurrenceLabels[s.recurrence] || s.recurrence}</Td>
                       <Td><Badge variant={meta.variant}>{meta.label}</Badge></Td>
+                      {canConduct && (
+                        <Td>
+                          {showConduct && s.status !== 'cancelled' ? (
+                            <Button
+                              size="sm"
+                              variant={s.status === 'completed' ? 'secondary' : 'primary'}
+                              leftIcon={<LuCheck size={14} />}
+                              onClick={() => openConduct(s)}
+                            >
+                              {s.status === 'completed' ? 'Посещаемость' : 'Провести'}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-fox-gray">—</span>
+                          )}
+                        </Td>
+                      )}
                     </Tr>
                   )
                 })}
@@ -345,6 +393,20 @@ export default function SchedulePage() {
           </Card>
         )}
       </div>
+
+      <AttendanceModal
+        isOpen={!!conductSchedule}
+        onClose={() => {
+          setConductSchedule(null)
+          setConductStudents([])
+          setConductAttendances([])
+        }}
+        schedule={conductSchedule}
+        students={conductStudents}
+        initialAttendances={conductAttendances}
+        loading={conductLoading}
+        onSaved={fetchData}
+      />
     </PageShell>
   )
 }

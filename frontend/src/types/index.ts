@@ -89,6 +89,16 @@ export interface Schedule {
   created_at: string
 }
 
+export interface Attendance {
+  id: number
+  schedule_id: number
+  student_id: number
+  status: 'present' | 'absent' | 'late' | 'excused'
+  notes?: string | null
+  marked_by_id?: number | null
+  marked_at: string
+}
+
 export interface Group {
   id: number
   name: string

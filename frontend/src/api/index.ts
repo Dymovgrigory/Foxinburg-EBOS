@@ -6,6 +6,7 @@ import type {
   Module,
   Lesson,
   Schedule,
+  Attendance,
   Group,
   EmployeeGroup,
   Homework,
@@ -107,6 +108,15 @@ export const schedulesApi = {
   update: (id: number, data: Partial<Schedule>) =>
     api.patch<ApiResponse<Schedule>>(`/schedules/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/schedules/${id}`).then(unwrap),
+}
+
+export const attendanceApi = {
+  listBySchedule: (scheduleId: number) =>
+    api.get<ApiResponse<Attendance[]>>(`/attendance/schedule/${scheduleId}`).then(unwrap),
+  mark: (data: { schedule_id: number; student_id: number; status: string; notes?: string }) =>
+    api.post<ApiResponse<Attendance>>('/attendance', data).then(unwrap),
+  update: (id: number, data: { status?: string; notes?: string }) =>
+    api.patch<ApiResponse<Attendance>>(`/attendance/${id}`, data).then(unwrap),
 }
 
 export const modulesApi = {

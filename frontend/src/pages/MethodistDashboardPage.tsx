@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
-import { useToast, Button, Card, Loader, Tabs, Badge, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Button, Card, Loader, Tabs, Badge, Table, Thead, Th, Tbody, Tr, Td, PageShell } from '../components/ui'
 import { methodistsApi } from '../api'
 import type { MethodistAnalytics, PendingHomeworkItem, UpcomingScheduleItem } from '../types'
 import {
@@ -109,7 +109,7 @@ function DonutChart({ segments, size = 120 }: { segments: { label: string; value
   return (
     <div className="flex items-center gap-4">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#F3F4F6" strokeWidth="12" />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--fox-border)" strokeWidth="12" />
         {segments.map((s, i) => {
           const dash = total ? (s.value / total) * circumference : 0
           const circle = (
@@ -234,17 +234,17 @@ export default function MethodistDashboardPage() {
 
   if (loading || !analytics) {
     return (
-      <div className="min-h-screen bg-fox-light">
+      <PageShell>
         <Header title="Дашборд методиста" subtitle="Обзор учебного процесса" icon={<LuLayoutDashboard />} />
         <div className="p-6 max-w-7xl mx-auto">
           <Loader text="Загрузка аналитики..." />
         </div>
-      </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header
         title="Дашборд методиста"
         subtitle={`Добро пожаловать, ${user?.name || user?.email || 'методист'}!`}
@@ -252,6 +252,26 @@ export default function MethodistDashboardPage() {
       />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+          <img
+            src="/brand/mascot-hero.png"
+            alt=""
+            className="absolute -right-6 -bottom-10 w-40 h-56 object-contain opacity-15 pointer-events-none select-none"
+          />
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fox-purple/10 text-fox-purple text-xs font-semibold mb-3">
+              Методист
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+              Обзор учебного процесса
+            </h2>
+            <p className="text-fox-gray max-w-xl">
+              {analytics.overview.courses_count} курсов, {analytics.overview.students_count} учеников,{' '}
+              {analytics.overview.teachers_count} преподавателей.
+            </p>
+          </div>
+        </div>
+
         <Card className="p-0 overflow-hidden">
           <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
           <div className="p-5">
@@ -587,7 +607,7 @@ export default function MethodistDashboardPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageShell>
   )
 }
 

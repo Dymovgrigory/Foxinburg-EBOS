@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { useToast, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, PageShell, Tabs } from '../components/ui'
 import StatCard from '../components/ui/StatCard'
 import { analyticsApi, systemApi, usersApi, coursesApi, organizationsApi } from '../api'
 import {
@@ -53,10 +53,17 @@ export default function SystemCenterPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [branchesCount, setBranchesCount] = useState(0)
-  const [activeTab, setActiveTab] = useState('Обзор')
+  const [activeTab, setActiveTab] = useState('overview')
   const [apiSearch, setApiSearch] = useState('')
 
-  const tabs = ['Обзор', 'Модули', 'Роли', 'API', 'База данных', 'Конституция']
+  const tabs = [
+    { id: 'overview', label: 'Обзор' },
+    { id: 'modules', label: 'Модули' },
+    { id: 'roles', label: 'Роли' },
+    { id: 'api', label: 'API' },
+    { id: 'db', label: 'База данных' },
+    { id: 'constitution', label: 'Конституция' },
+  ]
 
   const fetchData = async () => {
     setLoading(true)
@@ -144,7 +151,7 @@ export default function SystemCenterPage() {
   }, [analytics])
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="System Center" subtitle="Управление операционной системой школы" icon={<LuSettings />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -167,25 +174,12 @@ export default function SystemCenterPage() {
 
             {/* Tabs */}
             <Card padding="none">
-              <div className="flex items-center gap-2 p-2 border-b border-fox-border overflow-x-auto">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={[
-                      'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition',
-                      activeTab === tab
-                        ? 'bg-fox-purple text-white shadow-sm'
-                        : 'text-fox-gray hover:bg-fox-light',
-                    ].join(' ')}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="p-2 border-b border-fox-border/60">
+                <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
               </div>
 
               <div className="p-6">
-                {activeTab === 'Обзор' && (
+                {activeTab === 'overview' && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-lg font-bold text-fox-dark mb-4">Готовность модулей</h3>
@@ -225,7 +219,7 @@ export default function SystemCenterPage() {
                   </div>
                 )}
 
-                {activeTab === 'Модули' && (
+                {activeTab === 'modules' && (
                   <div className="space-y-6">
                     <h3 className="text-lg font-bold text-fox-dark">Распределение по статусам</h3>
                     <div className="grid md:grid-cols-2 gap-6">
@@ -241,7 +235,7 @@ export default function SystemCenterPage() {
                   </div>
                 )}
 
-                {activeTab === 'Роли' && (
+                {activeTab === 'roles' && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-bold text-fox-dark">Матрица ролей и прав</h3>
@@ -298,7 +292,7 @@ export default function SystemCenterPage() {
                   </div>
                 )}
 
-                {activeTab === 'API' && (
+                {activeTab === 'api' && (
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
                       <h3 className="text-lg font-bold text-fox-dark">API Endpoints ({filteredEndpoints.length})</h3>
@@ -336,7 +330,7 @@ export default function SystemCenterPage() {
                   </div>
                 )}
 
-                {activeTab === 'База данных' && (
+                {activeTab === 'db' && (
                   <div className="space-y-6">
                     <h3 className="text-lg font-bold text-fox-dark">Сущности базы данных</h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -357,7 +351,7 @@ export default function SystemCenterPage() {
                   </div>
                 )}
 
-                {activeTab === 'Конституция' && (
+                {activeTab === 'constitution' && (
                   <div className="max-w-3xl space-y-6">
                     <p className="text-fox-gray leading-relaxed">
                       Конституция EBOS определяет базовые принципы платформы: пользователь находится в центре,
@@ -383,7 +377,7 @@ export default function SystemCenterPage() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 

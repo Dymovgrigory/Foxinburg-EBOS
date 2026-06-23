@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
-import { useToast, Card, Badge, Loader, Button } from '../components/ui'
+import { useToast, Card, Badge, Loader, Button, PageShell } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, progressApi, coursesApi, notificationsApi } from '../api'
 import type { Schedule, Homework, LessonProgress, Course } from '../types'
@@ -71,7 +71,7 @@ export default function StudentDashboardPage() {
   )
 
   return (
-    <div className="student-world min-h-screen">
+    <PageShell>
       <Header title="Главная" icon={<LuHouse />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -216,7 +216,7 @@ export default function StudentDashboardPage() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 

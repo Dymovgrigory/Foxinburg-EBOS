@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
-import { useToast, Card, Badge, Loader, Button } from '../components/ui'
+import { useToast, Card, Badge, Loader, Button, PageShell } from '../components/ui'
 import StatCard from '../components/ui/StatCard'
 import { useAuth } from '../contexts/AuthContext'
 import { schedulesApi, homeworksApi, usersApi, notificationsApi } from '../api'
 import type { Schedule, Homework, User } from '../types'
-import { LuCalendar, LuNotebookPen, LuGraduationCap, LuBell, LuHouse } from 'react-icons/lu'
+import { LuCalendar, LuNotebookPen, LuGraduationCap, LuBell, LuHouse, LuArrowRight } from 'react-icons/lu'
 import { roleLabel } from '../config/navigation'
 
 export default function TeacherDashboardPage() {
@@ -65,7 +65,7 @@ export default function TeacherDashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-fox-light">
+    <PageShell>
       <Header title="Главная" icon={<LuHouse />} />
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -73,12 +73,24 @@ export default function TeacherDashboardPage() {
           <Loader text="Загрузка дашборда..." />
         ) : (
           <>
-            <div className="bg-gradient-to-r from-fox-purple to-fox-purple-light rounded-card p-8 text-white shadow-fox">
-              <h2 className="text-2xl font-bold mb-2">Добро пожаловать, {user?.name}!</h2>
-              <p className="opacity-90">
-                Ваша роль: <span className="text-fox-gold font-semibold">{roleLabel(user?.role)}</span>.
-                У вас {myHomeworks.length} активных домашних заданий и {upcomingLessons.length} ближайших занятий.
-              </p>
+            <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+              <img
+                src="/brand/mascot-hero.png"
+                alt=""
+                className="absolute -right-6 -bottom-10 w-40 h-56 object-contain opacity-15 pointer-events-none select-none"
+              />
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fox-gold/20 text-fox-purple text-xs font-semibold mb-3">
+                  {roleLabel(user?.role)}
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+                  Добро пожаловать, {user?.name}!
+                </h2>
+                <p className="text-fox-gray max-w-xl">
+                  У вас <span className="text-fox-purple font-semibold">{myHomeworks.length}</span> активных домашних заданий
+                  и <span className="text-fox-purple font-semibold">{upcomingLessons.length}</span> ближайших занятий.
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -94,11 +106,11 @@ export default function TeacherDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card accent="purple">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-fox-dark">Ближайшие занятия</h3>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')}>
-                    Календарь →
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} rightIcon={<LuArrowRight size={14} />}>
+                    Календарь
                   </Button>
                 </div>
                 <div className="space-y-3">
@@ -108,7 +120,7 @@ export default function TeacherDashboardPage() {
                     upcomingLessons.map((s) => (
                       <div
                         key={s.id}
-                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30"
+                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/40 hover:border-fox-gold/50 transition"
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{s.title}</div>
@@ -124,11 +136,11 @@ export default function TeacherDashboardPage() {
                 </div>
               </Card>
 
-              <Card>
+              <Card accent="gold">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-fox-dark">Мои домашние задания</h3>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/homeworks')}>
-                    Все задания →
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/homeworks')} rightIcon={<LuArrowRight size={14} />}>
+                    Все задания
                   </Button>
                 </div>
                 <div className="space-y-3">
@@ -138,7 +150,7 @@ export default function TeacherDashboardPage() {
                     myHomeworks.map((h) => (
                       <div
                         key={h.id}
-                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/30"
+                        className="flex items-center justify-between p-4 bg-fox-light rounded-xl border border-fox-border/40 hover:border-fox-gold/50 transition"
                       >
                         <div>
                           <div className="font-medium text-fox-dark">{h.title || `Задание #${h.id}`}</div>
@@ -171,7 +183,7 @@ export default function TeacherDashboardPage() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 
@@ -196,7 +208,6 @@ function homeworkStatusLabel(status: string) {
   }
   return map[status] || status
 }
-
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })

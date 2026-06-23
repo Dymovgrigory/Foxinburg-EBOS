@@ -148,18 +148,22 @@ export default function GroupsPage() {
         if (search) params.search = search
       }
 
-      const [groupsRes, branchesRes, coursesRes, usersRes, studentsRes] = await Promise.all([
-        groupsApi.list(params),
-        branchesApi.list(),
-        coursesApi.list(),
-        usersApi.list(),
-        usersApi.listStudents(),
-      ])
-      setGroups(groupsRes)
-      setBranches(branchesRes)
-      setCourses(coursesRes)
-      setTeachers((usersRes || []).filter((u: User) => u.role === 'teacher'))
-      setStudents(studentsRes || [])
+      const requests: Promise<unknown>[] = [groupsApi.list(params)]
+      if (!isTeacher) {
+        requests.push(branchesApi.list(), coursesApi.list(), usersApi.list())
+      }
+      requests.push(usersApi.listStudents())
+
+      const res = await Promise.all(requests)
+      setGroups(res[0] as Group[])
+      if (!isTeacher) {
+        setBranches(res[1] as Branch[])
+        setCourses(res[2] as Course[])
+        setTeachers(((res[3] as User[]) || []).filter((u: User) => u.role === 'teacher'))
+        setStudents((res[4] as User[]) || [])
+      } else {
+        setStudents((res[1] as User[]) || [])
+      }
     } catch (err: unknown) {
       showToast(getErrorMessage(err, 'Ошибка загрузки данных'), 'error')
     } finally {

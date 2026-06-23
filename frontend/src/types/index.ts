@@ -86,6 +86,7 @@ export interface Schedule {
   room?: string
   status: string
   recurrence?: string
+  recurrence_end?: string | null
   created_at: string
 }
 
@@ -102,15 +103,72 @@ export interface Attendance {
 export interface Group {
   id: number
   name: string
+  description?: string
   course_id?: number
   teacher_id?: number
   branch_id?: number
+  room?: string
+  study_type?: string
+  language?: string
   level?: string
   max_students?: number
   status?: 'current' | 'planned' | 'closed'
+  start_date?: string | null
+  end_date?: string | null
+  academic_hour_minutes?: number
+  balance_type?: 'lessons' | 'rubles'
+  hourly_rate?: number
+  monthly_fee?: number | null
+  auto_invoices_enabled?: boolean
+  certificates_enabled?: boolean
   students_count?: number
   course_title?: string | null
+  teacher_name?: string | null
+  branch_name?: string | null
+  students?: StudentInfo[]
+  memberships?: GroupMembership[]
   created_at?: string
+  updated_at?: string
+}
+
+export interface StudentInfo {
+  id: number
+  name: string
+  email: string
+  phone?: string | null
+  is_active?: boolean
+}
+
+export interface GroupMembership {
+  id: number
+  group_id: number
+  student_id: number
+  student?: StudentInfo
+  joined_at: string
+  left_at?: string | null
+  status: 'active' | 'left' | 'transferred'
+  individual_hourly_rate?: number | null
+  individual_lesson_count?: number | null
+  discount_percent?: number
+  individual_monthly_fee?: number | null
+  auto_invoices_enabled?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface GroupMembershipAdd {
+  student_id?: number
+  joined_at?: string
+  status?: string
+  individual_hourly_rate?: number
+  individual_lesson_count?: number
+  discount_percent?: number
+  individual_monthly_fee?: number
+  auto_invoices_enabled?: boolean
+  new_student_name?: string
+  new_student_email?: string
+  new_student_password?: string
+  new_student_phone?: string
 }
 
 export interface EmployeeGroup {

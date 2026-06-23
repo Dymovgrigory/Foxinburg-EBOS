@@ -65,7 +65,7 @@ export default function PaymentsPage() {
     <PageShell>
       <Header title="Оплата" subtitle="История платежей и баланс" icon={<LuCreditCard />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         {loading ? (
           <Loader text="Загрузка платежей..." />
         ) : (

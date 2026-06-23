@@ -119,7 +119,7 @@ export default function ChatPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Чаты" subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'} icon={<LuMessageSquare />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto h-[calc(100vh-64px-32px)]">
+      <div className="p-4 md:p-6 w-full h-[calc(100vh-64px-32px)]">
         <Card padding="none" className="h-full flex overflow-hidden">
           {/* Rooms sidebar */}
           <div className="w-72 border-r border-fox-border/50 flex flex-col">

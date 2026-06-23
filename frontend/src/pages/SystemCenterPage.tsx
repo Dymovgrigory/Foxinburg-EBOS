@@ -154,7 +154,7 @@ export default function SystemCenterPage() {
     <PageShell>
       <Header title="System Center" subtitle="Управление операционной системой школы" icon={<LuSettings />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         {loading ? (
           <Loader text="Загрузка System Center..." />
         ) : (

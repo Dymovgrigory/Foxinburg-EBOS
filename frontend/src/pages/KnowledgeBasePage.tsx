@@ -56,7 +56,7 @@ export default function KnowledgeBasePage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="База знаний" subtitle="Методические материалы" icon={<LuBrain />} />
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка статей..." />
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function KnowledgeBasePage() {
   return (
     <div className="min-h-screen bg-fox-light">
       <Header title="База знаний" subtitle={`${filtered.length} статей`} icon={<LuBrain />} />
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
           <div className="flex flex-col sm:flex-row gap-3">
             <Input

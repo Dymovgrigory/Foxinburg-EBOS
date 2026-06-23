@@ -466,7 +466,7 @@ export default function CourseBuilderPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Конструктор курсов" subtitle="Редактирование обучения" icon={<LuWrench />} />
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка курсов..." />
         </div>
       </div>

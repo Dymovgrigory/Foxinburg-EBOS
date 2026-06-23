@@ -116,7 +116,7 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Отчеты" icon={<LuChartBarBig />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
           <div className="flex flex-col xl:flex-row xl:items-end gap-4">
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

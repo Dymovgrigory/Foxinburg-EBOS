@@ -33,7 +33,7 @@ import AIAssistantPage from './pages/AIAssistantPage'
 import CourseBuilderPage from './pages/CourseBuilderPage'
 import CoursePlayerPage from './pages/CoursePlayerPage'
 import EmployeeGroupsPage from './pages/EmployeeGroupsPage'
-import TeacherGroupsPage from './pages/TeacherGroupsPage'
+import GroupsPage from './pages/GroupsPage'
 import TasksPage from './pages/TasksPage'
 import SchoolSettingsPage from './pages/SchoolSettingsPage'
 import DirectoriesPage from './pages/DirectoriesPage'
@@ -71,7 +71,7 @@ function App() {
         <Route path="crm" element={<RoleProtected path="/crm"><CrmPage /></RoleProtected>} />
         <Route path="courses" element={<RoleProtected path="/courses"><CoursesPage /></RoleProtected>} />
         <Route path="calendar" element={<RoleProtected path="/calendar"><SchedulePage /></RoleProtected>} />
-        <Route path="groups" element={<RoleProtected path="/groups"><TeacherGroupsPage /></RoleProtected>} />
+        <Route path="groups" element={<RoleProtected path="/groups"><GroupsPage /></RoleProtected>} />
         <Route path="tasks" element={<RoleProtected path="/tasks"><TasksPage /></RoleProtected>} />
         <Route path="school-settings" element={<RoleProtected path="/school-settings"><SchoolSettingsPage /></RoleProtected>} />
         <Route path="directories" element={<RoleProtected path="/directories"><DirectoriesPage /></RoleProtected>} />

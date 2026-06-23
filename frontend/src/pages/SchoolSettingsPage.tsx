@@ -145,7 +145,7 @@ export default function SchoolSettingsPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Настройки школы" icon={<LuSchool />} />
 
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
           <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
         </Card>

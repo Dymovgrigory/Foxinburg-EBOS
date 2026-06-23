@@ -49,7 +49,7 @@ export default function TeacherGroupsPage() {
     <PageShell>
       <Header title="Группы" subtitle="Мои учебные группы" icon={<LuUsers />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
           <div
             className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-[0.04]"

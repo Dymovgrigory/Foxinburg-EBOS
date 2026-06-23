@@ -43,7 +43,7 @@ export default function TeacherCoursesPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Мои курсы" subtitle="Группы и расписание" icon={<LuBookOpen />} />
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка групп..." />
         </div>
       </div>
@@ -53,7 +53,7 @@ export default function TeacherCoursesPage() {
   return (
     <div className="min-h-screen bg-fox-light">
       <Header title="Мои курсы" subtitle={`${user?.name || 'Педагог'}, здесь ваши группы`} icon={<LuBookOpen />} />
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         {groups.length === 0 ? (
           <EmptyState icon={<LuBookOpen />} title="Нет групп" description="Вам пока не назначены группы." />
         ) : (

@@ -8,6 +8,8 @@ import type {
   Schedule,
   Attendance,
   Group,
+  GroupMembership,
+  GroupMembershipAdd,
   EmployeeGroup,
   Homework,
   HomeworkReview,
@@ -93,11 +95,28 @@ export const employeeGroupsApi = {
 }
 
 export const groupsApi = {
-  list: () => api.get<ApiResponse<Group[]>>('/groups').then(unwrap),
+  list: (params?: {
+    status?: string
+    branch_id?: number
+    teacher_id?: number
+    study_type?: string
+    search?: string
+  }) => api.get<ApiResponse<Group[]>>('/groups', { params }).then(unwrap),
   my: () => api.get<ApiResponse<Group[]>>('/groups/my').then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Group>>(`/groups/${id}`).then(unwrap),
   create: (data: Partial<Group>) => api.post<ApiResponse<Group>>('/groups', data).then(unwrap),
   update: (id: number, data: Partial<Group>) => api.patch<ApiResponse<Group>>(`/groups/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/groups/${id}`).then(unwrap),
+  listStudents: (id: number, params?: { status?: string }) =>
+    api.get<ApiResponse<GroupMembership[]>>(`/groups/${id}/students`, { params }).then(unwrap),
+  addStudent: (id: number, data: Partial<GroupMembershipAdd>) =>
+    api.post<ApiResponse<GroupMembership>>(`/groups/${id}/students`, data).then(unwrap),
+  updateStudent: (id: number, studentId: number, data: Partial<GroupMembership>) =>
+    api.patch<ApiResponse<GroupMembership>>(`/groups/${id}/students/${studentId}`, data).then(unwrap),
+  removeStudent: (id: number, studentId: number) =>
+    api.delete<ApiResponse<GroupMembership>>(`/groups/${id}/students/${studentId}`).then(unwrap),
+  transferStudent: (id: number, studentId: number, toGroupId: number) =>
+    api.post<ApiResponse<GroupMembership>>(`/groups/${id}/students/${studentId}/transfer`, { to_group_id: toGroupId }).then(unwrap),
 }
 
 export const schedulesApi = {
@@ -112,6 +131,13 @@ export const schedulesApi = {
   update: (id: number, data: Partial<Schedule>) =>
     api.patch<ApiResponse<Schedule>>(`/schedules/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/schedules/${id}`).then(unwrap),
+}
+
+export const branchesApi = {
+  list: () => api.get<ApiResponse<Branch[]>>('/branches').then(unwrap),
+  create: (data: Partial<Branch>) => api.post<ApiResponse<Branch>>('/branches', data).then(unwrap),
+  update: (id: number, data: Partial<Branch>) => api.patch<ApiResponse<Branch>>(`/branches/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/branches/${id}`).then(unwrap),
 }
 
 export const attendanceApi = {

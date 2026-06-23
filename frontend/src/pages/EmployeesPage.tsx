@@ -95,7 +95,7 @@ export default function EmployeesPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Сотрудники" subtitle={`Всего: ${filtered.length}`} icon={<LuUsers />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>

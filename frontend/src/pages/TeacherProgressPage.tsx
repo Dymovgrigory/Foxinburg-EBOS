@@ -81,7 +81,7 @@ export default function TeacherProgressPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Мой прогресс" subtitle="Академия и достижения" icon={<LuChartLine />} />
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка прогресса..." />
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function TeacherProgressPage() {
   return (
     <div className="min-h-screen bg-fox-light">
       <Header title="Мой прогресс" subtitle={`${user?.name || 'Педагог'}, ваш прогресс обучения`} icon={<LuChartLine />} />
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-fox-dark">Академия педагогов</h2>

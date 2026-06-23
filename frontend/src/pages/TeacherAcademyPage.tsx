@@ -330,7 +330,7 @@ export default function TeacherAcademyPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка курса..." />
         </div>
       </div>
@@ -341,7 +341,7 @@ export default function TeacherAcademyPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="p-6 w-full">
           <EmptyState
             icon={<LuGraduationCap />}
             title="Курс не найден"
@@ -360,7 +360,7 @@ export default function TeacherAcademyPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Академия педагогов" subtitle="Обучение и сертификация преподавателей" icon={<LuGraduationCap />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         {/* Hero card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-fox-purple to-fox-purple-light text-white p-6 md:p-8 shadow-lg">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -60,7 +60,7 @@ export default function AIAssistantPage() {
     <div className="min-h-screen bg-fox-light flex flex-col">
       <Header title="AI Помощник" icon={<LuBot />} />
 
-      <div className="flex-1 p-4 md:p-6 max-w-4xl mx-auto w-full flex flex-col">
+      <div className="flex-1 p-4 md:p-6 w-full w-full flex flex-col">
         <Card className="flex-1 flex flex-col overflow-hidden min-h-[500px]">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m, idx) => (

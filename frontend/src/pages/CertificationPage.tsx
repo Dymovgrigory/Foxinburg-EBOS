@@ -57,7 +57,7 @@ export default function CertificationPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Сертификация" icon={<LuAward />} />
 
-      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         {loading ? (
           <Loader text="Загрузка статуса сертификации..." />
         ) : (

@@ -267,7 +267,7 @@ export default function CoursePlayerPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Курс" icon={<LuBookOpen />} />
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="p-6 w-full">
           <Loader text="Загрузка курса..." />
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function CoursePlayerPage() {
     return (
       <div className="min-h-screen bg-fox-light">
         <Header title="Курс" icon={<LuBookOpen />} />
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="p-6 w-full">
           <EmptyState icon={<LuBookOpen />} title="Курс не найден" description="Проверьте ссылку или выберите курс в дашборде." />
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function CoursePlayerPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title={course.title} subtitle="Прохождение курса" icon={<LuBookOpen />} />
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="p-4 md:p-6 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sidebar */}
         <Card className="lg:col-span-1 h-fit max-h-[calc(100vh-140px)] overflow-y-auto">
           <h3 className="text-sm font-bold text-fox-dark mb-4">Программа курса</h3>

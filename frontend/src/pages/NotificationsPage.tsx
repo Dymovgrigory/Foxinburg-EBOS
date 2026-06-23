@@ -92,7 +92,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Уведомления" subtitle={`Непрочитанных: ${unreadCount}`} icon={<LuBell />} />
 
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div>

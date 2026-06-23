@@ -57,7 +57,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-fox-light">
       <Header title="Настройки" icon={<LuWrench />} />
 
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 w-full space-y-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
           <Card className="md:w-64 h-fit p-2">

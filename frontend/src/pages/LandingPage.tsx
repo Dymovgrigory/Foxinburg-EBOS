@@ -2,7 +2,26 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
 import DemoForm from '../components/DemoForm'
-import BrandLogo from '../components/BrandLogo'
+
+function LogoBlock({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-3 ${className}`}>
+      <img
+        src="/brand/fox-head.png"
+        alt="FOXINBURG"
+        className="h-10 w-auto"
+      />
+      <div className="flex flex-col leading-tight">
+        <span className="font-display font-bold tracking-tight text-lg text-white">
+          FOXINBURG
+        </span>
+        <span className="text-[10px] font-medium tracking-wide uppercase text-white/60">
+          EBOS
+        </span>
+      </div>
+    </div>
+  )
+}
 import {
   LuCheck,
   LuGraduationCap,
@@ -283,7 +302,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       <header className="fixed top-0 left-0 right-0 z-50 glass-header">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="hover:opacity-90 transition">
-            <BrandLogo variant="dark" />
+            <LogoBlock />
           </button>
 
           <nav className="hidden lg:flex items-center gap-8 text-sm text-white/70">
@@ -301,7 +320,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
             })}
           </nav>
 
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-5">
             <button
               onClick={() => setAuthOpen(true)}
               className="text-sm font-medium text-white/80 hover:text-white transition"
@@ -759,7 +778,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       <footer className="border-t border-white/10 bg-[#140a26] px-6 py-16">
         <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12">
           <div className="md:col-span-2">
-            <BrandLogo variant="dark" className="mb-6" />
+            <LogoBlock className="mb-6" />
             <p className="text-white/50 max-w-sm leading-relaxed mb-6">
               FOXINBURG EBOS — единая операционная система для образовательных организаций. LMS, CRM, ERP и HRM в одной платформе.
             </p>

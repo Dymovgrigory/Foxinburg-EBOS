@@ -5,6 +5,7 @@ import {
   LuTrendingUp,
   LuBuilding,
   LuUsers,
+  LuUser,
   LuGraduationCap,
   LuChartBarBig,
   LuClipboardList,
@@ -53,32 +54,61 @@ const badgeHomework = <HomeworkBadge key="homeworks" />
 
 export const adminGroups: MenuGroup[] = [
   {
+    title: 'Управление школой',
+    collapsible: true,
+    defaultOpen: true,
     items: [
-      { to: '/system-center', label: 'Executive', icon: <LuLayoutDashboard /> },
-      { to: '/finance', label: 'Финансы', icon: <LuTrendingUp /> },
+      { to: '/school-settings', label: 'Настройки школы', icon: <LuSchool /> },
       { to: '/branches', label: 'Филиалы', icon: <LuBuilding /> },
-      { to: '/employees', label: 'Сотрудники', icon: <LuUsers /> },
+      { to: '/directories', label: 'Справочники', icon: <LuBookOpen /> },
+      { to: '/reports', label: 'Отчеты', icon: <LuChartBarBig /> },
+      { to: '/surveys', label: 'Опросы в приложении', icon: <LuClipboardList /> },
+    ],
+  },
+  {
+    title: 'Учебный процесс',
+    collapsible: true,
+    defaultOpen: false,
+    items: [
+      { to: '/groups', label: 'Группы', icon: <LuUsers /> },
       { to: '/students', label: 'Ученики', icon: <LuGraduationCap /> },
-      { to: '/analytics', label: 'Аналитика', icon: <LuChartBarBig /> },
+      { to: '/calendar', label: 'Расписание', icon: <LuCalendar /> },
+      { to: '/courses', label: 'Курсы', icon: <LuBookOpen /> },
+      { to: '/homeworks', label: 'Домашние задания', icon: <LuNotebookPen />, badge: badgeHomework },
+      { to: '/course-builder', label: 'Конструктор', icon: <LuPuzzle /> },
+    ],
+  },
+  {
+    title: 'Продажи',
+    collapsible: true,
+    defaultOpen: false,
+    items: [
       { to: '/crm', label: 'CRM', icon: <LuClipboardList /> },
       { to: '/marketing', label: 'Маркетинг', icon: <LuMegaphone /> },
-      { to: '/courses', label: 'Курсы', icon: <LuBookOpen /> },
-      { to: '/calendar', label: 'Расписание', icon: <LuCalendar /> },
-      { to: '/chats', label: 'Чаты', icon: <LuMessageSquare /> },
-      { to: '/notifications', label: 'Уведомления', icon: <LuBell />, badge: badgeNotification },
+      { to: '/tasks', label: 'Задачи', icon: <LuListChecks /> },
+    ],
+  },
+  {
+    title: 'Финансы, кадры',
+    collapsible: true,
+    defaultOpen: false,
+    items: [
+      { to: '/finance', label: 'Финансы', icon: <LuTrendingUp /> },
+      { to: '/employees', label: 'Сотрудники', icon: <LuUsers /> },
+      { to: '/analytics', label: 'Аналитика', icon: <LuChartBarBig /> },
     ],
   },
   {
     title: 'Инструменты',
-    items: [{ to: '/ai', label: 'AI Помощник', icon: <LuSparkles /> }],
-  },
-  {
-    title: 'OS',
+    collapsible: true,
+    defaultOpen: false,
     items: [
+      { to: '/ai', label: 'AI Помощник', icon: <LuSparkles /> },
       { to: '/system-center', label: 'OS Center', icon: <LuSettings /> },
       { to: '/roles', label: 'Role Ecosystem', icon: <LuShield /> },
-      { to: '/settings', label: 'Настройки', icon: <LuSettings /> },
-      { to: '/course-builder', label: 'Конструктор', icon: <LuPuzzle /> },
+      { to: '/notifications', label: 'Уведомления', icon: <LuBell />, badge: badgeNotification },
+      { to: '/chats', label: 'Чаты', icon: <LuMessageSquare /> },
+      { to: '/settings', label: 'Настройки профиля', icon: <LuUser /> },
     ],
   },
 ]

@@ -11,9 +11,21 @@ class Organization(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    short_name = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     logo_url = Column(String, nullable=True)
+    square_logo_url = Column(String, nullable=True)
+    wide_logo_url = Column(String, nullable=True)
+    certificate_bg_url = Column(String, nullable=True)
+    card_bg_url = Column(String, nullable=True)
     website = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+
+    license_number = Column(String, nullable=True)
+    direction = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    main_phone = Column(String, nullable=True)
 
     timezone = Column(String, default="Europe/Moscow")
     currency = Column(String, default="RUB")
@@ -35,6 +47,7 @@ class Branch(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    city = Column(String, nullable=True)
     address = Column(Text, nullable=True)
     phone = Column(String, nullable=True)
     email = Column(String, nullable=True)

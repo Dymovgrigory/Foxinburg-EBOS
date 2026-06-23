@@ -35,6 +35,10 @@ import CoursePlayerPage from './pages/CoursePlayerPage'
 import EmployeeGroupsPage from './pages/EmployeeGroupsPage'
 import TeacherGroupsPage from './pages/TeacherGroupsPage'
 import TasksPage from './pages/TasksPage'
+import SchoolSettingsPage from './pages/SchoolSettingsPage'
+import DirectoriesPage from './pages/DirectoriesPage'
+import ReportsPage from './pages/ReportsPage'
+import SurveysPage from './pages/SurveysPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -69,6 +73,10 @@ function App() {
         <Route path="calendar" element={<RoleProtected path="/calendar"><SchedulePage /></RoleProtected>} />
         <Route path="groups" element={<RoleProtected path="/groups"><TeacherGroupsPage /></RoleProtected>} />
         <Route path="tasks" element={<RoleProtected path="/tasks"><TasksPage /></RoleProtected>} />
+        <Route path="school-settings" element={<RoleProtected path="/school-settings"><SchoolSettingsPage /></RoleProtected>} />
+        <Route path="directories" element={<RoleProtected path="/directories"><DirectoriesPage /></RoleProtected>} />
+        <Route path="reports" element={<RoleProtected path="/reports"><ReportsPage /></RoleProtected>} />
+        <Route path="surveys" element={<RoleProtected path="/surveys"><SurveysPage /></RoleProtected>} />
         <Route path="homeworks" element={<RoleProtected path="/homeworks"><HomeworksPage /></RoleProtected>} />
         <Route path="chats" element={<Protected><ChatPage /></Protected>} />
         <Route path="notifications" element={<Protected><NotificationsPage /></Protected>} />

@@ -12,6 +12,7 @@ from app.schemas.file import FileResponse
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_active_user, require_permission
 from app.core.permissions import Permission
+from app.services.storage import upload_image
 from app.utils import utc_now
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -72,6 +73,37 @@ async def upload_file(
     return success_response(
         data=FileResponse.model_validate(file_record).model_dump(),
         message="Файл загружен",
+        status_code=201,
+    )
+
+
+@router.post("/upload-image")
+async def upload_image_file(
+    file: UploadFile = FastAPIFile(...),
+    entity_type: Optional[str] = Form("school_asset"),
+    current_user=Depends(require_permission(Permission.ORGANIZATION_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        public_url = await upload_image(file, folder=entity_type or "school")
+    except ValueError as exc:
+        return error_response(str(exc), status_code=400)
+
+    file_record = FileModel(
+        original_name=file.filename,
+        storage_path=public_url,
+        public_url=public_url,
+        file_type="image",
+        mime_type=file.content_type,
+        uploaded_by_id=current_user.id,
+        entity_type=entity_type,
+    )
+    db.add(file_record)
+    await db.commit()
+    await db.refresh(file_record)
+    return success_response(
+        data=FileResponse.model_validate(file_record).model_dump(),
+        message="Изображение загружено",
         status_code=201,
     )
 

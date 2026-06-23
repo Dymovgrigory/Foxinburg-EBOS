@@ -18,6 +18,8 @@ from .schedule import Schedule, Attendance
 from .chat import ChatRoom, ChatParticipant, ChatMessage
 from .knowledge import KnowledgeArticle
 from .task import Task
+from .directory import Directory
+from .survey import Survey, SurveyQuestion, SurveyResponse, SurveyAnswer
 
 __all__ = [
     "Base",
@@ -55,4 +57,9 @@ __all__ = [
     "ChatMessage",
     "KnowledgeArticle",
     "Task",
+    "Directory",
+    "Survey",
+    "SurveyQuestion",
+    "SurveyResponse",
+    "SurveyAnswer",
 ]

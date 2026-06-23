@@ -16,12 +16,24 @@ router = APIRouter(prefix="/branches", tags=["branches"])
 @router.get("")
 async def list_branches(
     organization_id: Optional[int] = None,
+    is_active: Optional[int] = None,
+    search: Optional[str] = None,
     current_user=Depends(require_permission(Permission.BRANCH_MANAGE)),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Branch)
     if organization_id:
         query = query.where(Branch.organization_id == organization_id)
+    if is_active is not None:
+        query = query.where(Branch.is_active == is_active)
+    if search:
+        pattern = f"%{search}%"
+        query = query.where(
+            (Branch.name.ilike(pattern))
+            | (Branch.city.ilike(pattern))
+            | (Branch.address.ilike(pattern))
+            | (Branch.phone.ilike(pattern))
+        )
     query = query.order_by(Branch.created_at.desc())
     result = await db.execute(query)
     branches = result.scalars().all()

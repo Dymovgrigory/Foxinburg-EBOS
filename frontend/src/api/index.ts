@@ -25,6 +25,8 @@ import type {
   Organization,
   Branch,
   LessonProgress,
+  Directory,
+  Survey,
   Achievement,
   DashboardAnalytics,
   FinanceAnalytics,
@@ -255,10 +257,21 @@ export const chatsApi = {
 
 export const organizationsApi = {
   list: () => api.get<ApiResponse<Organization[]>>('/organizations').then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Organization>>(`/organizations/${id}`).then(unwrap),
   create: (data: Partial<Organization>) => api.post<ApiResponse<Organization>>('/organizations', data).then(unwrap),
   update: (id: number, data: Partial<Organization>) =>
     api.patch<ApiResponse<Organization>>(`/organizations/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/organizations/${id}`).then(unwrap),
+  uploadImage: (file: File, entityType: string = 'school_asset') => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('entity_type', entityType)
+    return api
+      .post<ApiResponse<{ public_url: string }>>('/files/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(unwrap)
+  },
   branches: (orgId: number) =>
     api.get<ApiResponse<Branch[]>>(`/organizations/${orgId}/branches`).then(unwrap),
   createBranch: (orgId: number, data: Partial<Branch>) =>
@@ -282,6 +295,23 @@ export const analyticsApi = {
   dashboard: () => api.get<ApiResponse<DashboardAnalytics>>('/analytics/dashboard').then(unwrap),
 }
 
+export const surveysApi = {
+  list: () => api.get<ApiResponse<Survey[]>>('/surveys').then(unwrap),
+  get: (id: number) => api.get<ApiResponse<Survey>>(`/surveys/${id}`).then(unwrap),
+  create: (data: Partial<Survey>) => api.post<ApiResponse<Survey>>('/surveys', data).then(unwrap),
+  update: (id: number, data: Partial<Survey>) => api.patch<ApiResponse<Survey>>(`/surveys/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/surveys/${id}`).then(unwrap),
+  results: (id: number) => api.get<ApiResponse<unknown>>(`/surveys/${id}/results`).then(unwrap),
+}
+
+export const reportsApi = {
+  types: () => api.get<ApiResponse<{ id: string; label: string }[]>>('/reports/types').then(unwrap),
+  get: (type: string, params?: { branch_id?: number; date_from?: string; date_to?: string }) =>
+    api.get<ApiResponse<unknown>>(`/reports/${type}`, { params }).then(unwrap),
+  exportCsv: (type: string, params?: { branch_id?: number; date_from?: string; date_to?: string }) =>
+    api.get(`/reports/${type}/export.csv`, { params, responseType: 'blob' }),
+}
+
 export interface SystemPermissionsResponse {
   role_permissions: Record<string, string[]>
   role_hierarchy: Record<string, string[]>
@@ -297,6 +327,16 @@ export const systemApi = {
 export const aiApi = {
   ask: (data: { message: string; context?: string }) =>
     api.post<ApiResponse<{ reply: string; provider: string }>>('/ai/ask', data).then(unwrap),
+}
+
+export const directoriesApi = {
+  list: (kind: string) =>
+    api.get<ApiResponse<Directory[]>>(`/directories?kind=${encodeURIComponent(kind)}`).then(unwrap),
+  create: (data: Partial<Directory>) =>
+    api.post<ApiResponse<Directory>>('/directories', data).then(unwrap),
+  update: (id: number, data: Partial<Directory>) =>
+    api.patch<ApiResponse<Directory>>(`/directories/${id}`, data).then(unwrap),
+  delete: (id: number) => api.delete<ApiResponse<void>>(`/directories/${id}`).then(unwrap),
 }
 
 export const methodistsApi = {

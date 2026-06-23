@@ -279,26 +279,69 @@ export interface ChatMessage {
 export interface Organization {
   id: number
   name: string
-  legal_name?: string
-  inn?: string
-  address?: string
-  phone?: string
-  email?: string
+  short_name?: string
+  description?: string
+  logo_url?: string
+  square_logo_url?: string
+  wide_logo_url?: string
+  certificate_bg_url?: string
+  card_bg_url?: string
   website?: string
-  settings?: Record<string, unknown>
+  email?: string
+  license_number?: string
+  direction?: string
+  city?: string
+  address?: string
+  main_phone?: string
+  timezone?: string
+  currency?: string
+  is_active?: number
   created_at: string
+  updated_at: string
 }
 
 export interface Branch {
   id: number
   organization_id: number
   name: string
+  city?: string
   address?: string
   phone?: string
   email?: string
   timezone?: string
-  is_active: boolean
+  is_active: number
   created_at: string
+}
+
+export interface Directory {
+  id: number
+  kind: string
+  name: string
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface SurveyQuestion {
+  id?: number
+  text: string
+  type: 'single' | 'text' | 'rating'
+  options: string[]
+  order: number
+}
+
+export interface Survey {
+  id: number
+  title: string
+  description?: string
+  is_active: boolean
+  target_roles: string[]
+  anonymous: boolean
+  created_by_id?: number
+  created_at: string
+  updated_at: string
+  questions: SurveyQuestion[]
 }
 
 export interface Enrollment {

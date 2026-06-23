@@ -81,6 +81,14 @@ class Settings(BaseSettings):
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""
 
+    # Yandex Object Storage (S3-compatible)
+    S3_ENDPOINT: str = "https://storage.yandexcloud.net"
+    S3_REGION: str = "ru-central1"
+    S3_BUCKET: str = ""
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_PUBLIC_URL: str = ""
+
     @model_validator(mode="after")
     def _validate_production_secrets(self) -> "Settings":
         if self.NODE_ENV != "production":

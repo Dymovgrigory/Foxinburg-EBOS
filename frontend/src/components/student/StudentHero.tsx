@@ -1,4 +1,4 @@
-import { LuStar, LuZap, LuTarget, LuCircleCheck } from 'react-icons/lu'
+import { LuTarget, LuCircleCheck } from 'react-icons/lu'
 
 interface StudentHeroProps {
   name?: string
@@ -25,62 +25,61 @@ export default function StudentHero({
   const lessonsPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
   return (
-    <div
-      className="relative overflow-hidden rounded-card p-6 md:p-8 text-white shadow-fox-lg"
-      style={{
-        background: 'linear-gradient(135deg, #1c0e36 0%, #2d1b4e 60%, #4a3b6b 100%)',
-      }}
-    >
-      {/* Decorative stars */}
-      <LuStar className="absolute top-4 right-12 text-fox-gold/20 w-16 h-16 rotate-12" />
-      <LuStar className="absolute bottom-4 right-32 text-fox-gold/10 w-10 h-10 -rotate-12" />
-      <LuZap className="absolute top-8 right-48 text-fox-gold/10 w-8 h-8" />
+    <div className="relative overflow-hidden rounded-card p-6 md:p-8 border border-fox-border/60 bg-white shadow-fox-lg">
+      <div
+        className="absolute top-0 right-0 w-64 h-64 pointer-events-none opacity-30"
+        style={{
+          background: 'radial-gradient(circle at 80% 20%, rgba(245, 237, 117, 0.35) 0%, transparent 50%)',
+        }}
+      />
+      <img
+        src="/brand/mascot-hero.png"
+        alt=""
+        className="absolute -right-4 -bottom-8 w-40 h-56 object-contain opacity-20 pointer-events-none select-none"
+      />
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
         <div className="flex-1 space-y-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Привет, {name || 'ученик'}! 👋
+            <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">
+              Привет, {name || 'ученик'}!
             </h2>
-            <p className="text-white/80 max-w-xl">
-              Продолжай своё приключение в мире знаний. У тебя{' '}
-              <span className="text-fox-gold font-semibold">{upcomingLessons}</span>{' '}
+            <p className="text-fox-gray max-w-xl">
+              У тебя{' '}
+              <span className="text-fox-purple font-semibold">{upcomingLessons}</span>{' '}
               ближайших занятий и{' '}
-              <span className="text-fox-gold font-semibold">{pendingHomeworks}</span>{' '}
+              <span className="text-fox-purple font-semibold">{pendingHomeworks}</span>{' '}
               заданий.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10">
-              <LuTarget className="w-4 h-4 text-fox-gold" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-fox-gold/20 text-fox-purple border border-fox-gold/40">
+              <LuTarget className="w-4 h-4" />
               <span className="text-sm font-medium">{lessonsPercent}% курса пройдено</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10">
-              <LuCircleCheck className="w-4 h-4 text-green-400" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-fox-purple/10 text-fox-purple border border-fox-purple/20">
+              <LuCircleCheck className="w-4 h-4" />
               <span className="text-sm font-medium">{completedLessons} уроков завершено</span>
             </div>
           </div>
 
           <div className="space-y-1.5 max-w-md">
             <div className="flex justify-between text-sm">
-              <span className="text-white/80">Уровень {level}</span>
-              <span className="text-fox-gold font-semibold">{xpIntoLevel} / {baseLevelXp} XP</span>
+              <span className="text-fox-gray">Уровень {level}</span>
+              <span className="text-fox-purple font-semibold">{xpIntoLevel} / {baseLevelXp} XP</span>
             </div>
-            <div className="h-3 bg-white/10 rounded-full overflow-hidden border border-white/10">
+            <div className="h-3 bg-fox-border/60 rounded-full overflow-hidden border border-fox-border/40">
               <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${xpPercent}%`, backgroundColor: '#F9E4A6' }}
+                className="h-full rounded-full transition-all duration-500 bg-fox-gold"
+                style={{ width: `${xpPercent}%` }}
               />
             </div>
           </div>
         </div>
 
         <div className="flex-shrink-0 flex justify-center md:justify-end">
-          <div
-            className="w-28 h-28 md:w-36 md:h-36 rounded-full flex flex-col items-center justify-center border-4 shadow-fox-gold/30 shadow-xl"
-            style={{ backgroundColor: '#F9E4A6', borderColor: 'rgba(249, 228, 166, 0.4)', color: '#1c0e36' }}
-          >
+          <div className="w-28 h-28 md:w-36 md:h-36 rounded-full flex flex-col items-center justify-center border-4 shadow-fox-gold/30 shadow-xl bg-fox-gold border-fox-gold/60 text-fox-purple">
             <span className="text-xs font-bold uppercase tracking-wider">Уровень</span>
             <span className="text-5xl md:text-6xl font-black leading-none">{level}</span>
           </div>

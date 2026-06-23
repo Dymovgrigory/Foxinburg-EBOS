@@ -30,11 +30,11 @@ export default function BrandLogo({
           <circle cx="20" cy="20" r="20" fill="#1c0e36" />
           <path
             d="M12 18c0-3.5 2.5-6 6-6h4c3.5 0 6 2.5 6 6v2c0 3.5-2.5 6-6 6h-4c-3.5 0-6-2.5-6-6v-2z"
-            fill="#F9E4A6"
+            fill="#F5ED75"
           />
           <path
             d="M10 14l4 2-1.5 3L10 14zM30 14l-4 2 1.5 3L30 14z"
-            fill="#F9E4A6"
+            fill="#F5ED75"
           />
           <circle cx="17" cy="20" r="1.5" fill="#1c0e36" />
           <circle cx="23" cy="20" r="1.5" fill="#1c0e36" />
@@ -46,12 +46,12 @@ export default function BrandLogo({
           />
           <path
             d="M14 12l6-3 6 3"
-            stroke="#F9E4A6"
+            stroke="#F5ED75"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <rect x="18" y="8" width="4" height="3" rx="1" fill="#F9E4A6" />
+          <rect x="18" y="8" width="4" height="3" rx="1" fill="#F5ED75" />
         </svg>
       </div>
     )
@@ -69,11 +69,11 @@ export default function BrandLogo({
         <circle cx="20" cy="20" r="20" fill="#1c0e36" />
         <path
           d="M12 18c0-3.5 2.5-6 6-6h4c3.5 0 6 2.5 6 6v2c0 3.5-2.5 6-6 6h-4c-3.5 0-6-2.5-6-6v-2z"
-          fill="#F9E4A6"
+          fill="#F5ED75"
         />
         <path
           d="M10 14l4 2-1.5 3L10 14zM30 14l-4 2 1.5 3L30 14z"
-          fill="#F9E4A6"
+          fill="#F5ED75"
         />
         <circle cx="17" cy="20" r="1.5" fill="#1c0e36" />
         <circle cx="23" cy="20" r="1.5" fill="#1c0e36" />
@@ -85,12 +85,12 @@ export default function BrandLogo({
         />
         <path
           d="M14 12l6-3 6 3"
-          stroke="#F9E4A6"
+          stroke="#F5ED75"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <rect x="18" y="8" width="4" height="3" rx="1" fill="#F9E4A6" />
+        <rect x="18" y="8" width="4" height="3" rx="1" fill="#F5ED75" />
       </svg>
       <div className="flex flex-col leading-tight">
         <span

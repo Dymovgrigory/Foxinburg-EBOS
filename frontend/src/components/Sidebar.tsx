@@ -4,7 +4,6 @@ import { FiChevronLeft, FiChevronRight, FiLogOut, FiMoon, FiSun } from 'react-ic
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { groupsForRole, roleLabel } from '../config/navigation'
-import BrandLogo from './BrandLogo'
 
 interface SidebarProps {
   mobileOpen: boolean
@@ -33,11 +32,27 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     </div>
   )
 
+  const logo = (
+    <div className="flex items-center gap-3">
+      <img
+        src="/brand/fox-head.png"
+        alt="FOXINBURG"
+        className={['object-contain', collapsed ? 'w-9 h-9' : 'w-9 h-9'].join(' ')}
+      />
+      {!collapsed && (
+        <div className="flex flex-col leading-tight">
+          <span className="font-display font-bold text-fox-purple text-sm tracking-tight">FOXINBURG</span>
+          <span className="text-[9px] text-fox-gray uppercase tracking-widest">EBOS</span>
+        </div>
+      )}
+    </div>
+  )
+
   const sidebarContent = (
     <>
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-fox-sidebar-border flex-shrink-0">
-        <BrandLogo collapsed={collapsed} variant="auto" />
+        {logo}
       </div>
 
       {/* Profile */}
@@ -165,17 +180,26 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
     </>
   )
 
+  const sidebarClass = [
+    'flex h-screen flex-col transition-all duration-300 flex-shrink-0 border-r',
+    collapsed ? 'w-20' : 'w-64',
+    'bg-fox-sidebar-bg border-fox-sidebar-border relative',
+  ].join(' ')
+
   return (
     <>
       {/* Desktop sidebar */}
-      <aside
-        className={[
-          'hidden lg:flex h-screen flex-col transition-all duration-300 flex-shrink-0 border-r',
-          collapsed ? 'w-20' : 'w-64',
-          'bg-fox-sidebar-bg border-fox-sidebar-border',
-        ].join(' ')}
-      >
-        {sidebarContent}
+      <aside className={[sidebarClass, 'hidden lg:flex'].join(' ')}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: 'url(/brand/swirl-1.png)',
+            backgroundSize: '200%',
+            backgroundPosition: 'top right',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        <div className="relative z-10 flex flex-col h-full">{sidebarContent}</div>
       </aside>
 
       {/* Mobile overlay */}
@@ -191,10 +215,19 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         className={[
           'fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:hidden border-r',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          'bg-fox-sidebar-bg border-fox-sidebar-border',
+          'bg-fox-sidebar-bg border-fox-sidebar-border relative',
         ].join(' ')}
       >
-        {sidebarContent}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: 'url(/brand/swirl-1.png)',
+            backgroundSize: '200%',
+            backgroundPosition: 'top right',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        <div className="relative z-10 flex flex-col h-full">{sidebarContent}</div>
       </aside>
     </>
   )

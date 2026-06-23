@@ -254,11 +254,11 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
     <div className="min-h-screen bg-fox-deep text-white overflow-x-hidden font-sans selection:bg-fox-gold/40 selection:text-fox-purple">
       <style>{`
         .bg-fox-deep { background-color: #1c0e36; }
-        .text-fox-gold { color: #F9E4A6; }
-        .bg-fox-gold { background-color: #F9E4A6; }
-        .border-fox-gold { border-color: #F9E4A6; }
+        .text-fox-gold { color: #F5ED75; }
+        .bg-fox-gold { background-color: #F5ED75; }
+        .border-fox-gold { border-color: #F5ED75; }
         .text-gold-gradient {
-          background: linear-gradient(135deg, #F9E4A6 0%, #F5ED75 50%, #FFF8C5 100%);
+          background: linear-gradient(135deg, #F5ED75 0%, #F5ED75 50%, #FFF8C5 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -274,7 +274,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           backdrop-filter: blur(20px);
         }
         .glow-gold {
-          box-shadow: 0 0 80px rgba(249, 228, 166, 0.18);
+          box-shadow: 0 0 80px rgba(245, 237, 117, 0.18);
         }
         .glow-purple {
           box-shadow: 0 0 100px rgba(90, 60, 130, 0.35);
@@ -282,7 +282,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         .reveal { opacity: 0; transform: translateY(28px); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
         .revealed { opacity: 1; transform: translateY(0); }
         .hero-gradient {
-          background: radial-gradient(circle at 80% 20%, rgba(249, 228, 166, 0.12) 0%, transparent 35%),
+          background: radial-gradient(circle at 80% 20%, rgba(245, 237, 117, 0.12) 0%, transparent 35%),
                       radial-gradient(circle at 20% 80%, rgba(90, 60, 130, 0.25) 0%, transparent 40%),
                       linear-gradient(180deg, #1c0e36 0%, #24133d 50%, #1c0e36 100%);
         }
@@ -461,7 +461,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                   <img
                     src="/brand/fox-head.png"
                     alt="FOXINBURG"
-                    className="relative h-28 md:h-36 w-auto mx-auto mb-5 drop-shadow-[0_0_40px_rgba(249,228,166,0.18)]"
+                    className="relative h-28 md:h-36 w-auto mx-auto mb-5 drop-shadow-[0_0_40px_rgba(245,237,117,0.18)]"
                   />
                 </div>
                 <h2 className="font-display text-5xl md:text-6xl font-bold text-gold-gradient mb-3">
@@ -478,7 +478,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                 <img
                   src="/brand/mascot-hero.png"
                   alt="FOXINBURG mascot"
-                  className="relative z-10 w-full h-auto max-h-[45vh] object-contain mx-auto drop-shadow-[0_0_40px_rgba(249,228,166,0.1)] animate-float"
+                  className="relative z-10 w-full h-auto max-h-[45vh] object-contain mx-auto drop-shadow-[0_0_40px_rgba(245,237,117,0.1)] animate-float"
                 />
               </div>
             </div>

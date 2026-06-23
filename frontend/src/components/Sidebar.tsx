@@ -28,7 +28,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   }
 
   const avatar = (
-    <div className="w-10 h-10 rounded-full bg-fox-gold text-fox-purple flex items-center justify-center font-bold flex-shrink-0">
+    <div className="w-10 h-10 rounded-full bg-fox-purple text-fox-gold flex items-center justify-center font-bold flex-shrink-0 border-2 border-fox-gold/30">
       {user?.name?.[0] || user?.email?.[0] || '?'}
     </div>
   )
@@ -36,21 +36,21 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-white/10 flex-shrink-0">
-        <BrandLogo collapsed={collapsed} variant="dark" />
+      <div className="h-16 flex items-center px-4 border-b border-fox-sidebar-border flex-shrink-0">
+        <BrandLogo collapsed={collapsed} variant="auto" />
       </div>
 
       {/* Profile */}
       {!collapsed && (
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-fox-sidebar-border">
           <button
             onClick={() => setUserOpen(!userOpen)}
-            className="w-full flex items-center gap-3 rounded-xl hover:bg-white/5 transition p-1 -m-1"
+            className="w-full flex items-center gap-3 rounded-xl hover:bg-fox-sidebar-hover-bg transition p-1 -m-1"
           >
             {avatar}
             <div className="min-w-0 text-left flex-1">
-              <div className="text-sm font-medium text-white truncate">{user?.email}</div>
-              <div className="text-xs text-fox-gold/80 capitalize font-medium">{roleLabel(user?.role)}</div>
+              <div className="text-sm font-medium text-fox-sidebar-text truncate">{user?.email}</div>
+              <div className="text-xs text-fox-purple capitalize font-medium">{roleLabel(user?.role)}</div>
             </div>
           </button>
           {userOpen && (
@@ -58,13 +58,13 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
               <Link
                 to="/settings"
                 onClick={onCloseMobile}
-                className="block text-sm text-white/70 hover:text-white py-1"
+                className="block text-sm text-fox-sidebar-muted hover:text-fox-purple py-1"
               >
                 Профиль
               </Link>
               <button
                 onClick={handleLogout}
-                className="block text-sm text-white/70 hover:text-red-300 py-1"
+                className="block text-sm text-fox-sidebar-muted hover:text-fox-error py-1"
               >
                 Выйти
               </button>
@@ -74,7 +74,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       )}
 
       {collapsed && (
-        <div className="py-3 border-b border-white/10 flex justify-center">
+        <div className="py-3 border-b border-fox-sidebar-border flex justify-center">
           {avatar}
         </div>
       )}
@@ -84,7 +84,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         {groups.map((group, gi) => (
           <div key={gi}>
             {!collapsed && group.title && (
-              <div className="px-3 mb-2 text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+              <div className="px-3 mb-2 text-[10px] font-semibold text-fox-sidebar-muted uppercase tracking-wider">
                 {group.title}
               </div>
             )}
@@ -99,8 +99,8 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
                     className={[
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                       active
-                        ? 'bg-fox-gold text-fox-purple shadow-md shadow-fox-gold/20'
-                        : 'text-white/70 hover:bg-white/10 hover:text-white',
+                        ? 'bg-fox-sidebar-active-bg text-fox-sidebar-active-text shadow-sm'
+                        : 'text-fox-sidebar-muted hover:bg-fox-sidebar-hover-bg hover:text-fox-purple',
                       collapsed && 'justify-center',
                     ].join(' ')}
                     title={collapsed ? item.label : undefined}
@@ -110,7 +110,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
                     {!collapsed && item.badge && (
                       <span className="flex-shrink-0">
                         {typeof item.badge === 'number' ? (
-                          <span className="bg-fox-gold text-fox-purple text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                          <span className="bg-fox-purple text-fox-gold text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                             {item.badge}
                           </span>
                         ) : (
@@ -127,11 +127,11 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       </nav>
 
       {/* Bottom */}
-      <div className="p-3 border-t border-white/10 space-y-1 flex-shrink-0">
+      <div className="p-3 border-t border-fox-sidebar-border space-y-1 flex-shrink-0">
         <button
           onClick={toggleTheme}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-fox-sidebar-muted hover:bg-fox-sidebar-hover-bg hover:text-fox-purple transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
@@ -142,7 +142,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-fox-sidebar-muted hover:bg-fox-sidebar-hover-bg hover:text-fox-purple transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={collapsed ? 'Развернуть' : 'Свернуть'}
@@ -153,7 +153,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         <button
           onClick={handleLogout}
           className={[
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-red-500/20 hover:text-red-200 transition',
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-fox-sidebar-muted hover:bg-red-50 hover:text-fox-error transition',
             collapsed && 'justify-center',
           ].join(' ')}
           title={collapsed ? 'Выйти' : undefined}
@@ -170,10 +170,10 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Desktop sidebar */}
       <aside
         className={[
-          'hidden lg:flex h-screen flex-col transition-all duration-300 flex-shrink-0',
+          'hidden lg:flex h-screen flex-col transition-all duration-300 flex-shrink-0 border-r',
           collapsed ? 'w-20' : 'w-64',
+          'bg-fox-sidebar-bg border-fox-sidebar-border',
         ].join(' ')}
-        style={{ backgroundColor: 'var(--fox-purple)' }}
       >
         {sidebarContent}
       </aside>
@@ -181,7 +181,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-fox-purple/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-fox-purple/30 backdrop-blur-sm lg:hidden"
           onClick={onCloseMobile}
         />
       )}
@@ -189,10 +189,10 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       {/* Mobile sidebar */}
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:hidden border-r',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          'bg-fox-sidebar-bg border-fox-sidebar-border',
         ].join(' ')}
-        style={{ backgroundColor: 'var(--fox-purple)' }}
       >
         {sidebarContent}
       </aside>

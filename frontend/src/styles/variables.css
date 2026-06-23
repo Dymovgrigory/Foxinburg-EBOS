@@ -1,14 +1,14 @@
 :root {
-  /* Brand colors — из брендбука FOXINBURG 2025 */
+  /* Brand colors — FOXINBURG brandbook + FOX-TASK-0055 */
   --fox-purple: #3A2953;
   --fox-purple-rgb: 58, 41, 83;
   --fox-purple-light: #4d3869;
   --fox-purple-dark: #251636;
   --fox-purple-darker: #1a1026;
-  --fox-gold: #F5ED75;
-  --fox-gold-rgb: 245, 237, 117;
-  --fox-gold-light: #FFF8A3;
-  --fox-gold-dark: #E5D85C;
+  --fox-gold: #F9E4A6;
+  --fox-gold-rgb: 249, 228, 166;
+  --fox-gold-light: #FFF0C5;
+  --fox-gold-dark: #E5CF8E;
   --fox-white: #FFFFFF;
   --fox-white-rgb: 255, 255, 255;
   --fox-dark: #2A2A2A;
@@ -23,6 +23,15 @@
   --fox-error: #EF4444;
   --fox-info: #3B82F6;
 
+  /* Light platform shell */
+  --fox-sidebar-bg: #FFFFFF;
+  --fox-sidebar-text: #3A2953;
+  --fox-sidebar-muted: #6B6B7B;
+  --fox-sidebar-border: #E8E4F0;
+  --fox-sidebar-active-bg: #F9E4A6;
+  --fox-sidebar-active-text: #3A2953;
+  --fox-sidebar-hover-bg: #F8F7FA;
+
   /* Typography — брендбуки: DM Sans (основной), Montserrat (акценты) */
   --font-sans: 'DM Sans', 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Montserrat', 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -35,10 +44,10 @@
   --radius-pill: 9999px;
 
   /* Shadows */
-  --shadow-card: 0 1px 3px rgba(58, 41, 83, 0.06), 0 4px 16px rgba(58, 41, 83, 0.06);
-  --shadow-fox: 0 4px 20px rgba(58, 41, 83, 0.10);
-  --shadow-fox-md: 0 8px 30px rgba(58, 41, 83, 0.12);
-  --shadow-fox-lg: 0 12px 40px rgba(58, 41, 83, 0.14);
+  --shadow-card: 0 1px 3px rgba(58, 41, 83, 0.05), 0 4px 16px rgba(58, 41, 83, 0.05);
+  --shadow-fox: 0 4px 20px rgba(58, 41, 83, 0.08);
+  --shadow-fox-md: 0 8px 30px rgba(58, 41, 83, 0.10);
+  --shadow-fox-lg: 0 12px 40px rgba(58, 41, 83, 0.12);
 }
 
 .dark {
@@ -47,10 +56,10 @@
   --fox-purple-light: #4d3869;
   --fox-purple-dark: #251636;
   --fox-purple-darker: #140c1e;
-  --fox-gold: #F5ED75;
-  --fox-gold-rgb: 245, 237, 117;
-  --fox-gold-light: #FFF8A3;
-  --fox-gold-dark: #E5D85C;
+  --fox-gold: #F9E4A6;
+  --fox-gold-rgb: 249, 228, 166;
+  --fox-gold-light: #FFF0C5;
+  --fox-gold-dark: #E5CF8E;
   --fox-white: #181026;
   --fox-white-rgb: 24, 16, 38;
   --fox-dark: #F8F7FA;
@@ -58,6 +67,14 @@
   --fox-border: #2d2440;
   --fox-gray: #A9A5B3;
   --fox-graphite: #F8F7FA;
+
+  --fox-sidebar-bg: #1a1026;
+  --fox-sidebar-text: #F8F7FA;
+  --fox-sidebar-muted: #A9A5B3;
+  --fox-sidebar-border: #2d2440;
+  --fox-sidebar-active-bg: #F9E4A6;
+  --fox-sidebar-active-text: #3A2953;
+  --fox-sidebar-hover-bg: rgba(255, 255, 255, 0.05);
 
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.30), 0 4px 16px rgba(0, 0, 0, 0.30);
   --shadow-fox: 0 4px 20px rgba(0, 0, 0, 0.35);

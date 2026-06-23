@@ -13,9 +13,9 @@ export default {
           'purple-light': '#4d3869',
           'purple-dark': '#251636',
           'purple-darker': '#1a1026',
-          gold: '#F5ED75',
-          'gold-light': '#FFF8A3',
-          'gold-dark': '#E5D85C',
+          gold: '#F9E4A6',
+          'gold-light': '#FFF0C5',
+          'gold-dark': '#E5CF8E',
           white: '#FFFFFF',
           dark: '#2A2A2A',
           light: '#F8F7FA',
@@ -27,6 +27,19 @@ export default {
           warning: '#F59E0B',
           error: '#EF4444',
           info: '#3B82F6',
+          sidebar: {
+            bg: 'var(--fox-sidebar-bg)',
+            text: 'var(--fox-sidebar-text)',
+            muted: 'var(--fox-sidebar-muted)',
+            border: 'var(--fox-sidebar-border)',
+            active: {
+              bg: 'var(--fox-sidebar-active-bg)',
+              text: 'var(--fox-sidebar-active-text)',
+            },
+            hover: {
+              bg: 'var(--fox-sidebar-hover-bg)',
+            },
+          }
         }
       },
       fontFamily: {
@@ -49,12 +62,12 @@ export default {
         'pill': '9999px',
       },
       boxShadow: {
-        'fox': '0 4px 20px rgba(58, 41, 83, 0.10)',
-        'fox-md': '0 8px 30px rgba(58, 41, 83, 0.12)',
-        'fox-lg': '0 12px 40px rgba(58, 41, 83, 0.14)',
-        'card': '0 1px 3px rgba(58, 41, 83, 0.06), 0 4px 16px rgba(58, 41, 83, 0.06)',
-        'glow-gold': '0 0 40px rgba(245, 237, 117, 0.20)',
-        'glow-purple': '0 0 60px rgba(58, 41, 83, 0.35)',
+        'fox': '0 4px 20px rgba(58, 41, 83, 0.08)',
+        'fox-md': '0 8px 30px rgba(58, 41, 83, 0.10)',
+        'fox-lg': '0 12px 40px rgba(58, 41, 83, 0.12)',
+        'card': '0 1px 3px rgba(58, 41, 83, 0.05), 0 4px 16px rgba(58, 41, 83, 0.05)',
+        'glow-gold': '0 0 40px rgba(249, 228, 166, 0.25)',
+        'glow-purple': '0 0 60px rgba(58, 41, 83, 0.20)',
       },
       spacing: {
         '18': '4.5rem',
@@ -77,7 +90,7 @@ export default {
         },
         'float': {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-12px)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
         'pulse-glow': {
           '0%, 100%': { opacity: '0.6' },
@@ -87,7 +100,7 @@ export default {
       animation: {
         'fade-in': 'fade-in 200ms ease-out',
         'slide-in': 'slide-in 200ms ease-out',
-        'float': 'float 6s ease-in-out infinite',
+        'float': 'float 5s ease-in-out infinite',
         'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
       },
     },

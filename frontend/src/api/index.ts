@@ -221,6 +221,8 @@ export const modulesApi = {
   delete: (id: number) => api.delete<ApiResponse<void>>(`/modules/${id}`).then(unwrap),
   lessons: (moduleId: number) =>
     api.get<ApiResponse<Lesson[]>>(`/modules/${moduleId}/lessons`).then(unwrap),
+  reorder: (courseId: number, moduleIds: number[]) =>
+    api.post<ApiResponse<Module[]>>('/modules/reorder', { course_id: courseId, module_ids: moduleIds }).then(unwrap),
 }
 
 export const lessonsApi = {
@@ -232,6 +234,8 @@ export const lessonsApi = {
     api.patch<ApiResponse<Lesson>>(`/lessons/${id}`, data).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/lessons/${id}`).then(unwrap),
   complete: (id: number) => api.post<ApiResponse<LessonProgress>>(`/lessons/${id}/complete`).then(unwrap),
+  reorder: (moduleId: number, lessonIds: number[]) =>
+    api.post<ApiResponse<Lesson[]>>('/lessons/reorder', { module_id: moduleId, lesson_ids: lessonIds }).then(unwrap),
 }
 
 export const testsApi = {

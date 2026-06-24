@@ -39,6 +39,16 @@ class ModuleCreate(ModuleBase):
     course_id: int
 
 
+class ModuleReorderRequest(BaseModel):
+    course_id: int
+    module_ids: List[int]
+
+
+class LessonReorderRequest(BaseModel):
+    module_id: int
+    lesson_ids: List[int]
+
+
 class ModuleUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None

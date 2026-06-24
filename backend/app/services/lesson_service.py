@@ -126,6 +126,22 @@ class LessonService(BaseService[Lesson]):
     async def delete_lesson(self, lesson: Lesson) -> None:
         await self.uow.session.delete(lesson)
 
+    async def reorder_lessons(self, module_id: int, lesson_ids: List[int]) -> List[Lesson]:
+        """Устанавливает порядок уроков в модуле по переданному списку ID."""
+        result = await self.uow.session.execute(
+            select(Lesson).where(Lesson.module_id == module_id)
+        )
+        lessons = {l.id: l for l in result.scalars().all()}
+
+        if set(lesson_ids) != set(lessons.keys()):
+            raise ValueError("Список уроков не соответствует модулю")
+
+        for idx, lid in enumerate(lesson_ids):
+            lessons[lid].order_index = idx
+
+        await self.uow.session.flush()
+        return await self.list_by_module(module_id)
+
     async def _create_test_for_lesson(self, lesson: Lesson, test: dict) -> Test:
         test_obj = Test(
             lesson_id=lesson.id,

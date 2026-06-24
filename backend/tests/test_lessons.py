@@ -227,3 +227,48 @@ async def test_complete_lesson(client, auth_headers_factory, user_factory):
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["status"] == "completed"
+
+
+async def test_reorder_lessons(client, auth_headers_factory):
+    methodist = await auth_headers_factory(Role.METHODIST)
+    course_id, module_id = await _create_course_and_module(client, methodist)
+
+    lessons = []
+    for title in ["Урок 1", "Урок 2", "Урок 3"]:
+        res = await client.post("/api/v3/lessons", json={
+            "module_id": module_id,
+            "title": title,
+            "lesson_type": "text",
+        }, headers=methodist)
+        lessons.append(res.json()["data"]["id"])
+
+    # Новый порядок: 3, 1, 2
+    new_order = [lessons[2], lessons[0], lessons[1]]
+    response = await client.post("/api/v3/lessons/reorder", json={
+        "module_id": module_id,
+        "lesson_ids": new_order,
+    }, headers=methodist)
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert [l["id"] for l in data] == new_order
+    assert data[0]["order_index"] == 0
+    assert data[1]["order_index"] == 1
+    assert data[2]["order_index"] == 2
+
+
+async def test_reorder_lessons_invalid_list(client, auth_headers_factory):
+    methodist = await auth_headers_factory(Role.METHODIST)
+    _, module_id = await _create_course_and_module(client, methodist)
+
+    res = await client.post("/api/v3/lessons", json={
+        "module_id": module_id,
+        "title": "Урок",
+        "lesson_type": "text",
+    }, headers=methodist)
+    lesson_id = res.json()["data"]["id"]
+
+    response = await client.post("/api/v3/lessons/reorder", json={
+        "module_id": module_id,
+        "lesson_ids": [lesson_id, 999999],
+    }, headers=methodist)
+    assert response.status_code == 400

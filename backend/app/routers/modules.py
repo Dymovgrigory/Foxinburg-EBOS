@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from app.core.dependencies import require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
-from app.schemas.course import ModuleCreate, ModuleUpdate, ModuleResponse, LessonResponse
+from app.schemas.course import ModuleCreate, ModuleUpdate, ModuleResponse, LessonResponse, ModuleReorderRequest
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.module_service import ModuleService
 from app.services.lesson_service import LessonService
@@ -71,6 +71,24 @@ async def create_module(
         data=ModuleResponse.model_validate(module).model_dump(),
         message="Модуль создан",
         status_code=201,
+    )
+
+
+@router.post("/reorder")
+async def reorder_modules(
+    data: ModuleReorderRequest,
+    current_user=Depends(require_permission(Permission.MODULE_UPDATE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = ModuleService(uow)
+    try:
+        modules = await service.reorder_modules(data.course_id, data.module_ids)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+    return success_response(
+        data=[ModuleResponse.model_validate(m).model_dump() for m in modules],
+        message="Порядок модулей обновлён",
     )
 
 

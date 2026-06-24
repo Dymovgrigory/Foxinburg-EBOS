@@ -3,12 +3,175 @@ import Header from '../components/Header'
 import { useToast, Button, Card, Input, Loader, EmptyState, Modal, ModalFooterActions } from '../components/ui'
 import { coursesApi, modulesApi, lessonsApi, testsApi, homeworksApi, groupsApi } from '../api'
 import type { Course, Module, Lesson, Test, TestQuestion, Group } from '../types'
-import { LuBookOpen, LuWrench, LuPencil, LuTrash2, LuFileText, LuVideo, LuClipboardList, LuHouse } from 'react-icons/lu'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { LuBookOpen, LuWrench, LuPencil, LuTrash2, LuFileText, LuVideo, LuClipboardList, LuHouse, LuGripVertical } from 'react-icons/lu'
 
 interface EditableItem {
   id?: number
   title: string
   description?: string
+}
+
+function lessonTypeIcon(type?: string) {
+  switch (type) {
+    case 'video':
+      return <LuVideo size={14} />
+    case 'test':
+      return <LuClipboardList size={14} />
+    case 'homework':
+      return <LuHouse size={14} />
+    default:
+      return <LuFileText size={14} />
+  }
+}
+
+interface SortableLessonItemProps {
+  lesson: Lesson
+  selectedLessonId: number | null
+  onSelect: (id: number) => void
+  onEdit: (lesson: Lesson, moduleId: number) => void
+  onDelete: (id: number) => void
+  moduleId: number
+}
+
+function SortableLessonItem({ lesson, selectedLessonId, onSelect, onEdit, onDelete, moduleId }: SortableLessonItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const isActive = selectedLessonId === lesson.id
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={[
+        'flex items-center justify-between p-2 rounded-lg text-sm cursor-pointer',
+        isActive ? 'bg-fox-purple text-white' : 'bg-fox-light/50 hover:bg-fox-light text-fox-dark',
+      ].join(' ')}
+      onClick={() => onSelect(lesson.id)}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          className={[
+            'cursor-grab active:cursor-grabbing',
+            isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple',
+          ].join(' ')}
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <LuGripVertical size={16} />
+        </button>
+        <span>{lessonTypeIcon(lesson.lesson_type)}</span>
+        <span className="truncate">{lesson.title}</span>
+      </div>
+      <div className="flex gap-1">
+        <button
+          className={isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit(lesson, moduleId)
+          }}
+        >
+          <LuPencil size={16} />
+        </button>
+        <button
+          className={isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-error'}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(lesson.id)
+          }}
+        >
+          <LuTrash2 size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface SortableModuleItemProps {
+  module: Module
+  selectedModuleId: number | null
+  selectedLessonId: number | null
+  onSelect: (id: number) => void
+  onEdit: (module: Module) => void
+  onDelete: (id: number) => void
+  children?: React.ReactNode
+}
+
+function SortableModuleItem({ module, selectedModuleId, onSelect, onEdit, onDelete, children }: SortableModuleItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: module.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const isActive = selectedModuleId === module.id
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={[
+        'rounded-xl border transition',
+        isActive ? 'border-fox-purple bg-fox-purple/5' : 'border-fox-border bg-white',
+      ].join(' ')}
+    >
+      <div
+        className="p-3 flex items-center justify-between cursor-pointer"
+        onClick={() => {
+          onSelect(module.id)
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            className="cursor-grab active:cursor-grabbing text-fox-gray/70 hover:text-fox-purple"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LuGripVertical size={18} />
+          </button>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-fox-dark truncate">{module.title}</p>
+            <p className="text-xs text-fox-gray/70">{module.lessons?.length || 0} уроков</p>
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <button
+            className="text-fox-gray/70 hover:text-fox-purple"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(module)
+            }}
+          >
+            <LuPencil size={16} />
+          </button>
+          <button
+            className="text-fox-gray/70 hover:text-fox-error"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(module.id)
+            }}
+          >
+            <LuTrash2 size={16} />
+          </button>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
 }
 
 export default function CourseBuilderPage() {
@@ -279,19 +442,6 @@ export default function CourseBuilderPage() {
     { value: 'homework', label: 'Домашнее задание' },
   ]
 
-  const lessonTypeIcon = (type?: string) => {
-    switch (type) {
-      case 'video':
-        return <LuVideo size={14} />
-      case 'test':
-        return <LuClipboardList size={14} />
-      case 'homework':
-        return <LuHouse size={14} />
-      default:
-        return <LuFileText size={14} />
-    }
-  }
-
   const openLessonModal = async (lesson: Lesson, moduleId: number) => {
     const modal: any = {
       id: lesson.id,
@@ -367,38 +517,52 @@ export default function CourseBuilderPage() {
     }
   }
 
-  const moveLesson = async (moduleId: number, lessonId: number, direction: -1 | 1) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleModuleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = modules.findIndex((m) => m.id === active.id)
+    const newIndex = modules.findIndex((m) => m.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(modules, oldIndex, newIndex)
+    setModules(reordered)
+
+    try {
+      await modulesApi.reorder(selectedCourseId!, reordered.map((m) => m.id))
+      showToast('Порядок модулей обновлён', 'success')
+      if (selectedCourseId) loadModules(selectedCourseId)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Не удалось изменить порядок модулей', 'error')
+      if (selectedCourseId) loadModules(selectedCourseId)
+    }
+  }
+
+  const handleLessonDragEnd = async (moduleId: number, event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
     const module = modules.find((m) => m.id === moduleId)
     if (!module?.lessons) return
     const sorted = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
-    const index = sorted.findIndex((l) => l.id === lessonId)
-    const newIndex = index + direction
-    if (index < 0 || newIndex < 0 || newIndex >= sorted.length) return
+    const oldIndex = sorted.findIndex((l) => l.id === active.id)
+    const newIndex = sorted.findIndex((l) => l.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
 
-    const current = sorted[index]
-    const swap = sorted[newIndex]
-
+    const reordered = arrayMove(sorted, oldIndex, newIndex).map((l, idx) => ({ ...l, order_index: idx }))
     setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== moduleId) return m
-        const updated = m.lessons.map((l) => {
-          if (l.id === current.id) return { ...l, order_index: swap.order_index }
-          if (l.id === swap.id) return { ...l, order_index: current.order_index }
-          return l
-        })
-        return { ...m, lessons: updated.sort((a, b) => a.order_index - b.order_index) }
-      })
+      prev.map((m) => (m.id === moduleId ? { ...m, lessons: reordered } : m))
     )
 
     try {
-      await Promise.all([
-        lessonsApi.update(current.id, { order_index: swap.order_index }),
-        lessonsApi.update(swap.id, { order_index: current.order_index }),
-      ])
+      await lessonsApi.reorder(moduleId, reordered.map((l) => l.id))
       showToast('Порядок уроков обновлён', 'success')
       if (selectedCourseId) loadModules(selectedCourseId)
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Не удалось изменить порядок', 'error')
+      showToast(err.response?.data?.message || 'Не удалось изменить порядок уроков', 'error')
       if (selectedCourseId) loadModules(selectedCourseId)
     }
   }
@@ -550,142 +714,87 @@ export default function CourseBuilderPage() {
                 </Button>
               )}
             </div>
-            <div className="max-h-[70vh] overflow-y-auto p-3 space-y-3">
+            <div className="max-h-[70vh] overflow-y-auto p-3">
               {!selectedCourse ? (
                 <EmptyState icon={<LuBookOpen />} title="Курс не выбран" description="Выберите курс слева" />
               ) : loadingModules ? (
                 <Loader text="Загрузка модулей..." />
               ) : (
-                modules.map((module) => (
-                  <div
-                    key={module.id}
-                    className={[
-                      'rounded-xl border transition',
-                      selectedModuleId === module.id
-                        ? 'border-fox-purple bg-fox-purple/5'
-                        : 'border-fox-border bg-white',
-                    ].join(' ')}
-                  >
-                    <div
-                      className="p-3 flex items-center justify-between cursor-pointer"
-                      onClick={() => {
-                        setSelectedModuleId(module.id)
-                        setSelectedLessonId(null)
-                      }}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-fox-dark truncate">{module.title}</p>
-                        <p className="text-xs text-fox-gray/70">{module.lessons?.length || 0} уроков</p>
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          className="text-fox-gray/70 hover:text-fox-purple"
-                          onClick={(e) => {
-                            e.stopPropagation()
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleModuleDragEnd}>
+                  <SortableContext items={modules.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3">
+                      {modules.map((module) => (
+                        <SortableModuleItem
+                          key={module.id}
+                          module={module}
+                          selectedModuleId={selectedModuleId}
+                          selectedLessonId={selectedLessonId}
+                          onSelect={(id) => {
+                            setSelectedModuleId(id)
+                            setSelectedLessonId(null)
+                          }}
+                          onEdit={(m) =>
                             setModuleModal({
-                              id: module.id,
-                              title: module.title,
-                              description: module.description || '',
-                              course_id: selectedCourse.id,
-                            })
-                          }}
-                        >
-                          <LuPencil size={16} />
-                        </button>
-                        <button
-                          className="text-fox-gray/70 hover:text-fox-error"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deleteModule(module.id)
-                          }}
-                        >
-                          <LuTrash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {selectedModuleId === module.id && (
-                      <div className="px-3 pb-3 space-y-2">
-                        {[...module.lessons].sort((a, b) => a.order_index - b.order_index).map((lesson, index, arr) => (
-                          <div
-                            key={lesson.id}
-                            className={[
-                              'flex items-center justify-between p-2 rounded-lg text-sm cursor-pointer',
-                              selectedLessonId === lesson.id
-                                ? 'bg-fox-purple text-white'
-                                : 'bg-fox-light/50 hover:bg-fox-light text-fox-dark',
-                            ].join(' ')}
-                            onClick={() => setSelectedLessonId(lesson.id)}
-                          >
-                            <span className="mr-2 inline-flex items-center">{lessonTypeIcon(lesson.lesson_type)}</span>
-                            <span className="truncate">{lesson.title}</span>
-                            <div className="flex gap-1">
-                              {index > 0 && (
-                                <button
-                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    moveLesson(module.id, lesson.id, -1)
-                                  }}
-                                  title="Переместить выше"
-                                >
-                                  ↑
-                                </button>
-                              )}
-                              {index < arr.length - 1 && (
-                                <button
-                                  className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    moveLesson(module.id, lesson.id, 1)
-                                  }}
-                                  title="Переместить ниже"
-                                >
-                                  ↓
-                                </button>
-                              )}
-                              <button
-                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openLessonModal(lesson, module.id)
-                                }}
-                              >
-                                <LuPencil size={16} />
-                              </button>
-                              <button
-                                className={selectedLessonId === lesson.id ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-error'}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  deleteLesson(lesson.id)
-                                }}
-                              >
-                                <LuTrash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="w-full mt-1"
-                          onClick={() =>
-                            setLessonModal({
-                              title: '',
-                              description: '',
-                              module_id: module.id,
-                              lesson_type: 'text',
-                              test: { questions: [] },
-                              homework: { title: '', description: '' },
+                              id: m.id,
+                              title: m.title,
+                              description: m.description || '',
+                              course_id: selectedCourse!.id,
                             })
                           }
+                          onDelete={deleteModule}
                         >
-                          + Добавить урок
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))
+                          {selectedModuleId === module.id && (
+                            <div className="px-3 pb-3 space-y-2">
+                              <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={(e) => handleLessonDragEnd(module.id, e)}
+                              >
+                                <SortableContext
+                                  items={[...module.lessons].sort((a, b) => a.order_index - b.order_index).map((l) => l.id)}
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  <div className="space-y-2">
+                                    {[...module.lessons]
+                                      .sort((a, b) => a.order_index - b.order_index)
+                                      .map((lesson) => (
+                                        <SortableLessonItem
+                                          key={lesson.id}
+                                          lesson={lesson}
+                                          selectedLessonId={selectedLessonId}
+                                          onSelect={setSelectedLessonId}
+                                          onEdit={openLessonModal}
+                                          onDelete={deleteLesson}
+                                          moduleId={module.id}
+                                        />
+                                      ))}
+                                  </div>
+                                </SortableContext>
+                              </DndContext>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="w-full mt-1"
+                                onClick={() =>
+                                  setLessonModal({
+                                    title: '',
+                                    description: '',
+                                    module_id: module.id,
+                                    lesson_type: 'text',
+                                    test: { questions: [] },
+                                    homework: { title: '', description: '' },
+                                  })
+                                }
+                              >
+                                + Добавить урок
+                              </Button>
+                            </div>
+                          )}
+                        </SortableModuleItem>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           </Card>

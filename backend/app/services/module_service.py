@@ -70,3 +70,19 @@ class ModuleService(BaseService[Module]):
 
     async def delete_module(self, module: Module) -> None:
         await self.uow.session.delete(module)
+
+    async def reorder_modules(self, course_id: int, module_ids: List[int]) -> List[Module]:
+        """Устанавливает порядок модулей курса по переданному списку ID."""
+        result = await self.uow.session.execute(
+            select(Module).where(Module.course_id == course_id)
+        )
+        modules = {m.id: m for m in result.scalars().all()}
+
+        if set(module_ids) != set(modules.keys()):
+            raise ValueError("Список модулей не соответствует курсу")
+
+        for idx, mid in enumerate(module_ids):
+            modules[mid].order_index = idx
+
+        await self.uow.session.flush()
+        return await self.list_by_course(course_id)

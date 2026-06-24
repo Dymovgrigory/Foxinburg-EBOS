@@ -17,6 +17,7 @@ from app.schemas.course import (
     LessonPlayerLessonResponse,
     LessonTestPlayerResponse,
     TestQuestionPlayerResponse,
+    LessonReorderRequest,
 )
 from app.schemas.homework import HomeworkResponse
 from app.schemas.progress import LessonProgressResponse
@@ -252,6 +253,24 @@ async def create_lesson(
         data=_lesson_detail_dict(lesson),
         message="Урок создан",
         status_code=201,
+    )
+
+
+@router.post("/reorder")
+async def reorder_lessons(
+    data: LessonReorderRequest,
+    current_user=Depends(require_permission(Permission.LESSON_UPDATE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    service = LessonService(uow)
+    try:
+        lessons = await service.reorder_lessons(data.module_id, data.lesson_ids)
+    except ValueError as e:
+        return error_response(str(e), status_code=400)
+
+    return success_response(
+        data=[LessonResponse.model_validate(l).model_dump() for l in lessons],
+        message="Порядок уроков обновлён",
     )
 
 

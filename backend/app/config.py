@@ -82,7 +82,7 @@ class Settings(BaseSettings):
 
     # MAX notifications (business.max.ru)
     MAX_BOT_TOKEN: str = ""
-    MAX_BOT_API_URL: str = "https://platform-api2.max.ru"
+    MAX_BOT_API_URL: str = "https://platform-api.max.ru"
     MAX_LINK_TOKEN_SECRET: str = "change-me-in-production"
     MAX_MINIAPP_URL: str = "https://foxinburg.ru/max-link"
     MAX_WEBHOOK_SECRET: str = ""

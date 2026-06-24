@@ -3,6 +3,10 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.homework import HomeworkResponse
+from app.schemas.test import TestAttemptResponse
+from app.schemas.progress import LessonProgressResponse
+
 
 class CourseBase(BaseModel):
     title: str
@@ -145,6 +149,47 @@ class LessonContentResponse(BaseModel):
 class LessonDetailResponse(LessonResponse):
     test: Optional[LessonTestResponse] = None
     contents: List[LessonContentResponse] = []
+
+
+class TestQuestionPlayerResponse(BaseModel):
+    """Вопрос теста без правильных ответов — для прохождения урока."""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    test_id: int
+    question_text: str
+    question_type: str
+    options: Optional[str] = None
+    points: int
+    order_index: int
+
+
+class LessonTestPlayerResponse(BaseModel):
+    """Тест урока без правильных ответов — для прохождения урока."""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    description: Optional[str] = None
+    passing_score: int
+    time_limit_minutes: Optional[int] = None
+    max_attempts: int
+    is_active: bool
+    questions: List[TestQuestionPlayerResponse] = []
+
+
+class LessonPlayerLessonResponse(LessonResponse):
+    """Урок, отдаваемый в плеере."""
+    test: Optional[LessonTestPlayerResponse] = None
+    contents: List[LessonContentResponse] = []
+
+
+class LessonPlayerResponse(BaseModel):
+    """Полный ответ плеера урока."""
+    lesson: LessonPlayerLessonResponse
+    progress: Optional[LessonProgressResponse] = None
+    homework: Optional[HomeworkResponse] = None
+    latest_test_attempt: Optional[TestAttemptResponse] = None
+    can_complete: bool = False
+    is_locked: bool = False
 
 
 class ModuleResponse(ModuleBase):

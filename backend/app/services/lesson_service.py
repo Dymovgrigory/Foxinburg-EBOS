@@ -19,6 +19,7 @@ class LessonService(BaseService[Lesson]):
             select(Lesson)
             .where(Lesson.id == lesson_id)
             .options(
+                selectinload(Lesson.module),
                 selectinload(Lesson.tests).selectinload(Test.questions),
                 selectinload(Lesson.homeworks),
                 selectinload(Lesson.contents),

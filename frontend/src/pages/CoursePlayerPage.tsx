@@ -1,11 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
-import { useAuth } from '../contexts/AuthContext'
 import { coursesApi, lessonsApi, progressApi, testsApi, homeworksApi } from '../api'
-import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
-import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview } from '../types'
-import { LuBookOpen, LuCircleCheck, LuLock, LuPlay, LuFileText, LuVideo, LuFileQuestion, LuClipboardList } from 'react-icons/lu'
+import { useToast, Button, Card, Badge, Loader, EmptyState, Tabs } from '../components/ui'
+import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview, LessonContent, LessonPlayerData } from '../types'
+import {
+  LuBookOpen,
+  LuCircleCheck,
+  LuLock,
+  LuPlay,
+  LuFileText,
+  LuVideo,
+  LuFileQuestion,
+  LuClipboardList,
+  LuFiles,
+  LuDownload,
+} from 'react-icons/lu'
 
 interface LessonItem {
   lesson: Lesson
@@ -52,18 +62,23 @@ function homeworkStatusMeta(homework: Homework, review: HomeworkReview | null) {
   return { label: 'Назначено', variant: 'default' as const }
 }
 
+function hasFileContent(contents?: LessonContent[]) {
+  return (contents || []).some((c) => ['pdf', 'file'].includes(c.content_type))
+}
+
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>()
   const courseId = Number(id)
-  const { user } = useAuth()
   const { showToast } = useToast()
 
   const [course, setCourse] = useState<Course | null>(null)
   const [progress, setProgress] = useState<LessonProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [activeLessonId, setActiveLessonId] = useState<number | null>(null)
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
+  const [player, setPlayer] = useState<LessonPlayerData | null>(null)
   const [activeLoading, setActiveLoading] = useState(false)
+  const [activeLocked, setActiveLocked] = useState(false)
+  const [activeTab, setActiveTab] = useState('theory')
 
   // test state
   const [attempt, setAttempt] = useState<TestAttempt | null>(null)
@@ -122,7 +137,8 @@ export default function CoursePlayerPage() {
 
   useEffect(() => {
     if (!activeLessonId) {
-      setActiveLesson(null)
+      setPlayer(null)
+      setActiveLocked(false)
       return
     }
     loadActiveLesson(activeLessonId)
@@ -130,22 +146,52 @@ export default function CoursePlayerPage() {
 
   const loadActiveLesson = async (lessonId: number) => {
     setActiveLoading(true)
+    setActiveLocked(false)
+    setPlayer(null)
+    setAttempt(null)
+    setAnswers({})
+    setHomework(null)
+    setHomeworkReview(null)
+    setHomeworkAnswer('')
     try {
-      const lesson = await lessonsApi.get(lessonId)
-      setActiveLesson(lesson)
-      setAttempt(null)
-      setAnswers({})
-      setHomework(null)
-      setHomeworkAnswer('')
+      const data = await lessonsApi.player(lessonId)
+      setPlayer(data)
 
-      if (lesson.lesson_type === 'test' && lesson.test) {
-        await startTestAttempt(lesson.test)
+      // Определяем начальную вкладку
+      const lesson = data.lesson
+      if (lesson.lesson_type === 'test') {
+        setActiveTab('test')
+      } else if (lesson.lesson_type === 'homework') {
+        setActiveTab('homework')
+      } else if (hasFileContent(lesson.contents)) {
+        setActiveTab('files')
+      } else {
+        setActiveTab('theory')
       }
-      if (lesson.lesson_type === 'homework') {
-        await loadHomework(lessonId)
+
+      // Инициализируем тест
+      if (lesson.lesson_type === 'test' && lesson.test) {
+        if (data.latest_test_attempt) {
+          setAttempt(data.latest_test_attempt)
+        } else {
+          await startTestAttempt(lesson.test)
+        }
+      }
+
+      // Инициализируем ДЗ
+      if (lesson.lesson_type === 'homework' && data.homework) {
+        setHomework(data.homework)
+        if (data.homework.content) setHomeworkAnswer(data.homework.content)
+        const reviews = await homeworksApi.reviews(data.homework.id)
+        setHomeworkReview(reviews[0] || null)
       }
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки урока', 'error')
+      const status = err.response?.status
+      const message = err.response?.data?.message || 'Ошибка загрузки урока'
+      if (status === 403) {
+        setActiveLocked(true)
+      }
+      showToast(message, status === 403 ? 'warning' : 'error')
     } finally {
       setActiveLoading(false)
     }
@@ -153,34 +199,11 @@ export default function CoursePlayerPage() {
 
   const startTestAttempt = async (test: Test) => {
     try {
-      const attempts = await testsApi.listAttempts(test.id)
-      const latest = attempts[0] || null
-      if (latest && latest.is_passed) {
-        setAttempt(latest)
-      } else if (latest && !latest.finished_at) {
-        setAttempt(latest)
-      } else {
-        const a = await testsApi.createAttempt(test.id, {})
-        setAttempt(a)
-      }
+      const a = await testsApi.createAttempt(test.id, {})
+      setAttempt(a)
+      setAnswers({})
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Не удалось начать тест', 'error')
-    }
-  }
-
-  const loadHomework = async (lessonId: number) => {
-    try {
-      const list = await homeworksApi.list(lessonId)
-      const hw = list.find((h) => h.student_id === user?.id) || list[0] || null
-      setHomework(hw)
-      setHomeworkReview(null)
-      if (hw?.content) setHomeworkAnswer(hw.content)
-      if (hw) {
-        const reviews = await homeworksApi.reviews(hw.id)
-        setHomeworkReview(reviews[0] || null)
-      }
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Не удалось загрузить задание', 'error')
     }
   }
 
@@ -193,10 +216,10 @@ export default function CoursePlayerPage() {
   }
 
   const handleComplete = async () => {
-    if (!activeLesson) return
+    if (!player?.lesson) return
     setCompleting(true)
     try {
-      await lessonsApi.complete(activeLesson.id)
+      await lessonsApi.complete(player.lesson.id)
       showToast('Урок завершён', 'success')
       await fetchData()
     } catch (err: any) {
@@ -211,13 +234,13 @@ export default function CoursePlayerPage() {
   }
 
   const handleSubmitTest = async () => {
-    if (!activeLesson?.test || !attempt) return
+    if (!player?.lesson?.test || !attempt) return
     setTestSubmitting(true)
     try {
-      await testsApi.updateAttempt(activeLesson.test.id, attempt.id, {
+      await testsApi.updateAttempt(player.lesson.test.id, attempt.id, {
         answers: JSON.stringify(answers),
       })
-      const scored = await testsApi.submitAttempt(activeLesson.test.id, attempt.id)
+      const scored = await testsApi.submitAttempt(player.lesson.test.id, attempt.id)
       setAttempt(scored)
       showToast(scored.is_passed ? 'Тест пройден' : 'Тест не пройден', scored.is_passed ? 'success' : 'warning')
       await fetchData()
@@ -229,10 +252,10 @@ export default function CoursePlayerPage() {
   }
 
   const handleRetryTest = async () => {
-    if (!activeLesson?.test) return
+    if (!player?.lesson?.test) return
     setTestSubmitting(true)
     try {
-      const a = await testsApi.createAttempt(activeLesson.test.id, {})
+      const a = await testsApi.createAttempt(player.lesson.test.id, {})
       setAttempt(a)
       setAnswers({})
       showToast('Новая попытка начата', 'info')
@@ -258,10 +281,24 @@ export default function CoursePlayerPage() {
     }
   }
 
-  const activeProgress = useMemo(
-    () => progress.find((p) => p.lesson_id === activeLessonId),
-    [progress, activeLessonId]
-  )
+  const activeLesson = player?.lesson
+  const activeProgress = player?.progress
+
+  const tabs = useMemo(() => {
+    if (!activeLesson) return []
+    const list: { id: string; label: string; icon: React.ReactNode }[] = []
+    list.push({ id: 'theory', label: 'Теория', icon: <LuBookOpen /> })
+    if (activeLesson.lesson_type === 'test' || activeLesson.test) {
+      list.push({ id: 'test', label: 'Тест', icon: <LuFileQuestion /> })
+    }
+    if (activeLesson.lesson_type === 'homework') {
+      list.push({ id: 'homework', label: 'Домашнее задание', icon: <LuClipboardList /> })
+    }
+    if (hasFileContent(activeLesson.contents)) {
+      list.push({ id: 'files', label: 'Файлы', icon: <LuFiles /> })
+    }
+    return list
+  }, [activeLesson])
 
   if (loading) {
     return (
@@ -279,7 +316,11 @@ export default function CoursePlayerPage() {
       <div className="min-h-screen bg-fox-light">
         <Header title="Курс" icon={<LuBookOpen />} />
         <div className="p-6 w-full">
-          <EmptyState icon={<LuBookOpen />} title="Курс не найден" description="Проверьте ссылку или выберите курс в дашборде." />
+          <EmptyState
+            icon={<LuBookOpen />}
+            title="Курс не найден"
+            description="Проверьте ссылку или выберите курс в дашборде."
+          />
         </div>
       </div>
     )
@@ -329,8 +370,22 @@ export default function CoursePlayerPage() {
         <div className="lg:col-span-2 space-y-4">
           {activeLoading ? (
             <Loader text="Загрузка урока..." />
+          ) : activeLocked ? (
+            <Card className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-fox-light flex items-center justify-center text-fox-gray mb-4">
+                <LuLock size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-fox-dark mb-2">Урок заблокирован</h3>
+              <p className="text-sm text-fox-gray max-w-md">
+                Завершите предыдущий урок и все обязательные задания, чтобы получить доступ.
+              </p>
+            </Card>
           ) : !activeLesson ? (
-            <EmptyState icon={<LuBookOpen />} title="Выберите урок" description="Начните с первого доступного урока в боковом меню." />
+            <EmptyState
+              icon={<LuBookOpen />}
+              title="Выберите урок"
+              description="Начните с первого доступного урока в боковом меню."
+            />
           ) : (
             <Card>
               <div className="flex items-start justify-between gap-4 mb-4">
@@ -339,7 +394,9 @@ export default function CoursePlayerPage() {
                     <Badge variant={statusMeta[activeProgress?.status || 'locked'].variant}>
                       {statusMeta[activeProgress?.status || 'locked'].label}
                     </Badge>
-                    <Badge variant="purple">{typeMeta[activeLesson.lesson_type] || <LuFileText />} {activeLesson.lesson_type}</Badge>
+                    <Badge variant="purple">
+                      {typeMeta[activeLesson.lesson_type] || <LuFileText />} {activeLesson.lesson_type}
+                    </Badge>
                   </div>
                   <h2 className="text-xl font-bold text-fox-dark">{activeLesson.title}</h2>
                 </div>
@@ -347,132 +404,175 @@ export default function CoursePlayerPage() {
               </div>
 
               {activeLesson.description && (
-                <p className="text-fox-gray text-sm mb-6 whitespace-pre-line">{activeLesson.description}</p>
+                <p className="text-fox-gray text-sm mb-4 whitespace-pre-line">{activeLesson.description}</p>
               )}
 
-              {/* Text / Video */}
-              {(activeLesson.lesson_type === 'text' || activeLesson.lesson_type === 'video') && (
-                <div className="space-y-4">
-                  {activeLesson.contents && activeLesson.contents.length > 0 ? (
-                    activeLesson.contents.map((c) => (
-                      <div key={c.id} className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
-                        <div className="font-medium text-sm text-fox-dark">{c.title || 'Материал'}</div>
-                        {c.content_type === 'text' && c.body && (
-                          <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">{c.body}</p>
-                        )}
-                        {c.content_type === 'video' && c.external_url && (
-                          <video src={c.external_url} controls className="mt-2 w-full rounded-lg" />
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="bg-fox-light rounded-xl p-8 text-center text-fox-gray text-sm border border-fox-border/30">
-                      {activeLesson.lesson_type === 'video' ? 'Видеоматериал к этому уроку ещё не загружен.' : 'Текстовый материал к этому уроку ещё не добавлен.'}
-                    </div>
-                  )}
-                  <Button
-                    onClick={handleComplete}
-                    loading={completing}
-                    disabled={activeProgress?.status === 'completed' || activeProgress?.status === 'locked'}
-                  >
-                    {activeProgress?.status === 'completed' ? 'Урок завершён' : 'Завершить урок'}
-                  </Button>
-                </div>
-              )}
+              <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-              {/* Test */}
-              {activeLesson.lesson_type === 'test' && activeLesson.test && (
-                <div className="space-y-6">
-                  {attempt?.finished_at ? (
-                    <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30 space-y-3">
-                      <div>
-                        <div className="text-lg font-bold text-fox-dark">
-                          Результат: {attempt.score} / {attempt.max_score}
+              <div className="mt-4">
+                {activeTab === 'theory' && (
+                  <div className="space-y-4">
+                    {activeLesson.contents && activeLesson.contents.length > 0 ? (
+                      activeLesson.contents.map((c) => (
+                        <div key={c.id} className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                          <div className="font-medium text-sm text-fox-dark">{c.title || 'Материал'}</div>
+                          {c.content_type === 'text' && c.body && (
+                            <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">{c.body}</p>
+                          )}
+                          {c.content_type === 'video' && c.external_url && (
+                            <video src={c.external_url} controls className="mt-2 w-full rounded-lg" />
+                          )}
                         </div>
-                        <Badge variant={attempt.is_passed ? 'success' : 'error'} className="mt-2">
-                          {attempt.is_passed ? 'Тест пройден' : 'Тест не пройден'}
-                        </Badge>
+                      ))
+                    ) : (
+                      <div className="bg-fox-light rounded-xl p-8 text-center text-fox-gray text-sm border border-fox-border/30">
+                        Теоретический материал к этому уроку ещё не добавлен.
                       </div>
-                      {!attempt.is_passed && (
-                        <Button onClick={handleRetryTest} loading={testSubmitting}>
-                          ↻ Повторить попытку
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      {activeLesson.test.questions?.map((q, idx) => (
-                        <TestQuestionView
-                          key={q.id}
-                          index={idx}
-                          question={q}
-                          value={answers[q.id]}
-                          onChange={(v) => handleAnswerChange(q.id, v)}
-                        />
-                      ))}
-                      <Button onClick={handleSubmitTest} loading={testSubmitting}>
-                        Отправить ответы
+                    )}
+                    {(activeLesson.lesson_type === 'text' || activeLesson.lesson_type === 'video') && (
+                      <Button
+                        onClick={handleComplete}
+                        loading={completing}
+                        disabled={!player?.can_complete || activeProgress?.status === 'completed'}
+                      >
+                        {activeProgress?.status === 'completed' ? 'Урок завершён' : 'Завершить урок'}
                       </Button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Homework */}
-              {activeLesson.lesson_type === 'homework' && (
-                <div className="space-y-4">
-                  <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
-                    <div className="font-medium text-fox-dark">{activeLesson.homework_title || activeLesson.title}</div>
-                    {activeLesson.homework_description && (
-                      <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">{activeLesson.homework_description}</p>
                     )}
                   </div>
-                  {homework ? (
-                    <>
-                      <textarea
-                        value={homeworkAnswer}
-                        onChange={(e) => setHomeworkAnswer(e.target.value)}
-                        disabled={homework.status !== 'assigned'}
-                        placeholder="Ваш ответ..."
-                        rows={6}
-                        className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
-                      />
-                      <div className="flex items-center gap-3">
-                        <Button
-                          onClick={handleSubmitHomework}
-                          loading={homeworkSubmitting}
-                          disabled={homework.status !== 'assigned'}
-                        >
-                          {homework.status === 'assigned' ? 'Отправить на проверку' : 'Ответ отправлен'}
-                        </Button>
-                        <Badge variant={homeworkStatusMeta(homework, homeworkReview).variant}>
-                          {homeworkStatusMeta(homework, homeworkReview).label}
-                        </Badge>
-                      </div>
-                      {homeworkReview && (
-                        <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
-                          <div className="text-sm font-semibold text-fox-dark">
-                            Результат проверки
-                            {homeworkReview.score !== undefined && homeworkReview.score !== null && (
-                              <span className="ml-2 text-fox-purple">{homeworkReview.score} балл(ов)</span>
-                            )}
+                )}
+
+                {activeTab === 'test' && activeLesson.test && (
+                  <div className="space-y-6">
+                    {attempt?.finished_at ? (
+                      <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30 space-y-3">
+                        <div>
+                          <div className="text-lg font-bold text-fox-dark">
+                            Результат: {attempt.score} / {attempt.max_score}
                           </div>
-                          {homeworkReview.comment && (
-                            <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
-                              {homeworkReview.comment}
-                            </p>
-                          )}
-                          <p className="text-xs text-fox-gray/70 mt-2">
-                            {new Date(homeworkReview.created_at).toLocaleString('ru-RU')}
-                          </p>
+                          <Badge variant={attempt.is_passed ? 'success' : 'error'} className="mt-2">
+                            {attempt.is_passed ? 'Тест пройден' : 'Тест не пройден'}
+                          </Badge>
                         </div>
+                        {!attempt.is_passed && (
+                          <Button onClick={handleRetryTest} loading={testSubmitting}>
+                            ↻ Повторить попытку
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {attempt?.started_at && (
+                          <p className="text-xs text-fox-gray">
+                            Попытка начата: {new Date(attempt.started_at).toLocaleString('ru-RU')}
+                          </p>
+                        )}
+                        {activeLesson.test.questions?.map((q, idx) => (
+                          <TestQuestionView
+                            key={q.id}
+                            index={idx}
+                            question={q}
+                            value={answers[q.id]}
+                            onChange={(v) => handleAnswerChange(q.id, v)}
+                          />
+                        ))}
+                        <Button onClick={handleSubmitTest} loading={testSubmitting}>
+                          Отправить ответы
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'homework' && (
+                  <div className="space-y-4">
+                    <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                      <div className="font-medium text-fox-dark">
+                        {activeLesson.homework_title || activeLesson.title}
+                      </div>
+                      {activeLesson.homework_description && (
+                        <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
+                          {activeLesson.homework_description}
+                        </p>
                       )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-fox-gray">Домашнее задание не назначено.</p>
-                  )}
-                </div>
-              )}
+                    </div>
+                    {homework ? (
+                      <>
+                        <textarea
+                          value={homeworkAnswer}
+                          onChange={(e) => setHomeworkAnswer(e.target.value)}
+                          disabled={homework.status !== 'assigned'}
+                          placeholder="Ваш ответ..."
+                          rows={6}
+                          className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
+                        />
+                        <div className="flex items-center gap-3">
+                          <Button
+                            onClick={handleSubmitHomework}
+                            loading={homeworkSubmitting}
+                            disabled={homework.status !== 'assigned'}
+                          >
+                            {homework.status === 'assigned' ? 'Отправить на проверку' : 'Ответ отправлен'}
+                          </Button>
+                          <Badge variant={homeworkStatusMeta(homework, homeworkReview).variant}>
+                            {homeworkStatusMeta(homework, homeworkReview).label}
+                          </Badge>
+                        </div>
+                        {homeworkReview && (
+                          <div className="bg-fox-light rounded-xl p-4 border border-fox-border/30">
+                            <div className="text-sm font-semibold text-fox-dark">
+                              Результат проверки
+                              {homeworkReview.score !== undefined && homeworkReview.score !== null && (
+                                <span className="ml-2 text-fox-purple">{homeworkReview.score} балл(ов)</span>
+                              )}
+                            </div>
+                            {homeworkReview.comment && (
+                              <p className="text-sm text-fox-gray mt-2 whitespace-pre-line">
+                                {homeworkReview.comment}
+                              </p>
+                            )}
+                            <p className="text-xs text-fox-gray/70 mt-2">
+                              {new Date(homeworkReview.created_at).toLocaleString('ru-RU')}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-fox-gray">Домашнее задание не назначено.</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'files' && (
+                  <div className="space-y-3">
+                    {(activeLesson.contents || [])
+                      .filter((c) => ['pdf', 'file'].includes(c.content_type))
+                      .map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center justify-between bg-fox-light rounded-xl p-4 border border-fox-border/30"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-fox-dark truncate">
+                              {c.title || 'Файл'}
+                            </div>
+                            <div className="text-xs text-fox-gray uppercase">{c.content_type}</div>
+                          </div>
+                          {(c.file_url || c.external_url) && (
+                            <a
+                              href={c.file_url || c.external_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1 text-sm text-fox-purple hover:text-fox-purple-dark"
+                            >
+                              <LuDownload size={16} />
+                              Открыть
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </Card>
           )}
         </div>

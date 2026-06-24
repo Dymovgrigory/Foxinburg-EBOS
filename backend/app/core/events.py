@@ -226,6 +226,7 @@ async def notify_lesson_available(
     event_type: SystemEventType, payload: dict, user_id: int
 ) -> None:
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
     from app.services.unit_of_work import UnitOfWork
     from app.services.notification_dispatcher import NotificationDispatcher
     from app.models.course import Course, Lesson, Module

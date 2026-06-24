@@ -78,6 +78,15 @@ export interface Lesson {
   test?: Test
 }
 
+export interface LessonPlayerData {
+  lesson: Lesson
+  progress?: LessonProgress
+  homework?: Homework
+  latest_test_attempt?: TestAttempt
+  can_complete: boolean
+  is_locked: boolean
+}
+
 export interface Schedule {
   id: number
   title: string

@@ -37,6 +37,7 @@ import type {
   Organization,
   Branch,
   LessonProgress,
+  LessonPlayerData,
   Directory,
   Survey,
   Achievement,
@@ -224,6 +225,7 @@ export const modulesApi = {
 
 export const lessonsApi = {
   get: (id: number) => api.get<ApiResponse<Lesson>>(`/lessons/${id}`).then(unwrap),
+  player: (id: number) => api.get<ApiResponse<LessonPlayerData>>(`/lessons/${id}/player`).then(unwrap),
   create: (data: Partial<Lesson> & { module_id: number }) =>
     api.post<ApiResponse<Lesson>>('/lessons', data).then(unwrap),
   update: (id: number, data: Partial<Lesson>) =>

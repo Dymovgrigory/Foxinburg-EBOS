@@ -1,16 +1,31 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select, desc
 
-from app.core.dependencies import require_permission
-from app.core.permissions import Permission
+from app.core.dependencies import require_permission, require_active_user
+from app.core.permissions import Permission, has_permission
 from app.core.responses import success_response, error_response
 from app.models.course import Lesson
-from app.schemas.course import LessonCreate, LessonUpdate, LessonResponse, LessonContentResponse
+from app.models.enrollment import Enrollment, LessonProgress
+from app.models.homework import Homework
+from app.models.test import TestAttempt
+from app.schemas.course import (
+    LessonCreate,
+    LessonUpdate,
+    LessonResponse,
+    LessonContentResponse,
+    LessonPlayerResponse,
+    LessonPlayerLessonResponse,
+    LessonTestPlayerResponse,
+    TestQuestionPlayerResponse,
+)
+from app.schemas.homework import HomeworkResponse
 from app.schemas.progress import LessonProgressResponse
-from app.schemas.test import TestQuestionResponse
+from app.schemas.test import TestQuestionResponse, TestAttemptResponse
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.lesson_service import LessonService
 from app.services.module_service import ModuleService
 from app.services.progress_service import ProgressService
+from app.utils import utc_now
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
 
@@ -36,6 +51,70 @@ def _lesson_detail_dict(lesson: Lesson) -> dict:
     return data
 
 
+_PREVIEW_ROLES = {"owner", "super_admin", "admin", "methodist", "teacher"}
+
+
+def _lesson_player_dict(
+    lesson: Lesson,
+    progress: LessonProgress | None,
+    homework: Homework | None,
+    latest_attempt: TestAttempt | None,
+    is_locked: bool,
+    can_complete: bool,
+) -> dict:
+    """Сериализует урок для плеера: без correct_answers, с прогрессом, ДЗ и попыткой."""
+    test = lesson.tests[0] if lesson.tests else None
+    test_data = None
+    if test:
+        test_data = {
+            "id": test.id,
+            "title": test.title,
+            "description": test.description,
+            "passing_score": test.passing_score,
+            "time_limit_minutes": test.time_limit_minutes,
+            "max_attempts": test.max_attempts,
+            "is_active": test.is_active,
+            "questions": [
+                {
+                    "id": q.id,
+                    "test_id": q.test_id,
+                    "question_text": q.question_text,
+                    "question_type": q.question_type,
+                    "options": q.options,
+                    "points": q.points,
+                    "order_index": q.order_index,
+                }
+                for q in test.questions
+            ],
+        }
+
+    lesson_data = {
+        "id": lesson.id,
+        "title": lesson.title,
+        "description": lesson.description,
+        "lesson_type": lesson.lesson_type,
+        "order_index": lesson.order_index,
+        "duration_minutes": lesson.duration_minutes,
+        "is_active": lesson.is_active,
+        "module_id": lesson.module_id,
+        "homework_title": lesson.homework_title,
+        "homework_description": lesson.homework_description,
+        "created_at": lesson.created_at,
+        "updated_at": lesson.updated_at,
+        "contents": [LessonContentResponse.model_validate(c).model_dump() for c in lesson.contents],
+        "test": test_data,
+    }
+
+    return {
+        "lesson": lesson_data,
+        "progress": LessonProgressResponse.model_validate(progress).model_dump() if progress else None,
+        "homework": HomeworkResponse.model_validate(homework).model_dump() if homework else None,
+        "latest_test_attempt": TestAttemptResponse.model_validate(latest_attempt).model_dump() if latest_attempt else None,
+        "is_locked": is_locked,
+        "can_complete": can_complete,
+    }
+
+
 @router.get("/{lesson_id}")
 async def get_lesson(
     lesson_id: int,
@@ -50,6 +129,98 @@ async def get_lesson(
         data=_lesson_detail_dict(lesson),
         message="Урок",
     )
+
+
+@router.get("/{lesson_id}/player")
+async def get_lesson_player(
+    lesson_id: int,
+    current_user=Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    lesson_service = LessonService(uow)
+    lesson = await lesson_service.get_by_id(lesson_id)
+    if not lesson:
+        return error_response("Урок не найден", status_code=404)
+
+    is_preview = current_user.role in _PREVIEW_ROLES
+    course_id = lesson.module.course_id
+
+    enrollment = None
+    if current_user.role == "student":
+        result = await uow.session.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == course_id,
+                Enrollment.status.in_(["active", "completed", "paused"]),
+            )
+        )
+        enrollment = result.scalar_one_or_none()
+        if not enrollment:
+            return error_response("Вы не зачислены на этот курс", status_code=403)
+    elif not is_preview:
+        return error_response("Недостаточно прав доступа", status_code=403)
+
+    progress_service = ProgressService(uow)
+    progress = None
+    is_locked = False
+    can_complete = False
+
+    if current_user.role == "student" and enrollment is not None:
+        progress = await progress_service.get_lesson_progress(current_user.id, lesson_id)
+        if not progress:
+            progress_rows = await progress_service.ensure_progress_records_for_enrollment(enrollment.id)
+            progress = next((p for p in progress_rows if p.lesson_id == lesson_id), None)
+
+        if progress:
+            is_locked = progress.status == "locked"
+            can_complete = progress.status in ("available", "in_progress")
+            if progress.status == "available":
+                progress.status = "in_progress"
+                await uow.session.flush()
+        else:
+            is_locked = True
+    elif is_preview:
+        progress = await progress_service.get_lesson_progress(current_user.id, lesson_id)
+        can_complete = True
+
+    if is_locked:
+        return error_response("Урок заблокирован. Завершите предыдущие уроки.", status_code=403)
+
+    # Домашнее задание студента (или любое для преподавателя/методиста)
+    homework = None
+    if current_user.role == "student":
+        result = await uow.session.execute(
+            select(Homework)
+            .where(
+                Homework.student_id == current_user.id,
+                Homework.lesson_id == lesson_id,
+            )
+            .order_by(desc(Homework.created_at))
+        )
+        homework = result.scalar_one_or_none()
+    else:
+        result = await uow.session.execute(
+            select(Homework)
+            .where(Homework.lesson_id == lesson_id)
+            .order_by(desc(Homework.created_at))
+        )
+        homework = result.scalar_one_or_none()
+
+    # Последняя попытка теста студента
+    latest_attempt = None
+    if current_user.role == "student" and lesson.tests:
+        result = await uow.session.execute(
+            select(TestAttempt)
+            .where(
+                TestAttempt.student_id == current_user.id,
+                TestAttempt.test_id == lesson.tests[0].id,
+            )
+            .order_by(desc(TestAttempt.started_at))
+        )
+        latest_attempt = result.scalar_one_or_none()
+
+    data = _lesson_player_dict(lesson, progress, homework, latest_attempt, is_locked, can_complete)
+    return success_response(data=data, message="Урок для прохождения")
 
 
 @router.post("")

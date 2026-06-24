@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     # Telegram notifications
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_BOT_USERNAME: str = ""
+    TELEGRAM_PROXY_URL: str | None = None  # socks5://user:pass@host:port или http://proxy:port
 
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""

@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 
 from telegram import Bot
+from telegram.request import HTTPXRequest
 
 from app.config import settings
 
@@ -19,7 +20,10 @@ class TelegramService:
         if not self.token:
             return None
         if self._bot is None:
-            self._bot = Bot(token=self.token)
+            request = None
+            if settings.TELEGRAM_PROXY_URL:
+                request = HTTPXRequest(proxy_url=settings.TELEGRAM_PROXY_URL)
+            self._bot = Bot(token=self.token, request=request)
         return self._bot
 
     async def send_message(self, chat_id: str, text: str) -> bool:

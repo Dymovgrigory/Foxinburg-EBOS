@@ -32,19 +32,41 @@ async def max_webhook(
     updates = payload if isinstance(payload, list) else [payload]
     for update in updates:
         update_type = update.get("type") or update.get("update_type")
-        if update_type in ("bot_started", "message_created"):
-            user_id = None
-            if "sender" in update:
-                user_id = str(update["sender"].get("user_id"))
-            elif "user" in update:
-                user_id = str(update["user"].get("id"))
-            elif "payload" in update and isinstance(update["payload"], dict):
-                user_id = str(update["payload"].get("user_id"))
 
+        if update_type == "bot_started":
+            user_id = _extract_user_id(update)
             if user_id:
                 await MaxService.send_welcome(user_id)
 
+        elif update_type == "message_created":
+            message = update.get("message") or update
+            sender = message.get("sender") or {}
+            # Не отвечаем на свои же сообщения
+            if sender.get("is_bot"):
+                continue
+            text = (message.get("body") or {}).get("text", "").strip().lower()
+            if text in ("/start", "start", "привет"):
+                user_id = str(sender.get("user_id"))
+                if user_id:
+                    await MaxService.send_welcome(user_id)
+
+        elif update_type == "message_callback":
+            # Пока просто подтверждаем callback, чтобы кнопка не зависала
+            callback_id = update.get("callback_id") or update.get("id")
+            if callback_id:
+                await MaxService.answer_callback(callback_id)
+
     return success_response(message="OK")
+
+
+def _extract_user_id(update: dict) -> Optional[str]:
+    if "sender" in update:
+        return str(update["sender"].get("user_id")) if update["sender"].get("user_id") else None
+    if "user" in update:
+        return str(update["user"].get("id")) if update["user"].get("id") else None
+    if "payload" in update and isinstance(update["payload"], dict):
+        return str(update["payload"].get("user_id")) if update["payload"].get("user_id") else None
+    return None
 
 
 @router.get("/miniapp-info")
@@ -53,7 +75,7 @@ async def max_miniapp_info(
 ):
     bot_info = await MaxService.get_bot_info()
     bot_username = bot_info.get("username") if bot_info else None
-    link_token = MaxService.generate_link_token(current_user.id)
+    link_token = await MaxService.generate_link_token(current_user.id)
     return success_response(
         data={
             "bot_username": bot_username,
@@ -73,7 +95,7 @@ async def max_link(
     init_data = data.get("init_data")
     link_token = data.get("token")
 
-    user_id = MaxService.verify_link_token(link_token)
+    user_id = await MaxService.verify_link_token(link_token)
     if not user_id:
         return error_response("Ссылка устарела или недействительна", status_code=400)
 

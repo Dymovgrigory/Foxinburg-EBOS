@@ -1,11 +1,11 @@
 import hashlib
 import hmac
 import logging
+import secrets
 import urllib.parse
 from typing import Optional
 
 import httpx
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from app.config import settings
 
@@ -78,6 +78,31 @@ class MaxService:
             return False
 
     @staticmethod
+    async def answer_callback(callback_id: str, notification: Optional[str] = None) -> bool:
+        if not settings.MAX_BOT_TOKEN:
+            return False
+        url = f"{settings.MAX_BOT_API_URL.rstrip('/')}/answers"
+        params = {"callback_id": callback_id}
+        body: dict = {}
+        if notification:
+            body["notification"] = notification
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    url,
+                    params=params,
+                    headers={
+                        "Authorization": settings.MAX_BOT_TOKEN,
+                        "Content-Type": "application/json",
+                    },
+                    json=body,
+                )
+            return response.status_code == 200
+        except Exception as e:
+            logger.exception("Ошибка answer_callback MAX: %s", e)
+            return False
+
+    @staticmethod
     async def send_welcome(user_id: str) -> bool:
         text = (
             "Добро пожаловать в Foxinburg! 🦊\n\n"
@@ -123,24 +148,32 @@ class MaxService:
         return await MaxService.send_message(user_id, text, attachments=attachments)
 
     @staticmethod
-    def generate_link_token(user_id: int) -> str:
-        serializer = URLSafeTimedSerializer(
-            settings.MAX_LINK_TOKEN_SECRET,
-            salt="max-link",
-        )
-        return serializer.dumps({"user_id": user_id})
+    async def generate_link_token(user_id: int) -> str:
+        token = secrets.token_urlsafe(32)
+        # start_param в MAX допускает только A-Za-z0-9_-
+        token = "".join(c for c in token if c.isalnum() or c in "_-")
+        try:
+            from app.services.redis_client import get_redis
+
+            redis = await get_redis()
+            await redis.setex(f"max:link:{token}", 600, str(user_id))
+        except Exception:
+            logger.exception("Ошибка записи MAX link token в Redis")
+        return token
 
     @staticmethod
-    def verify_link_token(token: str, max_age: int = 600) -> Optional[int]:
-        serializer = URLSafeTimedSerializer(
-            settings.MAX_LINK_TOKEN_SECRET,
-            salt="max-link",
-        )
+    async def verify_link_token(token: str) -> Optional[int]:
         try:
-            data = serializer.loads(token, max_age=max_age)
-            return data.get("user_id")
-        except (BadSignature, SignatureExpired):
-            return None
+            from app.services.redis_client import get_redis
+
+            redis = await get_redis()
+            user_id = await redis.get(f"max:link:{token}")
+            if user_id:
+                await redis.delete(f"max:link:{token}")
+                return int(user_id)
+        except Exception:
+            logger.exception("Ошибка чтения MAX link token из Redis")
+        return None
 
     @staticmethod
     def verify_init_data(init_data: str) -> Optional[dict]:

@@ -29,17 +29,18 @@ export default function MaxLinkPage() {
       const WebApp = window.WebApp
       if (!WebApp) {
         setStatus('error')
-        setMessage('Не удалось загрузить MAX Bridge')
+        setMessage('Не удалось загрузить MAX Bridge. Откройте приложение из чата с ботом MAX.')
         return
       }
       WebApp.ready()
-      const token = WebApp.initDataUnsafe?.start_param || ''
+      const urlParams = new URLSearchParams(window.location.search)
+      let token = WebApp.initDataUnsafe?.start_param || urlParams.get('startapp') || ''
       const initData = WebApp.initData || ''
       linkAccount(token, initData)
     }
     script.onerror = () => {
       setStatus('error')
-      setMessage('Ошибка загрузки MAX Bridge')
+      setMessage('Ошибка загрузки MAX Bridge. Откройте приложение из чата с ботом MAX.')
     }
     document.body.appendChild(script)
     return () => {
@@ -50,7 +51,7 @@ export default function MaxLinkPage() {
   const linkAccount = async (token: string, initData: string) => {
     if (!token || !initData) {
       setStatus('error')
-      setMessage('Не получены данные из MAX. Откройте приложение из чата с ботом.')
+      setMessage('Данные из MAX не получены. Откройте приложение через кнопку «Привязать MAX» в настройках Foxinburg или из чата с ботом.')
       return
     }
     try {

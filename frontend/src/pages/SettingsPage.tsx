@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Input, Badge } from '../components/ui'
-import TelegramLinkSection from '../components/TelegramLinkSection'
+import MaxLinkSection from '../components/MaxLinkSection'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../api'
 import { LuBell, LuLock, LuUser, LuWrench, LuSave, LuKeyRound } from 'react-icons/lu'
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                 </h2>
                 <div className="space-y-4">
                   <NotificationRow title="Email-уведомления" description="Получать важные уведомления на email." />
-                  <TelegramLinkSection />
+                  <MaxLinkSection />
                   <NotificationRow title="Расписание" description="Уведомления о предстоящих занятиях." />
                 </div>
               </Card>

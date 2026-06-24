@@ -1,7 +1,11 @@
+import hashlib
+import hmac
 import logging
+import urllib.parse
 from typing import Optional
 
 import httpx
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from app.config import settings
 
@@ -9,13 +13,33 @@ logger = logging.getLogger(__name__)
 
 
 class MaxService:
-    """Отправка уведомлений через бота МАКС (business.max.ru)."""
+    """Отправка уведомлений и работа с ботом МАКС (business.max.ru)."""
+
+    @staticmethod
+    async def get_bot_info() -> Optional[dict]:
+        if not settings.MAX_BOT_TOKEN:
+            return None
+        url = f"{settings.MAX_BOT_API_URL.rstrip('/')}/me"
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.get(
+                    url,
+                    headers={"Authorization": settings.MAX_BOT_TOKEN},
+                )
+            if response.status_code == 200:
+                return response.json()
+            logger.error("Ошибка MAX /me: status=%s body=%s", response.status_code, response.text)
+            return None
+        except Exception as e:
+            logger.exception("Ошибка MAX /me: %s", e)
+            return None
 
     @staticmethod
     async def send_message(
         user_id: str,
         text: str,
         chat_id: Optional[str] = None,
+        attachments: Optional[list] = None,
     ) -> bool:
         if not settings.MAX_BOT_TOKEN:
             logger.warning("MAX бот не настроен, сообщение не отправлено")
@@ -26,6 +50,10 @@ class MaxService:
         if chat_id:
             params["chat_id"] = chat_id
 
+        body: dict = {"text": text}
+        if attachments:
+            body["attachments"] = attachments
+
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.post(
@@ -35,7 +63,7 @@ class MaxService:
                         "Authorization": settings.MAX_BOT_TOKEN,
                         "Content-Type": "application/json",
                     },
-                    json={"text": text},
+                    json=body,
                 )
             if response.status_code == 200:
                 return True
@@ -48,3 +76,108 @@ class MaxService:
         except Exception as e:
             logger.exception("Ошибка отправки MAX: %s", e)
             return False
+
+    @staticmethod
+    async def send_welcome(user_id: str) -> bool:
+        text = (
+            "Добро пожаловать в Foxinburg! 🦊\n\n"
+            "Здесь вы будете получать уведомления о занятиях, домашних заданиях и курсах."
+        )
+        attachments = [
+            {
+                "type": "inline_keyboard",
+                "payload": {
+                    "buttons": [
+                        [
+                            {
+                                "type": "link",
+                                "text": "О школе",
+                                "url": "https://foxinburg.ru",
+                            }
+                        ],
+                        [
+                            {
+                                "type": "link",
+                                "text": "Курсы",
+                                "url": "https://foxinburg.ru/courses",
+                            }
+                        ],
+                        [
+                            {
+                                "type": "link",
+                                "text": "Привязать аккаунт",
+                                "url": "https://foxinburg.ru/settings",
+                            }
+                        ],
+                        [
+                            {
+                                "type": "link",
+                                "text": "Поддержка",
+                                "url": "https://foxinburg.ru",
+                            }
+                        ],
+                    ]
+                },
+            }
+        ]
+        return await MaxService.send_message(user_id, text, attachments=attachments)
+
+    @staticmethod
+    def generate_link_token(user_id: int) -> str:
+        serializer = URLSafeTimedSerializer(
+            settings.MAX_LINK_TOKEN_SECRET,
+            salt="max-link",
+        )
+        return serializer.dumps({"user_id": user_id})
+
+    @staticmethod
+    def verify_link_token(token: str, max_age: int = 600) -> Optional[int]:
+        serializer = URLSafeTimedSerializer(
+            settings.MAX_LINK_TOKEN_SECRET,
+            salt="max-link",
+        )
+        try:
+            data = serializer.loads(token, max_age=max_age)
+            return data.get("user_id")
+        except (BadSignature, SignatureExpired):
+            return None
+
+    @staticmethod
+    def verify_init_data(init_data: str) -> Optional[dict]:
+        """Проверяет подпись initData из MAX Bridge и возвращает user.id."""
+        if not settings.MAX_BOT_TOKEN or not init_data:
+            return None
+
+        parsed = urllib.parse.parse_qs(init_data)
+        received_hash = parsed.pop("hash", [None])[0]
+        if not received_hash:
+            return None
+
+        data_pairs = []
+        for key in sorted(parsed.keys()):
+            for value in sorted(parsed[key]):
+                data_pairs.append(f"{key}={value}")
+        data_check_string = "\n".join(data_pairs)
+
+        secret = hmac.new(
+            key=b"WebAppData" + settings.MAX_BOT_TOKEN.encode(),
+            msg=b"",
+            digestmod=hashlib.sha256,
+        ).digest()
+        computed_hash = hmac.new(
+            key=secret,
+            msg=data_check_string.encode(),
+            digestmod=hashlib.sha256,
+        ).hexdigest()
+
+        if not hmac.compare_digest(computed_hash, received_hash):
+            return None
+
+        user_raw = parsed.get("user", ["{}"])[0]
+        try:
+            import json
+
+            user = json.loads(user_raw)
+            return {"user_id": str(user.get("id"))}
+        except Exception:
+            return None

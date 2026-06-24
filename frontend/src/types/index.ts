@@ -20,6 +20,7 @@ export interface User {
   branch_id?: number | null
   group_id?: number | null
   telegram_chat_id?: string | null
+  max_user_id?: string | null
   last_login_at?: string
   created_at?: string
   position?: string | null

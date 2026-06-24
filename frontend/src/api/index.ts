@@ -66,6 +66,8 @@ export const authApi = {
     api.get<ApiResponse<{ bot_username: string; bot_link: string }>>('/users/me/telegram-info').then(unwrap),
   linkTelegram: (data: { telegram_chat_id?: string; id?: number; hash?: string; auth_date?: number; first_name?: string; last_name?: string; username?: string; photo_url?: string }) =>
     api.patch<ApiResponse<User>>('/users/me/telegram', data).then(unwrap),
+  getMaxMiniappInfo: () =>
+    api.get<ApiResponse<{ bot_username: string | null; link_token: string; miniapp_url: string }>>('/max/miniapp-info').then(unwrap),
   changePassword: (current_password: string, new_password: string) =>
     api.patch<ApiResponse<void>>('/auth/me/password', { current_password, new_password }).then(unwrap),
 }

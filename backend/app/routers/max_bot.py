@@ -86,6 +86,8 @@ async def max_webhook(
 
 
 def _extract_user_id(update: dict) -> Optional[str]:
+    if "user_id" in update and update.get("user_id"):
+        return str(update["user_id"])
     if "sender" in update:
         return str(update["sender"].get("user_id")) if update["sender"].get("user_id") else None
     if "user" in update:

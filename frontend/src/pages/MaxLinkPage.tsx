@@ -34,7 +34,11 @@ export default function MaxLinkPage() {
       }
       WebApp.ready()
       const urlParams = new URLSearchParams(window.location.search)
-      let token = WebApp.initDataUnsafe?.start_param || urlParams.get('startapp') || ''
+      let token =
+        WebApp.initDataUnsafe?.start_param ||
+        urlParams.get('token') ||
+        urlParams.get('startapp') ||
+        ''
       const initData = WebApp.initData || ''
       linkAccount(token, initData)
     }

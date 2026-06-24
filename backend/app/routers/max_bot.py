@@ -7,6 +7,7 @@ from app.core.responses import success_response, error_response
 from app.core.dependencies import require_active_user
 from app.models.user import User
 from app.schemas.user import UserResponse
+from app.services.ai_service import AiService
 from app.services.max_service import MaxService
 from app.services.unit_of_work import UnitOfWork, get_uow
 
@@ -44,11 +45,29 @@ async def max_webhook(
             # Не отвечаем на свои же сообщения
             if sender.get("is_bot"):
                 continue
-            text = (message.get("body") or {}).get("text", "").strip().lower()
-            if text in ("/start", "start", "привет"):
-                user_id = str(sender.get("user_id"))
-                if user_id:
-                    await MaxService.send_welcome(user_id)
+            user_id = str(sender.get("user_id")) if sender.get("user_id") else None
+            if not user_id:
+                continue
+            text = (message.get("body") or {}).get("text", "").strip()
+            lowered = text.lower()
+            if lowered in ("/start", "start", "привет"):
+                await MaxService.send_welcome(user_id)
+            elif lowered in ("/help", "помощь"):
+                await MaxService.send_message(
+                    user_id,
+                    "Доступные возможности:\n"
+                    "• Напишите любой вопрос — ответит AI-помощник\n"
+                    "• /start — показать приветствие\n"
+                    "• /help — эта справка\n\n"
+                    "Для привязки аккаунта откройте личный кабинет на сайте.",
+                )
+            elif lowered.startswith("/"):
+                await MaxService.send_message(
+                    user_id,
+                    "Я не знаю такой команды. Напишите /help или просто задайте вопрос.",
+                )
+            else:
+                await _handle_ai_message(user_id, text, uow)
 
         elif update_type == "message_callback":
             # Пока просто подтверждаем callback, чтобы кнопка не зависала
@@ -67,6 +86,20 @@ def _extract_user_id(update: dict) -> Optional[str]:
     if "payload" in update and isinstance(update["payload"], dict):
         return str(update["payload"].get("user_id")) if update["payload"].get("user_id") else None
     return None
+
+
+async def _handle_ai_message(user_id: str, text: str, uow: UnitOfWork) -> None:
+    service = AiService(uow)
+    try:
+        reply, provider = await service.get_reply(text)
+    except Exception:
+        reply = (
+            "Произошла ошибка при обработке вопроса. "
+            "Попробуйте позже или обратитесь к администратору."
+        )
+        provider = "error"
+    prefix = "🤖 AI-помощник:\n\n" if provider in ("yandexgpt", "rule") else ""
+    await MaxService.send_message(user_id, f"{prefix}{reply}")
 
 
 @router.get("/miniapp-info")

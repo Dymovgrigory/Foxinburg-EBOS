@@ -128,6 +128,34 @@ async def max_miniapp_info(
     )
 
 
+@router.post("/link-in-app")
+async def max_link_in_app(
+    data: dict,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Привязывает MAX-аккаунт к текущему пользователю из мини-приложения."""
+    init_data = data.get("init_data")
+
+    init_info = MaxService.verify_init_data(init_data)
+    if not init_info or not init_info.get("user_id"):
+        return error_response("Неверные данные MAX", status_code=400)
+
+    result = await uow.session.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return error_response("Пользователь не найден", status_code=404)
+
+    user.max_user_id = init_info["user_id"]
+    await uow.commit()
+    await uow.session.refresh(user)
+
+    return success_response(
+        data=UserResponse.model_validate(user).model_dump(),
+        message="MAX успешно привязан",
+    )
+
+
 @router.post("/link")
 async def max_link(
     data: dict,

@@ -104,6 +104,7 @@ class MaxService:
 
     @staticmethod
     async def send_welcome(user_id: str) -> bool:
+        logger.warning("MAX send_welcome called for user_id=%s token_set=%s", user_id, bool(settings.MAX_BOT_TOKEN))
         text = (
             "Добро пожаловать в Foxinburg! 🦊\n\n"
             "Здесь вы будете получать уведомления о занятиях, домашних заданиях и курсах.\n\n"

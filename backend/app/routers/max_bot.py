@@ -36,14 +36,14 @@ async def max_webhook(
     updates = payload if isinstance(payload, list) else [payload]
     for update in updates:
         update_type = update.get("type") or update.get("update_type")
-        logger.info("MAX webhook update_type=%s", update_type)
+        logger.warning("MAX webhook update_type=%s payload_keys=%s", update_type, list(update.keys()))
 
         if update_type == "bot_started":
             user_id = _extract_user_id(update)
-            logger.info("MAX bot_started user_id=%s", user_id)
+            logger.warning("MAX bot_started user_id=%s", user_id)
             if user_id:
                 ok = await MaxService.send_welcome(user_id)
-                logger.info("MAX send_welcome result=%s", ok)
+                logger.warning("MAX send_welcome result=%s", ok)
 
         elif update_type == "message_created":
             message = update.get("message") or update
@@ -55,7 +55,7 @@ async def max_webhook(
             if not user_id:
                 continue
             text = (message.get("body") or {}).get("text", "").strip()
-            logger.info("MAX message_created user_id=%s text=%s", user_id, text)
+            logger.warning("MAX message_created user_id=%s text=%s", user_id, text)
             lowered = text.lower()
             if lowered in ("/start", "start", "привет"):
                 await MaxService.send_welcome(user_id)

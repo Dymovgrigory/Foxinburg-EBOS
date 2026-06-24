@@ -27,7 +27,7 @@ from app.routers import (
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
-    role_config,
+    role_config, dashboard,
     # system_settings is part of system router
 )
 from app.admin import setup_admin
@@ -218,6 +218,7 @@ app.include_router(reports.router, prefix="/api/v3")
 app.include_router(surveys.router, prefix="/api/v3")
 app.include_router(hr.router, prefix="/api/v3")
 app.include_router(role_config.router, prefix="/api/v3")
+app.include_router(dashboard.router, prefix="/api/v3")
 
 setup_admin(app)
 

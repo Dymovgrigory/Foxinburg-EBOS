@@ -69,6 +69,10 @@ export const authApi = {
     api.patch<ApiResponse<void>>('/auth/me/password', { current_password, new_password }).then(unwrap),
 }
 
+export const dashboardApi = {
+  summary: () => api.get<ApiResponse<any>>('/dashboard/summary').then(unwrap),
+}
+
 export const usersApi = {
   list: () => api.get<ApiResponse<User[]>>('/users').then(unwrap),
   listStudents: () => api.get<ApiResponse<User[]>>('/users/students').then(unwrap),

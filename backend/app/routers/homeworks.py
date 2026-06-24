@@ -108,8 +108,19 @@ async def assign_homework_to_lesson(
     if not enrollments:
         return error_response("Активные ученики не найдены", status_code=404)
 
+    student_ids = [enrollment.student_id for enrollment in enrollments]
+    existing_result = await uow.session.execute(
+        select(Homework.student_id).where(
+            Homework.lesson_id == data.lesson_id,
+            Homework.student_id.in_(student_ids),
+        )
+    )
+    existing_student_ids = set(existing_result.scalars().all())
+
     created = []
     for enrollment in enrollments:
+        if enrollment.student_id in existing_student_ids:
+            continue
         homework = Homework(
             lesson_id=data.lesson_id,
             student_id=enrollment.student_id,
@@ -121,6 +132,15 @@ async def assign_homework_to_lesson(
         )
         uow.session.add(homework)
         created.append(homework)
+
+    await uow.session.flush()
+    for h in created:
+        await EventBus.publish(
+            uow,
+            SystemEventType.HOMEWORK_ASSIGNED,
+            {"homework_id": h.id, "student_id": h.student_id, "lesson_id": h.lesson_id},
+            user_id=current_user.id,
+        )
 
     await uow.commit()
     for h in created:
@@ -203,15 +223,15 @@ async def submit_homework(
     homework.status = "submitted"
     homework.submitted_at = utc_now()
 
-    await uow.commit()
-    await uow.session.refresh(homework)
-
     await EventBus.publish(
         uow,
         SystemEventType.HOMEWORK_SUBMITTED,
         {"homework_id": homework.id, "student_id": current_user.id},
         user_id=current_user.id,
     )
+
+    await uow.commit()
+    await uow.session.refresh(homework)
 
     return success_response(
         data=HomeworkResponse.model_validate(homework).model_dump(),
@@ -240,6 +260,8 @@ async def create_review(
     uow.session.add(review)
     homework.status = _review_status_to_homework_status(data.status)
 
+    await uow.session.flush()
+
     if data.status == "approved":
         progress_service = ProgressService(uow)
         try:
@@ -247,9 +269,6 @@ async def create_review(
         except ValueError:
             # Урок уже завершён или не может быть завершён автоматически
             pass
-
-    await uow.commit()
-    await uow.session.refresh(review)
 
     await EventBus.publish(
         uow,
@@ -261,6 +280,9 @@ async def create_review(
         },
         user_id=current_user.id,
     )
+
+    await uow.commit()
+    await uow.session.refresh(review)
 
     return success_response(
         data=HomeworkReviewResponse.model_validate(review).model_dump(),

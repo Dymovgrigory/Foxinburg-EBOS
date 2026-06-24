@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.models.test import Test, TestQuestion, TestAttempt
 from app.services.unit_of_work import UnitOfWork
 from app.services.base_service import BaseService
+from app.core.events import EventBus, SystemEventType
 from app.utils import utc_now
 
 
@@ -56,6 +57,20 @@ class TestService(BaseService[Test]):
 
         await self.uow.session.flush()
         await self.uow.session.refresh(attempt)
+
+        await EventBus.publish(
+            self.uow,
+            SystemEventType.TEST_PASSED if attempt.is_passed else SystemEventType.TEST_FAILED,
+            {
+                "attempt_id": attempt.id,
+                "test_id": test.id,
+                "student_id": attempt.student_id,
+                "lesson_id": test.lesson_id,
+                "score": attempt.score,
+                "max_score": attempt.max_score,
+            },
+            user_id=attempt.student_id,
+        )
 
         if attempt.is_passed:
             from app.services.progress_service import ProgressService

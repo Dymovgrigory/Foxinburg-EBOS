@@ -15,6 +15,7 @@ from app.services.progress_service import ProgressService
 from app.services.audit_service import AuditService
 from app.services.chat_service import ChatService
 from app.core.events import EventBus, SystemEventType
+from sqlalchemy.orm import selectinload
 from app.utils import utc_now
 
 
@@ -143,9 +144,24 @@ class EnrollmentService(BaseService[Enrollment]):
         if not course:
             return
 
+        homework_lesson_ids = [
+            lesson.id
+            for module in course.modules
+            for lesson in module.lessons
+            if lesson.lesson_type == "homework"
+        ]
+        existing_result = await self.uow.session.execute(
+            select(Homework.lesson_id).where(
+                Homework.student_id == student_id,
+                Homework.lesson_id.in_(homework_lesson_ids),
+            )
+        )
+        existing_lesson_ids = set(existing_result.scalars().all())
+
+        created = []
         for module in course.modules:
             for lesson in module.lessons:
-                if lesson.lesson_type == "homework":
+                if lesson.lesson_type == "homework" and lesson.id not in existing_lesson_ids:
                     homework = Homework(
                         lesson_id=lesson.id,
                         student_id=student_id,
@@ -154,3 +170,18 @@ class EnrollmentService(BaseService[Enrollment]):
                         status="assigned",
                     )
                     self.uow.session.add(homework)
+                    created.append(homework)
+
+        if created:
+            await self.uow.session.flush()
+            for homework in created:
+                await EventBus.publish(
+                    self.uow,
+                    SystemEventType.HOMEWORK_ASSIGNED,
+                    {
+                        "homework_id": homework.id,
+                        "student_id": homework.student_id,
+                        "lesson_id": homework.lesson_id,
+                    },
+                    user_id=student_id,
+                )

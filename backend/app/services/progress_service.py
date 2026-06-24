@@ -227,9 +227,11 @@ class ProgressService(BaseService[LessonProgress]):
 
     async def _ensure_homework_approved(self, student_id: int, lesson_id: int) -> None:
         hw_result = await self.uow.session.execute(
-            select(Homework).where(Homework.lesson_id == lesson_id, Homework.student_id == student_id)
+            select(Homework)
+            .where(Homework.lesson_id == lesson_id, Homework.student_id == student_id)
+            .order_by(desc(Homework.id))
         )
-        homework = hw_result.scalar_one_or_none()
+        homework = hw_result.scalars().first()
         if not homework:
             raise ValueError("Домашнее задание не назначено")
         if homework.status != "reviewed":

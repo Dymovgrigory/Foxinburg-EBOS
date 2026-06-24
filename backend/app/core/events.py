@@ -28,6 +28,7 @@ class SystemEventType(str, Enum):
 
     HOMEWORK_SUBMITTED = "homework.submitted"
     HOMEWORK_REVIEWED = "homework.reviewed"
+    HOMEWORK_ASSIGNED = "homework.assigned"
 
     LEAD_CREATED = "lead.created"
     LEAD_CONVERTED = "lead.converted"
@@ -229,12 +230,10 @@ async def notify_lesson_available(
     from sqlalchemy.orm import selectinload
     from app.services.unit_of_work import UnitOfWork
     from app.services.notification_dispatcher import NotificationDispatcher
-    from app.models.course import Course, Lesson, Module
-    from app.models.enrollment import Enrollment
+    from app.models.course import Lesson, Module
 
     student_id = payload.get("student_id")
     lesson_id = payload.get("lesson_id")
-    enrollment_id = payload.get("enrollment_id")
     if not student_id or not lesson_id:
         return
 
@@ -245,19 +244,31 @@ async def notify_lesson_available(
             .options(selectinload(Lesson.module).selectinload(Module.course))
         )
         lesson = lesson_result.scalar_one_or_none()
-        if not lesson or lesson.module.course.type != "teacher_academy":
+        if not lesson:
             return
 
         dispatcher = NotificationDispatcher(uow)
-        await dispatcher.notify_user(
-            user_id=student_id,
-            title="Доступен новый модуль Академии",
-            message=f"Модуль «{lesson.module.title}» открыт для прохождения.",
-            type_="academy",
-            link="/academy",
-            entity_type="lesson",
-            entity_id=lesson_id,
-        )
+        course = lesson.module.course
+        if course.type == "teacher_academy":
+            await dispatcher.notify_user(
+                user_id=student_id,
+                title="Доступен новый модуль Академии",
+                message=f"Модуль «{lesson.module.title}» открыт для прохождения.",
+                type_="academy",
+                link="/academy",
+                entity_type="lesson",
+                entity_id=lesson_id,
+            )
+        else:
+            await dispatcher.notify_user(
+                user_id=student_id,
+                title="Доступен новый урок",
+                message=f"Урок «{lesson.title}» курса «{course.title}» открыт для прохождения.",
+                type_="course",
+                link=f"/courses/{course.id}/learn",
+                entity_type="lesson",
+                entity_id=lesson_id,
+            )
         await uow.commit()
 
 
@@ -268,12 +279,10 @@ async def notify_lesson_completed(
     from sqlalchemy.orm import selectinload
     from app.services.unit_of_work import UnitOfWork
     from app.services.notification_dispatcher import NotificationDispatcher
-    from app.models.course import Course, Lesson, Module
-    from app.models.enrollment import Enrollment
+    from app.models.course import Lesson, Module
 
     student_id = payload.get("student_id")
     lesson_id = payload.get("lesson_id")
-    enrollment_id = payload.get("enrollment_id")
     if not student_id or not lesson_id:
         return
 
@@ -284,19 +293,31 @@ async def notify_lesson_completed(
             .options(selectinload(Lesson.module).selectinload(Module.course))
         )
         lesson = lesson_result.scalar_one_or_none()
-        if not lesson or lesson.module.course.type != "teacher_academy":
+        if not lesson:
             return
 
         dispatcher = NotificationDispatcher(uow)
-        await dispatcher.notify_user(
-            user_id=student_id,
-            title="Модуль Академии завершён",
-            message=f"Вы завершили модуль «{lesson.module.title}».",
-            type_="academy",
-            link="/academy",
-            entity_type="lesson",
-            entity_id=lesson_id,
-        )
+        course = lesson.module.course
+        if course.type == "teacher_academy":
+            await dispatcher.notify_user(
+                user_id=student_id,
+                title="Модуль Академии завершён",
+                message=f"Вы завершили модуль «{lesson.module.title}».",
+                type_="academy",
+                link="/academy",
+                entity_type="lesson",
+                entity_id=lesson_id,
+            )
+        else:
+            await dispatcher.notify_user(
+                user_id=student_id,
+                title="Урок завершён",
+                message=f"Вы завершили урок «{lesson.title}» курса «{course.title}».",
+                type_="course",
+                link=f"/courses/{course.id}/learn",
+                entity_type="lesson",
+                entity_id=lesson_id,
+            )
         await uow.commit()
 
 
@@ -308,6 +329,7 @@ async def notify_homework_reviewed(
     from app.services.unit_of_work import UnitOfWork
     from app.services.notification_dispatcher import NotificationDispatcher
     from app.models.homework import Homework, HomeworkReview
+    from app.models.course import Lesson, Module
 
     homework_id = payload.get("homework_id")
     if not homework_id:
@@ -325,7 +347,8 @@ async def notify_homework_reviewed(
 
         dispatcher = NotificationDispatcher(uow)
         status_text = "принято" if homework.status == "reviewed" else "требует доработки"
-        link = "/academy" if homework.lesson.module.course.type == "teacher_academy" else "/homeworks"
+        course = homework.lesson.module.course
+        link = "/academy" if course.type == "teacher_academy" else f"/courses/{course.id}/learn"
         await dispatcher.notify_user(
             user_id=homework.student_id,
             title="Домашнее задание проверено",
@@ -405,8 +428,94 @@ async def notify_homework_submitted(
         await uow.commit()
 
 
+async def notify_homework_assigned(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.homework import Homework
+    from app.models.course import Lesson, Module
+
+    homework_id = payload.get("homework_id")
+    if not homework_id:
+        return
+
+    async with UnitOfWork() as uow:
+        hw_result = await uow.session.execute(
+            select(Homework)
+            .where(Homework.id == homework_id)
+            .options(selectinload(Homework.lesson).selectinload(Lesson.module).selectinload(Module.course))
+        )
+        homework = hw_result.scalar_one_or_none()
+        if not homework:
+            return
+
+        dispatcher = NotificationDispatcher(uow)
+        course = homework.lesson.module.course
+        await dispatcher.notify_user(
+            user_id=homework.student_id,
+            title="Новое домашнее задание",
+            message=f"Вам назначено задание по уроку «{homework.lesson.title}».",
+            type_="homework",
+            link=f"/courses/{course.id}/learn",
+            entity_type="homework",
+            entity_id=homework_id,
+        )
+        await uow.commit()
+
+
+async def notify_test_result(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.notification_dispatcher import NotificationDispatcher
+    from app.models.test import Test, TestAttempt
+    from app.models.course import Lesson, Module
+
+    attempt_id = payload.get("attempt_id")
+    if not attempt_id:
+        return
+
+    async with UnitOfWork() as uow:
+        attempt_result = await uow.session.execute(
+            select(TestAttempt)
+            .where(TestAttempt.id == attempt_id)
+            .options(selectinload(TestAttempt.test).selectinload(Test.lesson).selectinload(Lesson.module).selectinload(Module.course))
+        )
+        attempt = attempt_result.scalar_one_or_none()
+        if not attempt:
+            return
+
+        test = attempt.test
+        lesson = test.lesson
+        course = lesson.module.course
+        passed = event_type == SystemEventType.TEST_PASSED
+
+        dispatcher = NotificationDispatcher(uow)
+        await dispatcher.notify_user(
+            user_id=attempt.student_id,
+            title="Тест пройден" if passed else "Тест не пройден",
+            message=(
+                f"Вы {'успешно прошли' if passed else 'не прошли'} тест «{test.title}» по уроку «{lesson.title}». "
+                f"Баллы: {attempt.score}/{attempt.max_score}."
+            ),
+            type_="course" if passed else "event",
+            link=f"/courses/{course.id}/learn",
+            entity_type="lesson",
+            entity_id=lesson.id,
+        )
+        await uow.commit()
+
+
 EventBus.subscribe(SystemEventType.COURSE_ENROLLED, notify_academy_enrolled)
 EventBus.subscribe(SystemEventType.LESSON_AVAILABLE, notify_lesson_available)
 EventBus.subscribe(SystemEventType.LESSON_COMPLETED, notify_lesson_completed)
 EventBus.subscribe(SystemEventType.HOMEWORK_REVIEWED, notify_homework_reviewed)
 EventBus.subscribe(SystemEventType.HOMEWORK_SUBMITTED, notify_homework_submitted)
+EventBus.subscribe(SystemEventType.HOMEWORK_ASSIGNED, notify_homework_assigned)
+EventBus.subscribe(SystemEventType.TEST_PASSED, notify_test_result)
+EventBus.subscribe(SystemEventType.TEST_FAILED, notify_test_result)

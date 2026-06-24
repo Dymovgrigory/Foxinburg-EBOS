@@ -1,9 +1,12 @@
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 
 from app.config import settings
 from app.core.responses import success_response, error_response
+
+logger = logging.getLogger(__name__)
 from app.core.dependencies import require_active_user
 from app.models.user import User
 from app.schemas.user import UserResponse
@@ -33,11 +36,14 @@ async def max_webhook(
     updates = payload if isinstance(payload, list) else [payload]
     for update in updates:
         update_type = update.get("type") or update.get("update_type")
+        logger.info("MAX webhook update_type=%s", update_type)
 
         if update_type == "bot_started":
             user_id = _extract_user_id(update)
+            logger.info("MAX bot_started user_id=%s", user_id)
             if user_id:
-                await MaxService.send_welcome(user_id)
+                ok = await MaxService.send_welcome(user_id)
+                logger.info("MAX send_welcome result=%s", ok)
 
         elif update_type == "message_created":
             message = update.get("message") or update
@@ -49,6 +55,7 @@ async def max_webhook(
             if not user_id:
                 continue
             text = (message.get("body") or {}).get("text", "").strip()
+            logger.info("MAX message_created user_id=%s text=%s", user_id, text)
             lowered = text.lower()
             if lowered in ("/start", "start", "привет"):
                 await MaxService.send_welcome(user_id)

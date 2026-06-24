@@ -195,8 +195,8 @@ class MaxService:
         data_check_string = "\n".join(data_pairs)
 
         secret = hmac.new(
-            key=b"WebAppData" + settings.MAX_BOT_TOKEN.encode(),
-            msg=b"",
+            key=b"WebAppData",
+            msg=settings.MAX_BOT_TOKEN.encode(),
             digestmod=hashlib.sha256,
         ).digest()
         computed_hash = hmac.new(

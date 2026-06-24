@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 
+from app.config import settings
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_active_user
 from app.models.user import User
@@ -18,6 +19,11 @@ async def max_webhook(
     uow: UnitOfWork = Depends(get_uow),
 ):
     """Принимает события от MAX (bot_started, message_created и др.)."""
+    if settings.MAX_WEBHOOK_SECRET:
+        received_secret = request.headers.get("X-Max-Bot-Api-Secret")
+        if received_secret != settings.MAX_WEBHOOK_SECRET:
+            return error_response("Invalid webhook secret", status_code=401)
+
     try:
         payload = await request.json()
     except Exception:

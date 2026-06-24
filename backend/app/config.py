@@ -85,6 +85,7 @@ class Settings(BaseSettings):
     MAX_BOT_API_URL: str = "https://platform-api.max.ru"
     MAX_LINK_TOKEN_SECRET: str = "change-me-in-production"
     MAX_MINIAPP_URL: str = "https://foxinburg.ru/max-link"
+    MAX_WEBHOOK_SECRET: str = ""
 
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""

@@ -24,6 +24,7 @@ class User(Base):
 
     phone = Column(String, nullable=True)
     telegram_chat_id = Column(String, nullable=True)
+    max_user_id = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
 

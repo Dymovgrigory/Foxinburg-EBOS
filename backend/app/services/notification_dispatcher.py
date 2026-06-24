@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.models.user import User
 from app.services.email_service import EmailService
+from app.services.max_service import MaxService
 from app.services.notification_service import NotificationService
 from app.services.telegram_service import TelegramService
 from app.services.unit_of_work import UnitOfWork
@@ -17,6 +18,7 @@ class NotificationDispatcher:
         self.uow = uow
         self.email_service = EmailService()
         self.telegram_service = TelegramService()
+        self.max_service = MaxService()
 
     async def notify_user(
         self,
@@ -59,5 +61,11 @@ class NotificationDispatcher:
         if user.telegram_chat_id:
             await self.telegram_service.send_message(
                 chat_id=user.telegram_chat_id,
+                text=f"*{title}*\n{message}" + (f"\n{link}" if link else ""),
+            )
+
+        if user.max_user_id:
+            await self.max_service.send_message(
+                user_id=user.max_user_id,
                 text=f"*{title}*\n{message}" + (f"\n{link}" if link else ""),
             )

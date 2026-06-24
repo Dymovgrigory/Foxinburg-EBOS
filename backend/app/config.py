@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_USERNAME: str = ""
     TELEGRAM_PROXY_URL: str | None = None  # socks5://user:pass@host:port или http://proxy:port
 
+    # MAX notifications (business.max.ru)
+    MAX_BOT_TOKEN: str = ""
+    MAX_BOT_API_URL: str = "https://platform-api.max.ru"
+
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""
 

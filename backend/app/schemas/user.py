@@ -24,6 +24,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     phone: Optional[str] = None
     telegram_chat_id: Optional[str] = None
+    max_user_id: Optional[str] = None
     avatar_url: Optional[str] = None
     organization_id: Optional[int] = None
     branch_id: Optional[int] = None
@@ -62,6 +63,7 @@ class UserResponse(UserBase):
     branch_id: Optional[int]
     group_id: Optional[int]
     telegram_chat_id: Optional[str]
+    max_user_id: Optional[str]
     position: Optional[str]
     employment_date: Optional[date]
     salary_type: str

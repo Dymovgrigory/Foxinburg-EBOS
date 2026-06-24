@@ -27,6 +27,7 @@ import {
   LuCreditCard,
   LuBrain,
   LuListChecks,
+  LuStore,
 } from 'react-icons/lu'
 import NotificationBadge from '../components/NotificationBadge'
 import HomeworkBadge from '../components/HomeworkBadge'
@@ -85,6 +86,7 @@ export const adminGroups: MenuGroup[] = [
     items: [
       { to: '/crm', label: 'CRM', icon: <LuClipboardList /> },
       { to: '/marketing', label: 'Маркетинг', icon: <LuMegaphone /> },
+      { to: '/store/products', label: 'Магазин', icon: <LuStore /> },
       { to: '/tasks', label: 'Задачи', icon: <LuListChecks /> },
     ],
   },
@@ -186,6 +188,7 @@ export const managerGroups: MenuGroup[] = [
       { to: '/finance', label: 'Финансы', icon: <LuTrendingUp /> },
       { to: '/analytics', label: 'Аналитика', icon: <LuChartBarBig /> },
       { to: '/marketing', label: 'Маркетинг', icon: <LuMegaphone /> },
+      { to: '/store/products', label: 'Магазин', icon: <LuStore /> },
       { to: '/settings', label: 'Настройки', icon: <LuSettings /> },
     ],
   },

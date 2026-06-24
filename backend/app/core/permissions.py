@@ -76,6 +76,9 @@ class Permission(str, Enum):
     MESSAGE_SEND = "message:send"
     MESSAGE_MANAGE = "message:manage"
 
+    # Store
+    STORE_MANAGE = "store:manage"
+
 
 # Иерархия ролей: кто кого может управлять
 ROLE_HIERARCHY = {
@@ -101,6 +104,7 @@ MODULE_PERMISSIONS = {
     "crm": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER],
     "finance": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN],
     "analytics": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER],
+    "store": [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER],
     "settings": [Role.OWNER, Role.SUPER_ADMIN],
     "student_world": [Role.STUDENT],
     "parent_cabinet": [Role.PARENT],
@@ -121,6 +125,7 @@ ROLE_PERMISSIONS = {
         Permission.HOMEWORK_REVIEW, Permission.ATTENDANCE_MANAGE,
         Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
+        Permission.STORE_MANAGE,
         Permission.NOTIFICATION_READ, Permission.NOTIFICATION_SEND,
         Permission.MESSAGE_READ, Permission.MESSAGE_SEND, Permission.MESSAGE_MANAGE,
     ],
@@ -151,6 +156,7 @@ ROLE_PERMISSIONS = {
         Permission.GROUP_READ, Permission.ENROLLMENT_MANAGE, Permission.PROGRESS_READ,
         Permission.TASK_READ, Permission.TASK_CREATE, Permission.TASK_UPDATE, Permission.TASK_DELETE,
         Permission.CRM_MANAGE, Permission.FINANCE_MANAGE, Permission.ANALYTICS_READ,
+        Permission.STORE_MANAGE,
         Permission.NOTIFICATION_READ,
     ],
     Role.STUDENT: [

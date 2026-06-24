@@ -41,6 +41,7 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   '/marketing': ['owner', 'super_admin', 'admin', 'manager'],
   '/roles': ['owner', 'super_admin', 'admin'],
   '/payments': ['parent'],
+  '/store/products': ['owner', 'super_admin', 'admin', 'manager'],
   '/employees': ['owner', 'super_admin', 'admin'],
   '/branches': ['owner', 'super_admin', 'admin'],
   '/students': ['owner', 'super_admin', 'admin', 'manager', 'teacher', 'methodist'],

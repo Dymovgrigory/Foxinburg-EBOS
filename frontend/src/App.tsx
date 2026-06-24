@@ -43,6 +43,7 @@ const SchoolSettingsPage = lazy(() => import('./pages/SchoolSettingsPage'))
 const DirectoriesPage = lazy(() => import('./pages/DirectoriesPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SurveysPage = lazy(() => import('./pages/SurveysPage'))
+const StoreProductsPage = lazy(() => import('./pages/StoreProductsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -111,6 +112,7 @@ function App() {
           <Route path="library" element={<RoleProtected path="/library"><LibraryPage /></RoleProtected>} />
           <Route path="community" element={<Navigate to="/chats" replace />} />
           <Route path="payments" element={<RoleProtected path="/payments"><PaymentsPage /></RoleProtected>} />
+          <Route path="store/products" element={<RoleProtected path="/store/products"><StoreProductsPage /></RoleProtected>} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

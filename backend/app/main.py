@@ -20,6 +20,7 @@ from app.models import (
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
     Task, Directory, StaffLeave, StaffKpi, SystemSettings, ScheduleException,
+    Product, CartItem, Order, OrderItem,
 )
 
 from app.routers import (
@@ -27,7 +28,7 @@ from app.routers import (
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
-    role_config, dashboard, max_bot,
+    role_config, dashboard, max_bot, store,
 )
 from app.admin import setup_admin
 
@@ -219,6 +220,7 @@ app.include_router(hr.router, prefix="/api/v3")
 app.include_router(role_config.router, prefix="/api/v3")
 app.include_router(dashboard.router, prefix="/api/v3")
 app.include_router(max_bot.router, prefix="/api/v3")
+app.include_router(store.router, prefix="/api/v3")
 
 setup_admin(app)
 

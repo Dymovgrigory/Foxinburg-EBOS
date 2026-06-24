@@ -791,3 +791,48 @@ export interface SystemSettings {
   created_at: string
   updated_at: string
 }
+
+export interface Product {
+  id: number
+  title: string
+  description?: string | null
+  image_url?: string | null
+  price: number
+  currency: string
+  product_type: 'service' | 'course' | 'subscription' | 'merchandise'
+  target_course_id?: number | null
+  target_group_id?: number | null
+  lessons_count?: number | null
+  subscription_months?: number | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CartItem {
+  id: number
+  user_id: number
+  product_id: number
+  quantity: number
+  product: Product
+}
+
+export interface OrderItem {
+  id: number
+  product_id: number
+  title_snapshot: string
+  price_snapshot: number
+  quantity: number
+}
+
+export interface Order {
+  id: number
+  user_id: number
+  status: 'pending' | 'paid' | 'cancelled'
+  total_amount: number
+  currency: string
+  items: OrderItem[]
+  created_at: string
+  updated_at: string
+}

@@ -45,6 +45,9 @@ import type {
   FinanceAnalytics,
   MethodistAnalytics,
   SystemSettings,
+  Product,
+  CartItem,
+  Order,
 } from '../types'
 
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
@@ -497,6 +500,31 @@ export const directoriesApi = {
 export const methodistsApi = {
   dashboard: () => api.get<ApiResponse<{ courses_count: number; groups_count: number; students_count: number; pending_homeworks_count: number }>>('/methodists/dashboard').then(unwrap),
   analytics: () => api.get<ApiResponse<MethodistAnalytics>>('/methodists/analytics').then(unwrap),
+}
+
+export interface CartResponse {
+  items: CartItem[]
+  total_amount: number
+  currency: string
+}
+
+export const storeApi = {
+  products: () => api.get<ApiResponse<Product[]>>('/store/products').then(unwrap),
+  getProduct: (id: number) => api.get<ApiResponse<Product>>(`/store/products/${id}`).then(unwrap),
+  createProduct: (data: Partial<Product>) => api.post<ApiResponse<Product>>('/store/products', data).then(unwrap),
+  updateProduct: (id: number, data: Partial<Product>) => api.patch<ApiResponse<Product>>(`/store/products/${id}`, data).then(unwrap),
+  deleteProduct: (id: number) => api.delete<ApiResponse<void>>(`/store/products/${id}`).then(unwrap),
+
+  cart: () => api.get<ApiResponse<CartResponse>>('/store/cart').then(unwrap),
+  addToCart: (data: { product_id: number; quantity: number }) =>
+    api.post<ApiResponse<CartItem>>('/store/cart', data).then(unwrap),
+  updateCartItem: (id: number, quantity: number) =>
+    api.patch<ApiResponse<CartItem>>(`/store/cart/${id}`, { quantity }).then(unwrap),
+  removeCartItem: (id: number) => api.delete<ApiResponse<void>>(`/store/cart/${id}`).then(unwrap),
+
+  checkout: () => api.post<ApiResponse<Order>>('/store/checkout').then(unwrap),
+  orders: () => api.get<ApiResponse<Order[]>>('/store/orders').then(unwrap),
+  getOrder: (id: number) => api.get<ApiResponse<Order>>(`/store/orders/${id}`).then(unwrap),
 }
 
 export const teacherAcademyApi = {

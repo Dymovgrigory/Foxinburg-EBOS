@@ -16,6 +16,7 @@ from app.models import (
     Enrollment, LessonProgress, Lead, Deal, Payment, Transaction,
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
+    Product, CartItem, Order, OrderItem,
 )
 
 # this is the Alembic Config object, which provides

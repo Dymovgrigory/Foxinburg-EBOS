@@ -133,6 +133,15 @@ class TinkoffService:
             logger.warning("Tinkoff notification received but not configured")
             return None
 
+        # Временный дебаг: смотрим, как Тинькофф считает токен
+        computed_token = TinkoffService._sign_payload(payload)
+        logger.warning(
+            "Tinkoff notification debug: payload=%s received_token=%s computed_token=%s",
+            payload,
+            payload.get("Token"),
+            computed_token,
+        )
+
         if not TinkoffService._validate_notification(payload):
             logger.warning("Tinkoff notification token mismatch")
             return None

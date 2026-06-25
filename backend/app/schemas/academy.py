@@ -33,6 +33,8 @@ class AcademyLessonResponse(BaseModel):
     order_index: int
     duration_minutes: int
     is_active: bool
+    homework_title: Optional[str] = None
+    homework_description: Optional[str] = None
     contents: List[AcademyContentResponse] = []
 
 

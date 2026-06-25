@@ -220,18 +220,6 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
         style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
         <div className={blocked ? 'blur-lg' : ''}>{viewer}</div>
-        {watermark && !blocked && (
-          <div
-            className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-16 overflow-hidden opacity-[0.12] rotate-[-25deg] text-fox-purple font-bold text-xl whitespace-nowrap"
-            aria-hidden="true"
-          >
-            {Array.from({ length: 18 }).map((_, i) => (
-              <span key={i} className="select-none">
-                {watermark}
-              </span>
-            ))}
-          </div>
-        )}
         <button
           type="button"
           onClick={() => setIsFullscreen(true)}
@@ -269,18 +257,6 @@ export default function AcademyContentViewer({ content, watermark }: AcademyCont
             onClick={(e) => e.stopPropagation()}
           >
             <div className={blocked ? 'blur-lg h-full' : 'h-full'}>{fullscreenViewer}</div>
-            {watermark && !blocked && (
-              <div
-                className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-24 overflow-hidden opacity-[0.08] rotate-[-25deg] text-white font-bold text-3xl whitespace-nowrap"
-                aria-hidden="true"
-              >
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <span key={i} className="select-none">
-                    {watermark}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}

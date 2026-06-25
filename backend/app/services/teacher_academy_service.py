@@ -35,9 +35,20 @@ class TeacherAcademyService:
 
         for order, module_data in enumerate(modules_data, start=1):
             module = await self._get_or_create_module(course, module_data["name"], order)
-            lesson = await self._get_or_create_lesson(module, f"Материалы: {module_data['name']}")
             files = await self.disk.list_module_files(module_data["path"])
-            await self._sync_lesson_contents(lesson, files)
+            materials, homeworks, tests = self._classify_files(files)
+
+            lessons = await self._ensure_module_lessons(module, module_data["name"])
+
+            await self._sync_lesson_contents(lessons["mixed"], materials)
+            if homeworks:
+                await self._sync_lesson_contents(lessons["homework"], homeworks)
+            elif lessons.get("homework"):
+                await self._sync_lesson_contents(lessons["homework"], [])
+            if tests:
+                await self._sync_lesson_contents(lessons["test"], tests)
+            elif lessons.get("test"):
+                await self._sync_lesson_contents(lessons["test"], [])
 
         course.last_sync_at = utc_now()
         await self.uow.commit()
@@ -154,17 +165,54 @@ class TeacherAcademyService:
         if not module.lessons:
             raise ValueError("В модуле отсутствуют уроки")
 
+        enrollment_result = await self.uow.session.execute(
+            select(Enrollment)
+            .where(Enrollment.student_id == student_id, Enrollment.course_id == module.course.id)
+        )
+        enrollment = enrollment_result.scalar_one_or_none()
+        if not enrollment:
+            raise ValueError("Вы не зачислены на курс")
+
         progress_service = ProgressService(self.uow)
+        await progress_service.ensure_progress_records_for_enrollment(enrollment.id)
+
+        lessons = sorted(module.lessons, key=lambda l: l.order_index)
+        lesson_ids = [lesson.id for lesson in lessons]
+        progress_result = await self.uow.session.execute(
+            select(LessonProgress)
+            .where(
+                LessonProgress.enrollment_id == enrollment.id,
+                LessonProgress.lesson_id.in_(lesson_ids),
+            )
+            .options(selectinload(LessonProgress.lesson))
+        )
+        progress_by_lesson = {p.lesson_id: p for p in progress_result.scalars().all()}
+
         last_progress: Optional[LessonProgress] = None
-        for lesson in sorted(module.lessons, key=lambda l: l.order_index):
-            try:
-                last_progress = await progress_service.complete_lesson(student_id, lesson.id)
-            except ValueError as e:
-                # Добавляем контекст урока, чтобы пользователь понимал, что именно не выполнено
-                raise ValueError(f"{lesson.title}: {e}")
+        for lesson in lessons:
+            progress = progress_by_lesson.get(lesson.id)
+            if not progress:
+                raise ValueError(f"Прогресс урока «{lesson.title}» не найден")
+            # В Академии завершение модуля разблокирует и отмечает все его уроки,
+            # чтобы тесты и домашние задания не останавливали прохождение.
+            if progress.status == "locked":
+                progress.status = "available"
+            if progress.status != "completed":
+                progress.status = "completed"
+                progress.completed_at = utc_now()
+                await self.uow.session.flush()
+            last_progress = progress
 
         if last_progress is None:
             raise ValueError("Прогресс не найден. Обратитесь к методисту.")
+
+        await progress_service._update_enrollment_progress(enrollment.id)
+
+        # Разблокируем следующий урок, если курс последовательный
+        if module.course.is_sequential:
+            next_lesson = await progress_service._get_next_lesson(last_progress.lesson, module.course)
+            if next_lesson:
+                await progress_service._unlock_lesson(enrollment.id, next_lesson.id)
 
         await self.uow.commit()
         await self.uow.session.refresh(last_progress)
@@ -187,16 +235,25 @@ class TeacherAcademyService:
 
         for module in course.modules:
             for lesson in module.lessons:
-                if lesson.lesson_type == "homework" and lesson.id not in existing_lesson_ids:
-                    self.uow.session.add(
-                        Homework(
-                            lesson_id=lesson.id,
-                            student_id=student_id,
-                            title=lesson.homework_title or lesson.title,
-                            description=lesson.homework_description,
-                            status="assigned",
-                        )
+                if lesson.lesson_type != "homework" or lesson.id in existing_lesson_ids:
+                    continue
+                # Не создаём пустые записи ДЗ для уроков без материалов и описания
+                has_content = bool(
+                    lesson.homework_title
+                    or lesson.homework_description
+                    or lesson.contents
+                )
+                if not has_content:
+                    continue
+                self.uow.session.add(
+                    Homework(
+                        lesson_id=lesson.id,
+                        student_id=student_id,
+                        title=lesson.homework_title or lesson.title,
+                        description=lesson.homework_description,
+                        status="assigned",
                     )
+                )
 
     async def _get_or_create_course(self) -> Course:
         result = await self.uow.session.execute(
@@ -235,23 +292,71 @@ class TeacherAcademyService:
         module.order_index = order_index
         return module
 
-    async def _get_or_create_lesson(self, module: Module, title: str) -> Lesson:
-        result = await self.uow.session.execute(
-            select(Lesson).where(Lesson.module_id == module.id).order_by(Lesson.order_index)
-        )
-        lesson = result.scalars().first()
-        if not lesson:
-            lesson = Lesson(
-                title=title,
-                module_id=module.id,
-                order_index=1,
-                lesson_type="mixed",
-                duration_minutes=30,
-                is_active=True,
+    def _classify_files(self, files: list) -> tuple[list, list, list]:
+        """Разделяет файлы модуля на материалы, домашние задания и тесты.
+
+        Учитывает как имя файла, так и название родительской папки, чтобы
+        корректно обрабатывать подпапки с тестами и домашними заданиями.
+        """
+        materials = []
+        homeworks = []
+        tests = []
+        for file in files:
+            path_parts = [part.lower() for part in file.path.split("/")]
+            name_lower = file.name.lower()
+
+            is_test = (
+                any("тестовое задание" in part for part in path_parts)
+                or any(part == "тест" or part.startswith("тест ") or "тесты" in part for part in path_parts)
+                or "тест" in name_lower
             )
-            self.uow.session.add(lesson)
-            await self.uow.session.flush()
-        return lesson
+            is_homework = (
+                any("домашнее задание" in part for part in path_parts)
+                or any(part == "дз" or part.startswith("дз ") for part in path_parts)
+                or "домашнее задание" in name_lower
+                or name_lower.startswith("дз")
+            )
+
+            if is_test:
+                tests.append(file)
+            elif is_homework:
+                homeworks.append(file)
+            else:
+                materials.append(file)
+        return materials, homeworks, tests
+
+    async def _ensure_module_lessons(self, module: Module, module_name: str) -> dict[str, Lesson]:
+        """Возвращает или создаёт уроки материалов, домашки и теста для модуля."""
+        result = await self.uow.session.execute(
+            select(Lesson).where(Lesson.module_id == module.id)
+        )
+        existing = {lesson.lesson_type: lesson for lesson in result.scalars().all()}
+        lessons: dict[str, Lesson] = {}
+
+        type_configs = [
+            ("mixed", f"Материалы: {module_name}", 1),
+            ("homework", f"Домашнее задание: {module_name}", 2),
+            ("test", f"Тест: {module_name}", 3),
+        ]
+
+        for lesson_type, title, order_index in type_configs:
+            lesson = existing.get(lesson_type)
+            if not lesson:
+                lesson = Lesson(
+                    title=title,
+                    module_id=module.id,
+                    order_index=order_index,
+                    lesson_type=lesson_type,
+                    duration_minutes=30,
+                    is_active=True,
+                )
+                self.uow.session.add(lesson)
+                await self.uow.session.flush()
+            lesson.title = title
+            lesson.order_index = order_index
+            lessons[lesson_type] = lesson
+
+        return lessons
 
     async def _sync_lesson_contents(self, lesson: Lesson, files: list) -> None:
         existing_result = await self.uow.session.execute(

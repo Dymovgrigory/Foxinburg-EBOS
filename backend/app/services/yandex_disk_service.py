@@ -98,11 +98,24 @@ class YandexDiskService:
         return modules
 
     async def list_module_files(self, module_path: str) -> List[YandexDiskItem]:
-        """Возвращает файлы внутри модуля."""
-        data = await self._public_request(module_path)
+        """Возвращает файлы внутри модуля (рекурсивно, включая подпапки)."""
+        return await self._list_files_recursive(module_path)
+
+    async def _list_files_recursive(self, path: str) -> List[YandexDiskItem]:
+        data = await self._public_request(path)
         items = data.get("_embedded", {}).get("items", [])
-        files = [YandexDiskItem(item) for item in items if item.get("type") == "file"]
-        files.sort(key=lambda item: _file_order(item.name))
+        files: List[YandexDiskItem] = []
+        dirs: List[dict] = []
+        for item in items:
+            if item.get("type") == "file":
+                files.append(YandexDiskItem(item))
+            elif item.get("type") == "dir":
+                dirs.append(item)
+        for dir_item in dirs:
+            sub_files = await self._list_files_recursive(dir_item["path"])
+            files.extend(sub_files)
+        # Сортируем по имени, сохраняя числовые префиксы
+        files.sort(key=lambda item: (_file_order(item.name), item.name.lower()))
         return files
 
     async def list_module_contents(self, module_path: str) -> List[dict]:

@@ -65,14 +65,10 @@ function PageCanvas({
       />
       {watermark && viewport && (
         <div
-          className="absolute inset-0 pointer-events-none z-10 flex flex-wrap content-start justify-center gap-12 overflow-hidden opacity-[0.12] rotate-[-25deg] text-fox-purple font-bold text-lg whitespace-nowrap"
+          className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden opacity-[0.06] rotate-[-25deg] text-fox-purple font-bold text-lg whitespace-nowrap"
           aria-hidden="true"
         >
-          {Array.from({ length: 16 }).map((_, i) => (
-            <span key={i} className="select-none">
-              {watermark}
-            </span>
-          ))}
+          <span className="select-none">{watermark}</span>
         </div>
       )}
     </div>

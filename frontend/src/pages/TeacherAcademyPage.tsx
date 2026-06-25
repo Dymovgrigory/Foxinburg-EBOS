@@ -603,10 +603,14 @@ export default function TeacherAcademyPage() {
                                 </div>
                               )}
                             </>
+                          ) : activeLesson.contents.length ? (
+                            <ContentList contents={activeLesson.contents} watermark={user?.email || user?.name || 'FOXINBURG'} />
                           ) : (
                             <p className="text-sm text-fox-gray">Домашнее задание не назначено.</p>
                           )}
                         </div>
+                      ) : activeLesson?.contents.length ? (
+                        <ContentList contents={activeLesson.contents} watermark={user?.email || user?.name || 'FOXINBURG'} />
                       ) : (
                         <div className="p-8 text-center text-fox-gray/70 bg-fox-light rounded-xl">
                           В уроке пока нет материалов.
@@ -641,6 +645,31 @@ export default function TeacherAcademyPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function ContentList({
+  contents,
+  watermark,
+}: {
+  contents: LessonContent[]
+  watermark?: string
+}) {
+  return (
+    <div className="space-y-6">
+      {contents.map((content) => (
+        <div key={content.id}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-fox-purple" />
+            <h4 className="text-sm font-semibold text-fox-dark">{content.title || 'Материал'}</h4>
+            <span className="ml-auto text-[10px] uppercase tracking-wide text-fox-gray/70 font-medium">
+              {content.content_type}
+            </span>
+          </div>
+          <AcademyContentViewer content={content} watermark={watermark} />
+        </div>
+      ))}
     </div>
   )
 }

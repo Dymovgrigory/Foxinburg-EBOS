@@ -43,10 +43,6 @@ from app.services.rate_limit_service import (
     check_content_id_enumeration_rate_limit,
     RateLimitExceeded,
 )
-from app.services.watermark_service import (
-    apply_text_watermark_to_pdf,
-    get_watermark_text,
-)
 
 router = APIRouter(prefix="/teacher-academy", tags=["teacher-academy"])
 
@@ -609,19 +605,6 @@ async def stream_content_pdf(
     except Exception as e:
         return error_response(f"Ошибка конвертации в PDF: {e}", status_code=502)
 
-    watermark_text = get_watermark_text(
-        user_email=current_user.email,
-        user_id=current_user.id,
-        user_name=current_user.name,
-    )
-    watermarked_bytes = apply_text_watermark_to_pdf(
-        pdf_bytes,
-        watermark_text,
-        content_id=content.id,
-        user_id=current_user.id,
-        file_md5=content.yandex_disk_md5 or "",
-    )
-
     await AuditService.log_action(
         uow,
         action="CONTENT_PDF_VIEWED",
@@ -629,7 +612,7 @@ async def stream_content_pdf(
         entity_id=content_id,
         user_id=current_user.id,
         ip_address=ip_address,
-        new_values={"watermarked": True},
+        new_values={"watermarked": False},
     )
     await uow.commit()
 
@@ -639,7 +622,7 @@ async def stream_content_pdf(
     content_disposition = f"inline; filename=\"document.pdf\"; filename*=UTF-8''{safe_filename}"
 
     return Response(
-        content=watermarked_bytes,
+        content=pdf_bytes,
         media_type="application/pdf",
         headers={
             "Content-Disposition": content_disposition,

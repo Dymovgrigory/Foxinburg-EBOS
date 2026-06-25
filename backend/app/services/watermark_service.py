@@ -45,10 +45,11 @@ def apply_text_watermark_to_pdf(
         center = fitz.Point(rect.width / 2, rect.height / 2)
         tw = fitz.TextWriter(rect)
         # Начальная точка (0,0) будет совмещена с центром страницы через morph
-        tw.append((0, 0), watermark_text, fontsize=40)
-        # Поворот watermark на 45 градусов вокруг центра страницы
-        matrix = fitz.Matrix(45)
-        tw.write_text(page, color=(0.85, 0.15, 0.15), morph=(center, matrix))
+        tw.append((0, 0), watermark_text, fontsize=20)
+        # Поворот watermark на 30 градусов вокруг центра страницы
+        matrix = fitz.Matrix(30)
+        # Светло-серый полупрозрачный текст — не мешает чтению
+        tw.write_text(page, color=(0.75, 0.75, 0.75, 0.35), morph=(center, matrix))
 
     output = io.BytesIO()
     src.save(output, garbage=4, deflate=True)

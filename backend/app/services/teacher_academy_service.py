@@ -1,14 +1,18 @@
 import datetime
+import json
 from typing import List, Optional
 
-from sqlalchemy import select
+import httpx
+from sqlalchemy import delete, select
 from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.models.course import Course, Module, Lesson, LessonContent
 from app.models.enrollment import Enrollment, LessonProgress
 from app.models.homework import Homework
+from app.models.test import Test, TestQuestion
 from app.models.user import User
+from app.services.docx_parser import parse_homework_docx, parse_test_docx
 from app.services.enrollment_service import EnrollmentService
 from app.services.progress_service import ProgressService
 from app.services.unit_of_work import UnitOfWork
@@ -43,10 +47,12 @@ class TeacherAcademyService:
             await self._sync_lesson_contents(lessons["mixed"], materials)
             if homeworks:
                 await self._sync_lesson_contents(lessons["homework"], homeworks)
+                await self._sync_homework_lesson(lessons["homework"], homeworks)
             elif lessons.get("homework"):
                 await self._sync_lesson_contents(lessons["homework"], [])
             if tests:
                 await self._sync_lesson_contents(lessons["test"], tests)
+                await self._sync_test_lesson(lessons["test"], tests)
             elif lessons.get("test"):
                 await self._sync_lesson_contents(lessons["test"], [])
 
@@ -357,6 +363,91 @@ class TeacherAcademyService:
             lessons[lesson_type] = lesson
 
         return lessons
+
+    async def _download_file_bytes(self, file) -> bytes:
+        """Скачивает файл по прямой ссылке Яндекс.Диска."""
+        url = file.file_url or file.public_url
+        if not url:
+            url = await self.disk.get_download_url(file.path)
+        if not url:
+            return b""
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.content
+
+    async def _sync_test_lesson(self, lesson: Lesson, test_files: list) -> None:
+        """Создаёт или обновляет интерактивный тест урока на основе docx-файлов."""
+        all_questions: List[dict] = []
+        for order, file in enumerate(test_files, start=1):
+            if not file.name.lower().endswith(".docx"):
+                continue
+            try:
+                content = await self._download_file_bytes(file)
+                parsed = parse_test_docx(content, title=file.name.replace(".docx", ""))
+                if not parsed:
+                    continue
+                all_questions.extend(parsed["questions"])
+            except Exception:
+                # Не ломаем синхронизацию, если один файл не распарсился
+                continue
+
+        if not all_questions:
+            return
+
+        for idx, q in enumerate(all_questions, start=1):
+            q["order_index"] = idx
+
+        result = await self.uow.session.execute(
+            select(Test).where(Test.lesson_id == lesson.id)
+        )
+        test = result.scalar_one_or_none()
+        if not test:
+            test = Test(
+                lesson_id=lesson.id,
+                title=lesson.title,
+                passing_score=0,
+                max_attempts=3,
+                is_active=True,
+            )
+            self.uow.session.add(test)
+            await self.uow.session.flush()
+        else:
+            # Полностью обновляем вопросы при повторной синхронизации
+            await self.uow.session.execute(
+                delete(TestQuestion).where(TestQuestion.test_id == test.id)
+            )
+            await self.uow.session.flush()
+
+        for q in all_questions:
+            self.uow.session.add(
+                TestQuestion(
+                    test_id=test.id,
+                    question_text=q["question_text"],
+                    question_type=q["question_type"],
+                    options=q["options"],
+                    correct_answers=q["correct_answers"],
+                    points=q["points"],
+                    order_index=q["order_index"],
+                )
+            )
+        await self.uow.session.flush()
+
+    async def _sync_homework_lesson(self, lesson: Lesson, homework_files: list) -> None:
+        """Заполняет шаблон домашнего задания из первого docx-файла."""
+        for file in homework_files:
+            if not file.name.lower().endswith(".docx"):
+                continue
+            try:
+                content = await self._download_file_bytes(file)
+                parsed = parse_homework_docx(content)
+                if parsed["description"]:
+                    lesson.homework_title = parsed["title"] or file.name.replace(".docx", "")
+                    lesson.homework_description = parsed["description"]
+                    await self.uow.session.flush()
+                break
+            except Exception:
+                continue
 
     async def _sync_lesson_contents(self, lesson: Lesson, files: list) -> None:
         existing_result = await self.uow.session.execute(

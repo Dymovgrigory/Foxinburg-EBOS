@@ -52,7 +52,7 @@ class TestService(BaseService[Test]):
         attempt.max_score = max_score
         attempt.finished_at = utc_now()
 
-        passing_score = test.passing_score or 70
+        passing_score = test.passing_score if test.passing_score is not None else 70
         attempt.is_passed = (score / max_score * 100) >= passing_score if max_score > 0 else False
 
         await self.uow.session.flush()

@@ -32,3 +32,8 @@ postgres_data/
 redis_data/
 uploads/
 *.tsbuildinfo
+
+# Credentials and temporary Office files
+Пароли.docx
+~$*.docx
+*.docx~

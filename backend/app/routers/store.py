@@ -230,14 +230,14 @@ async def remove_cart_item(
     return success_response(message="Товар удалён из корзины")
 
 
-async def _init_tinkoff_payment(order: Order, user: User) -> None:
+async def _init_tinkoff_payment(order: Order, user: User, items_data: list[dict]) -> None:
     receipt_items = [
         {
-            "title": item.title_snapshot,
-            "price": item.price_snapshot,
-            "quantity": item.quantity,
+            "title": line["title_snapshot"],
+            "price": line["price_snapshot"],
+            "quantity": line["quantity"],
         }
-        for item in order.items
+        for line in items_data
     ]
     result = await TinkoffService.init_payment(
         order_id=order.id,
@@ -294,10 +294,11 @@ async def checkout(
 
     if settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD:
         try:
-            await _init_tinkoff_payment(order, current_user)
+            await _init_tinkoff_payment(order, current_user, order_items_data)
         except Exception as exc:
             logger = __import__("logging").getLogger(__name__)
             logger.exception("Tinkoff init failed")
+            await uow.rollback()
             return error_response(f"Ошибка инициализации оплаты: {exc}", status_code=502)
 
     await uow.commit()
@@ -329,11 +330,20 @@ async def pay_order(
     if not (settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD):
         return error_response("Оплата временно недоступна", status_code=503)
 
+    items_data = [
+        {
+            "title_snapshot": item.title_snapshot,
+            "price_snapshot": item.price_snapshot,
+            "quantity": item.quantity,
+        }
+        for item in order.items
+    ]
     try:
-        await _init_tinkoff_payment(order, current_user)
+        await _init_tinkoff_payment(order, current_user, items_data)
     except Exception as exc:
         logger = __import__("logging").getLogger(__name__)
         logger.exception("Tinkoff init failed")
+        await uow.rollback()
         return error_response(f"Ошибка инициализации оплаты: {exc}", status_code=502)
 
     await uow.commit()

@@ -8,7 +8,7 @@ export default function Layout() {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex overflow-x-hidden"
       style={{ backgroundColor: 'var(--fox-light)', backgroundImage: 'var(--fox-page-gradient)' }}
     >
       <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />

@@ -289,33 +289,36 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         <div className="relative z-10 flex flex-col h-full">{sidebarContent}</div>
       </aside>
 
-      {/* Mobile overlay */}
+      {/* Mobile drawer */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-fox-purple/30 backdrop-blur-sm lg:hidden"
-          onClick={onCloseMobile}
-        />
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-fox-purple/30 backdrop-blur-sm lg:hidden"
+            onClick={onCloseMobile}
+          />
+          <aside
+            className="fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] flex-col border-r bg-fox-sidebar-bg border-fox-sidebar-border lg:hidden"
+          >
+            <button
+              onClick={onCloseMobile}
+              className="absolute top-3 right-3 z-50 w-9 h-9 flex items-center justify-center rounded-lg text-fox-sidebar-muted hover:text-fox-sidebar-text hover:bg-fox-sidebar-hover-bg transition"
+              aria-label="Закрыть меню"
+            >
+              <FiChevronLeft size={20} />
+            </button>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.03]"
+              style={{
+                backgroundImage: 'url(/brand/swirl-1.png)',
+                backgroundSize: '200%',
+                backgroundPosition: 'top right',
+                backgroundRepeat: 'no-repeat',
+              }}
+            />
+            <div className="relative z-10 flex flex-col h-full">{sidebarContent}</div>
+          </aside>
+        </>
       )}
-
-      {/* Mobile sidebar */}
-      <aside
-        className={[
-          'fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:hidden border-r',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          'bg-fox-sidebar-bg border-fox-sidebar-border relative',
-        ].join(' ')}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{
-            backgroundImage: 'url(/brand/swirl-1.png)',
-            backgroundSize: '200%',
-            backgroundPosition: 'top right',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-        <div className="relative z-10 flex flex-col h-full">{sidebarContent}</div>
-      </aside>
     </>
   )
 }

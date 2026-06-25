@@ -71,11 +71,14 @@ export default function MaxLinkPage() {
       setLinkToken(token)
       if (orderIdParam) {
         setInitialOrderId(orderIdParam)
+        setMessage('Загружаем результат оплаты...')
       }
 
       if (!data) {
-        setScreen('error')
-        setMessage('Данные из MAX не получены. Откройте приложение из чата с ботом.')
+        if (!orderIdParam) {
+          setScreen('error')
+          setMessage('Данные из MAX не получены. Откройте приложение из чата с ботом.')
+        }
         return
       }
 
@@ -97,11 +100,11 @@ export default function MaxLinkPage() {
   }, [])
 
   useEffect(() => {
-    if (authLoading || !user || !initData || linkToken) return
+    if (authLoading || !user || linkToken) return
 
     if (initialOrderId) {
       fetchOrder(Number(initialOrderId))
-    } else if (screen === 'login') {
+    } else if (initData && screen === 'login') {
       linkAuthenticated(initData)
     }
   }, [authLoading, user, initData, linkToken, screen, initialOrderId])
@@ -169,7 +172,11 @@ export default function MaxLinkPage() {
       const { access_token, user } = await authApi.login(email, password)
       login(user, access_token)
       showToast('Вход выполнен', 'success')
-      await linkAuthenticated(initData)
+      if (initialOrderId) {
+        await fetchOrder(Number(initialOrderId))
+      } else if (initData) {
+        await linkAuthenticated(initData)
+      }
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Ошибка входа', 'error')
     } finally {
@@ -247,8 +254,9 @@ export default function MaxLinkPage() {
 
   const openPayment = () => {
     if (!order?.payment_url) return
-    if (window.WebApp?.openLink) {
-      window.WebApp.openLink(order.payment_url)
+    if (window.WebApp) {
+      // Открываем внутри вебвью MAX, чтобы после оплаты вернуться с сохранением контекста
+      window.location.href = order.payment_url
     } else {
       window.open(order.payment_url, '_blank')
     }

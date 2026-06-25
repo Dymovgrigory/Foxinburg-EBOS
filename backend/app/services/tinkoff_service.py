@@ -97,7 +97,8 @@ class TinkoffService:
             "OrderId": order_id_str,
             "Description": description,
             "CustomerKey": f"user_{order_id}",
-            "ReturnUrl": return_url,
+            "SuccessURL": return_url,
+            "FailURL": return_url,
             "NotificationURL": notification_url,
         }
         if email or phone:

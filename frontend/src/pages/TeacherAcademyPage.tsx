@@ -4,9 +4,9 @@ import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import AcademyContentViewer from '../components/AcademyContentViewer'
 import { lessonsApi, testsApi, homeworksApi } from '../api'
-import { useToast, Button, Card, Badge, Loader, EmptyState } from '../components/ui'
+import { useToast, Button, Card, Badge, Loader, EmptyState, Sheet } from '../components/ui'
 import type { Lesson as FullLesson, TestQuestion, TestAttempt, Homework, HomeworkReview } from '../types'
-import { LuGraduationCap, LuLock, LuCircleCheck, LuBookOpen, LuPlay } from 'react-icons/lu'
+import { LuGraduationCap, LuLock, LuCircleCheck, LuBookOpen, LuPlay, LuMenu } from 'react-icons/lu'
 
 interface LessonContent {
   id: number
@@ -102,6 +102,7 @@ export default function TeacherAcademyPage() {
 
   const [activeLessonDetail, setActiveLessonDetail] = useState<FullLesson | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [showModules, setShowModules] = useState(false)
 
   // test state
   const [attempt, setAttempt] = useState<TestAttempt | null>(null)
@@ -326,6 +327,47 @@ export default function TeacherAcademyPage() {
   )
   const totalCount = course?.modules.length || 0
 
+  const ModulesList = ({ onClose }: { onClose?: () => void }) => (
+    <div className="divide-y divide-fox-border">
+      {course!.modules.map((module, idx) => {
+        const status = moduleStatus(module.id)
+        const meta = statusMeta[status] || statusMeta.locked
+        const isActive = activeModuleId === module.id
+        const disabled = !canOpenModule(module.id)
+
+        return (
+          <button
+            key={module.id}
+            onClick={() => {
+              if (!disabled) {
+                setActiveModuleId(module.id)
+                onClose?.()
+              }
+            }}
+            disabled={disabled}
+            className={[
+              'w-full text-left p-4 transition flex items-center gap-3',
+              isActive ? 'bg-fox-purple/5' : 'hover:bg-fox-light/50',
+              disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+            ].join(' ')}
+          >
+            <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-fox-light text-fox-gray text-xs font-bold flex items-center justify-center">
+              {idx + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={`text-sm font-medium truncate ${isActive ? 'text-fox-purple' : 'text-fox-dark'}`}>
+                {module.title}
+              </p>
+              <Badge variant={meta.variant} className="mt-1">
+                {meta.icon} {meta.label}
+              </Badge>
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
@@ -421,51 +463,37 @@ export default function TeacherAcademyPage() {
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* Sidebar modules */}
-            <Card padding="none" className="lg:sticky lg:top-6 overflow-hidden">
+            {/* Sidebar modules — desktop */}
+            <Card padding="none" className="hidden lg:block lg:sticky lg:top-6 overflow-hidden">
               <div className="p-4 border-b border-fox-border bg-fox-light/50">
                 <h3 className="font-bold text-fox-dark">Модули курса</h3>
                 <p className="text-xs text-fox-gray/70 mt-0.5">Открываются по порядку</p>
               </div>
-              <div className="divide-y divide-fox-border max-h-[70vh] overflow-y-auto">
-                {course.modules.map((module, idx) => {
-                  const status = moduleStatus(module.id)
-                  const meta = statusMeta[status] || statusMeta.locked
-                  const isActive = activeModuleId === module.id
-                  const disabled = !canOpenModule(module.id)
-
-                  return (
-                    <button
-                      key={module.id}
-                      onClick={() => {
-                        if (!disabled) setActiveModuleId(module.id)
-                      }}
-                      disabled={disabled}
-                      className={[
-                        'w-full text-left p-4 transition flex items-center gap-3',
-                        isActive ? 'bg-fox-purple/5' : 'hover:bg-fox-light/50',
-                        disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
-                      ].join(' ')}
-                    >
-                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-fox-light text-fox-gray text-xs font-bold flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-medium truncate ${isActive ? 'text-fox-purple' : 'text-fox-dark'}`}>
-                          {module.title}
-                        </p>
-                        <Badge variant={meta.variant} className="mt-1">
-                          {meta.icon} {meta.label}
-                        </Badge>
-                      </div>
-                    </button>
-                  )
-                })}
+              <div className="max-h-[70vh] overflow-y-auto">
+                <ModulesList />
               </div>
             </Card>
 
             {/* Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Mobile module selector */}
+              <Card className="lg:hidden flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-fox-gray/70">Текущий модуль</p>
+                  <p className="font-bold text-fox-dark truncate">
+                    {activeModule ? activeModule.title : 'Выберите модуль'}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  leftIcon={<LuMenu size={18} />}
+                  onClick={() => setShowModules(true)}
+                >
+                  Модули
+                </Button>
+              </Card>
+
               {activeModule ? (
                 <Card>
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
@@ -570,7 +598,7 @@ export default function TeacherAcademyPage() {
                                 disabled={homework.status !== 'assigned'}
                                 placeholder="Ваш ответ..."
                                 rows={6}
-                                className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
+                                className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
                               />
                               <div className="flex items-center gap-3">
                                 <Button
@@ -645,6 +673,16 @@ export default function TeacherAcademyPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile modules drawer */}
+      <Sheet
+        isOpen={showModules}
+        onClose={() => setShowModules(false)}
+        title="Модули курса"
+        position="left"
+      >
+        <ModulesList onClose={() => setShowModules(false)} />
+      </Sheet>
     </div>
   )
 }
@@ -734,7 +772,7 @@ function TestQuestionView({
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ваш ответ"
-          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
         />
       )}
     </div>

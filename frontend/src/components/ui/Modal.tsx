@@ -71,8 +71,10 @@ export default function Modal({
         </div>
         <div className="px-6 py-5">{children}</div>
         {footer && (
-          <div className="px-6 py-4 bg-fox-light/50 flex items-center justify-end gap-3">
-            {footer}
+          <div className="px-6 py-4 bg-fox-light/50 flex flex-wrap items-center justify-end gap-3">
+            {React.Children.map(footer, (child) =>
+              child ? <div className="w-full sm:w-auto">{child}</div> : null
+            )}
           </div>
         )}
       </div>

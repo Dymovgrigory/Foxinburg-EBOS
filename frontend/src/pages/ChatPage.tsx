@@ -1,15 +1,66 @@
 import { useEffect, useState, useRef } from 'react'
 import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
-import { useToast, Button, Card, Modal, Input, Loader, Badge, EmptyState } from '../components/ui'
+import { useToast, Button, Card, Modal, Input, Loader, Badge, EmptyState, Sheet } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { useChatSocket } from '../hooks/useChatSocket'
 import { chatsApi, usersApi } from '../api'
 import type { ChatRoom, ChatMessage, User } from '../types'
-import { LuMessageSquare } from 'react-icons/lu'
+import { LuMessageSquare, LuMenu } from 'react-icons/lu'
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+function RoomsList({
+  rooms,
+  loadingRooms,
+  selectedRoom,
+  canCreateRoom,
+  onSelect,
+  onCreate,
+}: {
+  rooms: ChatRoom[]
+  loadingRooms: boolean
+  selectedRoom: ChatRoom | null
+  canCreateRoom: boolean
+  onSelect: (room: ChatRoom) => void
+  onCreate: () => void
+}) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
+        <div className="font-bold text-fox-dark">Чаты</div>
+        {canCreateRoom && (
+          <Button size="sm" onClick={onCreate} leftIcon="+">
+            Новый
+          </Button>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {loadingRooms ? (
+          <Loader text="Загрузка..." size="sm" />
+        ) : rooms.length === 0 ? (
+          <p className="p-4 text-sm text-fox-gray/70 text-center">Нет чатов</p>
+        ) : (
+          rooms.map((room) => (
+            <button
+              key={room.id}
+              onClick={() => onSelect(room)}
+              className={[
+                'w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition',
+                selectedRoom?.id === room.id
+                  ? 'bg-fox-purple text-white shadow-sm'
+                  : 'text-fox-graphite hover:bg-fox-light',
+              ].join(' ')}
+            >
+              {room.name}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default function ChatPage() {
@@ -21,6 +72,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loadingRooms, setLoadingRooms] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showRooms, setShowRooms] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [newRoomName, setNewRoomName] = useState('')
   const [selectedParticipants, setSelectedParticipants] = useState<number[]>([])
@@ -115,54 +167,48 @@ export default function ChatPage() {
     )
   }
 
+  const handleSelectRoom = (room: ChatRoom) => {
+    setSelectedRoom(room)
+    setShowRooms(false)
+  }
+
   return (
     <div className="min-h-screen bg-fox-light">
       <Header title="Чаты" subtitle={selectedRoom ? selectedRoom.name : 'Выберите чат'} icon={<LuMessageSquare />} />
 
       <div className="p-4 md:p-6 w-full h-[calc(100vh-64px-32px)]">
         <Card padding="none" className="h-full flex overflow-hidden">
-          {/* Rooms sidebar */}
-          <div className="w-72 border-r border-fox-border/50 flex flex-col">
-            <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
-              <div className="font-bold text-fox-dark">Чаты</div>
-              {canCreateRoom && (
-                <Button size="sm" onClick={() => setShowCreateModal(true)} leftIcon="+">
-                  Новый
-                </Button>
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {loadingRooms ? (
-                <Loader text="Загрузка..." size="sm" />
-              ) : rooms.length === 0 ? (
-                <p className="p-4 text-sm text-fox-gray/70 text-center">Нет чатов</p>
-              ) : (
-                rooms.map((room) => (
-                  <button
-                    key={room.id}
-                    onClick={() => setSelectedRoom(room)}
-                    className={[
-                      'w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition',
-                      selectedRoom?.id === room.id
-                        ? 'bg-fox-purple text-white shadow-sm'
-                        : 'text-fox-graphite hover:bg-fox-light',
-                    ].join(' ')}
-                  >
-                    {room.name}
-                  </button>
-                ))
-              )}
-            </div>
+          {/* Rooms sidebar — desktop */}
+          <div className="hidden lg:flex w-72 border-r border-fox-border/50 flex-col">
+            <RoomsList
+              rooms={rooms}
+              loadingRooms={loadingRooms}
+              selectedRoom={selectedRoom}
+              canCreateRoom={canCreateRoom}
+              onSelect={handleSelectRoom}
+              onCreate={() => setShowCreateModal(true)}
+            />
           </div>
 
           {/* Chat area */}
           <div className="flex-1 flex flex-col min-w-0">
             {selectedRoom ? (
               <>
-                <div className="p-4 border-b border-fox-border/50 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-fox-dark">{selectedRoom.name}</div>
-                    <div className="text-xs text-fox-gray/70">
+                <div className="p-4 border-b border-fox-border/50 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="lg:hidden -ml-2 px-2"
+                        leftIcon={<LuMenu size={18} />}
+                        onClick={() => setShowRooms(true)}
+                      >
+                        Чаты
+                      </Button>
+                      <div className="font-bold text-fox-dark truncate">{selectedRoom.name}</div>
+                    </div>
+                    <div className="text-xs text-fox-gray/70 mt-0.5">
                       {connected ? (
                         <span className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -188,7 +234,7 @@ export default function ChatPage() {
                         <div
                           key={m.id}
                           className={[
-                            'max-w-[80%] p-3 rounded-2xl text-sm',
+                            'max-w-[85%] sm:max-w-[80%] p-3 rounded-2xl text-sm',
                             isMe
                               ? 'ml-auto bg-fox-purple text-white rounded-br-none'
                               : 'bg-white border border-fox-border/50 rounded-bl-none',
@@ -202,7 +248,7 @@ export default function ChatPage() {
                               {formatTime(m.created_at)}
                             </span>
                           </div>
-                          <p className={['whitespace-pre-wrap', isMe ? 'text-white/90' : 'text-fox-graphite'].join(' ')}>
+                          <p className={['whitespace-pre-wrap break-words', isMe ? 'text-white/90' : 'text-fox-graphite'].join(' ')}>
                             {m.content}
                           </p>
                         </div>
@@ -212,14 +258,14 @@ export default function ChatPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSend} className="p-4 border-t border-fox-border/50 flex gap-3 bg-white">
+                <form onSubmit={handleSend} className="p-4 border-t border-fox-border/50 flex flex-col sm:flex-row gap-3 bg-white">
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Введите сообщение..."
                     className="flex-1"
                   />
-                  <Button type="submit" disabled={!connected || !input.trim()}>
+                  <Button type="submit" disabled={!connected || !input.trim()} className="w-full sm:w-auto">
                     Отправить
                   </Button>
                 </form>
@@ -233,6 +279,26 @@ export default function ChatPage() {
         </Card>
       </div>
 
+      {/* Mobile rooms drawer */}
+      <Sheet
+        isOpen={showRooms}
+        onClose={() => setShowRooms(false)}
+        title="Чаты"
+        position="left"
+      >
+        <RoomsList
+          rooms={rooms}
+          loadingRooms={loadingRooms}
+          selectedRoom={selectedRoom}
+          canCreateRoom={canCreateRoom}
+          onSelect={handleSelectRoom}
+          onCreate={() => {
+            setShowRooms(false)
+            setShowCreateModal(true)
+          }}
+        />
+      </Sheet>
+
       {/* Create room modal */}
       <Modal
         isOpen={showCreateModal}
@@ -240,8 +306,8 @@ export default function ChatPage() {
         title="Новый чат"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Отмена</Button>
-            <Button type="submit" form="chat-form" loading={creating}>Создать</Button>
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setShowCreateModal(false)}>Отмена</Button>
+            <Button type="submit" form="chat-form" loading={creating} className="w-full sm:w-auto">Создать</Button>
           </>
         }
       >
@@ -261,9 +327,9 @@ export default function ChatPage() {
                     type="checkbox"
                     checked={selectedParticipants.includes(u.id)}
                     onChange={() => toggleParticipant(u.id)}
-                    className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
+                    className="rounded border-fox-border text-fox-purple focus:ring-fox-gold min-w-[18px] min-h-[18px]"
                   />
-                  {u.name} <span className="text-fox-gray/70">({u.email})</span>
+                  <span className="break-words">{u.name} <span className="text-fox-gray/70">({u.email})</span></span>
                 </label>
               ))}
             </div>

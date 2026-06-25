@@ -23,7 +23,7 @@ export default function Select({
       )}
       <select
         className={[
-          'w-full rounded-button border px-4 py-3 text-sm transition-all duration-200',
+          'w-full rounded-button border px-4 py-3 text-base md:text-sm transition-all duration-200',
           'bg-white text-fox-graphite',
           'focus:outline-none focus:ring-2 focus:border-fox-purple focus:ring-fox-purple/20',
           'hover:border-fox-gray-light/60',

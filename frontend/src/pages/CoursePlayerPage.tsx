@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { coursesApi, lessonsApi, progressApi, testsApi, homeworksApi } from '../api'
-import { useToast, Button, Card, Badge, Loader, EmptyState, Tabs } from '../components/ui'
+import { useToast, Button, Card, Badge, Loader, EmptyState, Tabs, Sheet } from '../components/ui'
 import type { Course, Lesson, LessonProgress, Test, TestQuestion, Homework, TestAttempt, HomeworkReview, LessonContent, LessonPlayerData } from '../types'
 import {
   LuBookOpen,
@@ -15,6 +15,7 @@ import {
   LuClipboardList,
   LuFiles,
   LuDownload,
+  LuMenu,
 } from 'react-icons/lu'
 
 interface LessonItem {
@@ -79,6 +80,7 @@ export default function CoursePlayerPage() {
   const [activeLoading, setActiveLoading] = useState(false)
   const [activeLocked, setActiveLocked] = useState(false)
   const [activeTab, setActiveTab] = useState('theory')
+  const [showProgram, setShowProgram] = useState(false)
 
   // test state
   const [attempt, setAttempt] = useState<TestAttempt | null>(null)
@@ -300,6 +302,42 @@ export default function CoursePlayerPage() {
     return list
   }, [activeLesson])
 
+  const ProgramList = ({ onClose }: { onClose?: () => void }) => (
+    <div className="space-y-4">
+      {course!.modules.map((m) => (
+        <div key={m.id}>
+          <div className="text-xs font-semibold text-fox-gray uppercase mb-2">{m.title}</div>
+          <div className="space-y-1">
+            {m.lessons.map((l) => {
+              const item = allLessons.find((x) => x.lesson.id === l.id)
+              const status = item?.progress?.status || 'locked'
+              const meta = statusMeta[status]
+              const isActive = activeLessonId === l.id
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => {
+                    if (item) handleSelectLesson(item)
+                    onClose?.()
+                  }}
+                  className={[
+                    'w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-2',
+                    isActive ? 'bg-fox-purple/10 text-fox-purple font-medium' : 'hover:bg-fox-light text-fox-graphite',
+                    status === 'locked' && 'opacity-60 cursor-not-allowed',
+                  ].join(' ')}
+                >
+                  <span>{meta.icon}</span>
+                  <span className="flex-1 truncate">{l.title}</span>
+                  <span className="text-xs">{typeMeta[l.lesson_type] || <LuFileText />}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen bg-fox-light">
@@ -331,43 +369,32 @@ export default function CoursePlayerPage() {
       <Header title={course.title} subtitle="Прохождение курса" icon={<LuBookOpen />} />
 
       <div className="p-4 md:p-6 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sidebar */}
-        <Card className="lg:col-span-1 h-fit max-h-[calc(100vh-140px)] overflow-y-auto">
+        {/* Sidebar — desktop */}
+        <Card className="hidden lg:block lg:col-span-1 h-fit max-h-[calc(100vh-140px)] overflow-y-auto">
           <h3 className="text-sm font-bold text-fox-dark mb-4">Программа курса</h3>
-          <div className="space-y-4">
-            {course.modules.map((m) => (
-              <div key={m.id}>
-                <div className="text-xs font-semibold text-fox-gray uppercase mb-2">{m.title}</div>
-                <div className="space-y-1">
-                  {m.lessons.map((l) => {
-                    const item = allLessons.find((x) => x.lesson.id === l.id)
-                    const status = item?.progress?.status || 'locked'
-                    const meta = statusMeta[status]
-                    const isActive = activeLessonId === l.id
-                    return (
-                      <button
-                        key={l.id}
-                        onClick={() => item && handleSelectLesson(item)}
-                        className={[
-                          'w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-2',
-                          isActive ? 'bg-fox-purple/10 text-fox-purple font-medium' : 'hover:bg-fox-light text-fox-graphite',
-                          status === 'locked' && 'opacity-60 cursor-not-allowed',
-                        ].join(' ')}
-                      >
-                        <span>{meta.icon}</span>
-                        <span className="flex-1 truncate">{l.title}</span>
-                        <span className="text-xs">{typeMeta[l.lesson_type] || <LuFileText />}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProgramList />
         </Card>
 
         {/* Viewer */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Mobile program selector */}
+          <Card className="lg:hidden flex items-center justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-fox-gray/70">Текущий урок</p>
+              <p className="font-bold text-fox-dark truncate">
+                {activeLesson ? activeLesson.title : 'Выберите урок'}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<LuMenu size={18} />}
+              onClick={() => setShowProgram(true)}
+            >
+              Программа
+            </Button>
+          </Card>
+
           {activeLoading ? (
             <Loader text="Загрузка урока..." />
           ) : activeLocked ? (
@@ -503,7 +530,7 @@ export default function CoursePlayerPage() {
                           disabled={homework.status !== 'assigned'}
                           placeholder="Ваш ответ..."
                           rows={6}
-                          className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
+                          className="w-full px-4 py-3 border border-fox-border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white disabled:bg-fox-light/50"
                         />
                         <div className="flex items-center gap-3">
                           <Button
@@ -577,6 +604,16 @@ export default function CoursePlayerPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile program drawer */}
+      <Sheet
+        isOpen={showProgram}
+        onClose={() => setShowProgram(false)}
+        title="Программа курса"
+        position="left"
+      >
+        <ProgramList onClose={() => setShowProgram(false)} />
+      </Sheet>
     </div>
   )
 }
@@ -641,7 +678,7 @@ function TestQuestionView({
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ваш ответ"
-          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
+          className="w-full px-4 py-2.5 border border-fox-border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-fox-gold/50 focus:border-fox-gold bg-white"
         />
       )}
     </div>

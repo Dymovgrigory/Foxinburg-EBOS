@@ -44,7 +44,7 @@ export default function Input({
         )}
         <input
           className={[
-            'w-full rounded-button border px-4 py-3 text-sm transition-all duration-200',
+            'w-full rounded-button border px-4 py-3 text-base md:text-sm transition-all duration-200',
             'focus:outline-none focus:ring-2',
             isDark
               ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-fox-gold focus:ring-fox-gold/20'

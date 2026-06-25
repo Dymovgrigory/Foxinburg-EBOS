@@ -102,7 +102,7 @@ function MonthView({
   const byDay = groupByDay(occurrences)
 
   return (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-7 gap-1 sm:gap-2">
       {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((d) => (
         <div key={d} className="text-center text-xs font-bold text-fox-gray py-2">
           {d}
@@ -116,7 +116,7 @@ function MonthView({
           <div
             key={key}
             className={[
-              'min-h-[120px] rounded-xl border p-2 transition',
+              'min-h-[80px] sm:min-h-[120px] rounded-xl border p-1 sm:p-2 transition',
               isCurrentMonth ? 'bg-white border-fox-border' : 'bg-fox-light/50 border-fox-border/40',
             ].join(' ')}
           >
@@ -166,8 +166,9 @@ function WeekDayView({
     occurrences.filter((occ) => isSameDay(parseISO(occ.start_time), day))
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[800px]">
+    <div className={isDay ? 'overflow-x-hidden' : 'overflow-x-auto'}>
+      <div className={isDay ? 'min-w-0' : 'min-w-[800px]'}
+      >
         {/* Header */}
         <div className="grid" style={{ gridTemplateColumns: `48px repeat(${days.length}, minmax(0, 1fr))` }}>
           <div className="h-12"></div>

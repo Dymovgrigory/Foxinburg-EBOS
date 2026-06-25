@@ -82,22 +82,28 @@ function SortableLessonItem({ lesson, selectedLessonId, onSelect, onEdit, onDele
       </div>
       <div className="flex gap-1">
         <button
-          className={isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple'}
+          className={[
+            'min-w-11 min-h-11 flex items-center justify-center rounded-lg',
+            isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-purple',
+          ].join(' ')}
           onClick={(e) => {
             e.stopPropagation()
             onEdit(lesson, moduleId)
           }}
         >
-          <LuPencil size={16} />
+          <LuPencil size={18} />
         </button>
         <button
-          className={isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-error'}
+          className={[
+            'min-w-11 min-h-11 flex items-center justify-center rounded-lg',
+            isActive ? 'text-white/80 hover:text-white' : 'text-fox-gray/70 hover:text-fox-error',
+          ].join(' ')}
           onClick={(e) => {
             e.stopPropagation()
             onDelete(lesson.id)
           }}
         >
-          <LuTrash2 size={16} />
+          <LuTrash2 size={18} />
         </button>
       </div>
     </div>
@@ -136,12 +142,12 @@ function SortableModuleItem({ module, selectedModuleId, onSelect, onEdit, onDele
       >
         <div className="flex items-center gap-2 min-w-0">
           <button
-            className="cursor-grab active:cursor-grabbing text-fox-gray/70 hover:text-fox-purple"
+            className="cursor-grab active:cursor-grabbing text-fox-gray/70 hover:text-fox-purple min-w-11 min-h-11 flex items-center justify-center rounded-lg"
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
           >
-            <LuGripVertical size={18} />
+            <LuGripVertical size={20} />
           </button>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-fox-dark truncate">{module.title}</p>
@@ -150,22 +156,22 @@ function SortableModuleItem({ module, selectedModuleId, onSelect, onEdit, onDele
         </div>
         <div className="flex gap-1">
           <button
-            className="text-fox-gray/70 hover:text-fox-purple"
+            className="text-fox-gray/70 hover:text-fox-purple min-w-11 min-h-11 flex items-center justify-center rounded-lg"
             onClick={(e) => {
               e.stopPropagation()
               onEdit(module)
             }}
           >
-            <LuPencil size={16} />
+            <LuPencil size={18} />
           </button>
           <button
-            className="text-fox-gray/70 hover:text-fox-error"
+            className="text-fox-gray/70 hover:text-fox-error min-w-11 min-h-11 flex items-center justify-center rounded-lg"
             onClick={(e) => {
               e.stopPropagation()
               onDelete(module.id)
             }}
           >
-            <LuTrash2 size={16} />
+            <LuTrash2 size={18} />
           </button>
         </div>
       </div>
@@ -673,22 +679,22 @@ export default function CourseBuilderPage() {
                   </div>
                   <div className="flex gap-1">
                     <button
-                      className="text-fox-gray/70 hover:text-fox-purple"
+                      className="text-fox-gray/70 hover:text-fox-purple min-w-11 min-h-11 flex items-center justify-center rounded-lg"
                       onClick={(e) => {
                         e.stopPropagation()
                         setCourseModal({ id: course.id, title: course.title, description: course.description || '' })
                       }}
                     >
-                      <LuPencil size={16} />
+                      <LuPencil size={18} />
                     </button>
                     <button
-                      className="text-fox-gray/70 hover:text-fox-error"
+                      className="text-fox-gray/70 hover:text-fox-error min-w-11 min-h-11 flex items-center justify-center rounded-lg"
                       onClick={(e) => {
                         e.stopPropagation()
                         deleteCourse(course.id)
                       }}
                     >
-                      <LuTrash2 size={16} />
+                      <LuTrash2 size={18} />
                     </button>
                   </div>
                 </div>
@@ -812,7 +818,7 @@ export default function CourseBuilderPage() {
                   <p className="text-sm text-fox-gray mb-4">
                     Материалы добавляются через синхронизацию с Яндекс.Диском на странице Академии.
                   </p>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="bg-fox-light/50 p-3 rounded-xl">
                       <span className="text-fox-gray/70">Тип</span>
                       <p className="font-medium text-fox-dark">
@@ -866,7 +872,7 @@ export default function CourseBuilderPage() {
                       value={testForm.title || ''}
                       onChange={(e) => setTestForm({ ...testForm, title: e.target.value })}
                     />
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Input
                         label="Проходной балл"
                         type="number"
@@ -973,7 +979,7 @@ export default function CourseBuilderPage() {
                     <div>
                       <label className="block text-sm font-medium text-fox-graphite mb-1.5">Группа (необязательно)</label>
                       <select
-                        className="w-full rounded-xl border border-fox-border bg-white px-4 py-2.5 text-sm"
+                        className="w-full rounded-xl border border-fox-border bg-white px-4 py-2.5 text-sm md:text-base"
                         value={homeworkForm.group_id || ''}
                         onChange={(e) =>
                           setHomeworkForm({ ...homeworkForm, group_id: e.target.value ? Number(e.target.value) : undefined })
@@ -1121,7 +1127,7 @@ export default function CourseBuilderPage() {
                     })
                   }
                 />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="Проходной балл, %"
                     type="number"
@@ -1171,7 +1177,7 @@ export default function CourseBuilderPage() {
                         }}
                       />
                       <select
-                        className="w-full rounded-xl border border-fox-border bg-white px-3 py-2 text-sm"
+                        className="w-full rounded-xl border border-fox-border bg-white px-3 py-2 text-sm md:text-base"
                         value={q.question_type || 'single'}
                         onChange={(e) => {
                           const next = { ...lessonModal.test, questions: [...(lessonModal.test?.questions || [])] }

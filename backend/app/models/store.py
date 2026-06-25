@@ -70,6 +70,10 @@ class Order(Base):
     total_amount = Column(Integer, nullable=False, default=0)  # в копейках
     currency = Column(String, default="RUB", nullable=False)
 
+    tinkoff_payment_id = Column(String, nullable=True)
+    payment_url = Column(String, nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

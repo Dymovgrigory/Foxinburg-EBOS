@@ -832,6 +832,9 @@ export interface Order {
   status: 'pending' | 'paid' | 'cancelled'
   total_amount: number
   currency: string
+  tinkoff_payment_id?: string | null
+  payment_url?: string | null
+  paid_at?: string | null
   items: OrderItem[]
   created_at: string
   updated_at: string

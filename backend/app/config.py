@@ -87,6 +87,11 @@ class Settings(BaseSettings):
     MAX_MINIAPP_URL: str = "https://foxinburg.ru/max-link"
     MAX_WEBHOOK_SECRET: str = ""
 
+    # Tinkoff payments
+    TINKOFF_TERMINAL_KEY: str = ""
+    TINKOFF_TERMINAL_PASSWORD: str = ""
+    TINKOFF_API_URL: str = "https://securepay.tinkoff.ru/v2"
+
     # Password encryption (for owner/superadmin access to user passwords in admin)
     PASSWORD_ENCRYPTION_KEY: str = ""
 

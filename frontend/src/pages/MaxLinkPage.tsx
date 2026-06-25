@@ -14,6 +14,7 @@ interface MaxWebApp {
     user?: { id: number; first_name?: string; last_name?: string; username?: string }
     [key: string]: any
   }
+  openLink?: (url: string) => void
 }
 
 declare global {
@@ -22,7 +23,7 @@ declare global {
   }
 }
 
-type Screen = 'loading' | 'login' | 'linking' | 'success' | 'store' | 'error'
+type Screen = 'loading' | 'login' | 'linking' | 'success' | 'store' | 'order' | 'error'
 type Tab = 'catalog' | 'cart' | 'orders'
 
 const formatMoney = (kopecks: number) => new Intl.NumberFormat('ru-RU').format(kopecks / 100) + ' ₽'
@@ -34,6 +35,7 @@ export default function MaxLinkPage() {
   const [message, setMessage] = useState('Открываем мини-приложение FOXINBURG...')
   const [initData, setInitData] = useState('')
   const [linkToken, setLinkToken] = useState('')
+  const [initialOrderId, setInitialOrderId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
@@ -64,8 +66,12 @@ export default function MaxLinkPage() {
         urlParams.get('startapp') ||
         ''
       const data = WebApp.initData || ''
+      const orderIdParam = urlParams.get('order_id')
       setInitData(data)
       setLinkToken(token)
+      if (orderIdParam) {
+        setInitialOrderId(orderIdParam)
+      }
 
       if (!data) {
         setScreen('error')
@@ -91,10 +97,25 @@ export default function MaxLinkPage() {
   }, [])
 
   useEffect(() => {
-    if (!authLoading && user && initData && !linkToken && screen === 'login') {
+    if (authLoading || !user || !initData || linkToken) return
+
+    if (initialOrderId) {
+      fetchOrder(Number(initialOrderId))
+    } else if (screen === 'login') {
       linkAuthenticated(initData)
     }
-  }, [authLoading, user, initData, linkToken, screen])
+  }, [authLoading, user, initData, linkToken, screen, initialOrderId])
+
+  const fetchOrder = async (id: number) => {
+    try {
+      const orderRes = await storeApi.getOrder(id)
+      setOrder(orderRes)
+      setScreen('order')
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Ошибка загрузки заказа', 'error')
+      setScreen('store')
+    }
+  }
 
   const loadStore = async () => {
     setStoreLoading(true)
@@ -214,6 +235,7 @@ export default function MaxLinkPage() {
       setOrder(orderRes)
       setCartItems([])
       setOrders((prev) => [orderRes, ...prev])
+      setScreen('order')
       showToast(`Заказ №${orderRes.id} создан`, 'success')
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Ошибка оформления заказа', 'error')
@@ -222,6 +244,54 @@ export default function MaxLinkPage() {
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
+  const openPayment = () => {
+    if (!order?.payment_url) return
+    if (window.WebApp?.openLink) {
+      window.WebApp.openLink(order.payment_url)
+    } else {
+      window.open(order.payment_url, '_blank')
+    }
+  }
+
+  const renderOrder = () => {
+    if (!order) return null
+    const isPaid = order.status === 'paid'
+    return (
+      <div className="space-y-5 text-center">
+        <div className="text-5xl">{isPaid ? '✅' : '💳'}</div>
+        <div>
+          <div className="text-lg font-bold text-fox-purple">Заказ #{order.id}</div>
+          <div className="text-sm text-fox-gray">
+            {isPaid ? 'Оплачен' : 'В обработке'}
+          </div>
+        </div>
+        <div className="text-2xl font-bold text-fox-purple">{formatMoney(order.total_amount)}</div>
+
+        {!isPaid && order.payment_url && (
+          <Button className="w-full" onClick={openPayment}>
+            Оплатить через Тинькофф
+          </Button>
+        )}
+
+        <div className="text-xs text-fox-gray space-y-1">
+          {order.items.map((it) => (
+            <div key={it.id} className="flex justify-between">
+              <span>{it.title_snapshot} × {it.quantity}</span>
+              <span>{formatMoney(it.price_snapshot * it.quantity)}</span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => { setOrder(null); setScreen('store'); setTab('orders') }}
+          className="text-sm text-fox-purple hover:underline"
+        >
+          ← В магазин
+        </button>
+      </div>
+    )
+  }
 
   const renderStore = () => {
     if (storeLoading) return <Loader text="Загружаем магазин..." />
@@ -426,6 +496,8 @@ export default function MaxLinkPage() {
         )}
 
         {screen === 'store' && renderStore()}
+
+        {screen === 'order' && renderOrder()}
 
         {screen === 'error' && (
           <div className="space-y-4 text-center">

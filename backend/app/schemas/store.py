@@ -101,6 +101,9 @@ class OrderResponse(BaseModel):
     status: str
     total_amount: int
     currency: str
+    tinkoff_payment_id: Optional[str] = None
+    payment_url: Optional[str] = None
+    paid_at: Optional[datetime] = None
     items: List[OrderItemResponse] = []
     created_at: datetime
     updated_at: datetime

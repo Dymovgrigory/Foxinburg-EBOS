@@ -1,11 +1,13 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
-from sqlalchemy import select, asc, desc
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select, asc, desc, func
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.core.dependencies import require_active_user, require_permission
 from app.core.permissions import Permission
 from app.core.responses import success_response, error_response
+from app.models.finance import Payment, Transaction
 from app.models.store import Product, CartItem, Order, OrderItem
 from app.models.user import User
 from app.schemas.store import (
@@ -18,6 +20,8 @@ from app.schemas.store import (
     CartResponse,
     OrderResponse,
 )
+from app.services.max_service import MaxService
+from app.services.tinkoff_service import TinkoffService
 from app.services.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/store", tags=["store"])
@@ -226,6 +230,27 @@ async def remove_cart_item(
     return success_response(message="Товар удалён из корзины")
 
 
+async def _init_tinkoff_payment(order: Order, user: User) -> None:
+    receipt_items = [
+        {
+            "title": item.title_snapshot,
+            "price": item.price_snapshot,
+            "quantity": item.quantity,
+        }
+        for item in order.items
+    ]
+    result = await TinkoffService.init_payment(
+        order_id=order.id,
+        amount=order.total_amount,
+        description=f"Заказ #{order.id} в FOXINBURG",
+        email=user.email,
+        phone=user.phone,
+        items=receipt_items,
+    )
+    order.tinkoff_payment_id = result["payment_id"]
+    order.payment_url = result["payment_url"]
+
+
 @router.post("/checkout")
 async def checkout(
     current_user: User = Depends(require_active_user),
@@ -267,6 +292,14 @@ async def checkout(
     for item in items:
         await uow.session.delete(item)
 
+    if settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD:
+        try:
+            await _init_tinkoff_payment(order, current_user)
+        except Exception as exc:
+            logger = __import__("logging").getLogger(__name__)
+            logger.exception("Tinkoff init failed")
+            return error_response(f"Ошибка инициализации оплаты: {exc}", status_code=502)
+
     await uow.commit()
     await uow.session.refresh(order)
     return success_response(
@@ -274,6 +307,110 @@ async def checkout(
         message="Заказ создан",
         status_code=201,
     )
+
+
+@router.post("/orders/{order_id}/pay")
+async def pay_order(
+    order_id: int,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    result = await uow.session.execute(
+        select(Order)
+        .where(Order.id == order_id, Order.user_id == current_user.id)
+        .options(selectinload(Order.items))
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        return error_response("Заказ не найден", status_code=404)
+    if order.status != "pending":
+        return error_response("Заказ уже оплачен или отменён", status_code=400)
+
+    if not (settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD):
+        return error_response("Оплата временно недоступна", status_code=503)
+
+    try:
+        await _init_tinkoff_payment(order, current_user)
+    except Exception as exc:
+        logger = __import__("logging").getLogger(__name__)
+        logger.exception("Tinkoff init failed")
+        return error_response(f"Ошибка инициализации оплаты: {exc}", status_code=502)
+
+    await uow.commit()
+    await uow.session.refresh(order)
+    return success_response(
+        data=OrderResponse.model_validate(order).model_dump(),
+        message="Ссылка на оплату обновлена",
+    )
+
+
+@router.post("/tinkoff/webhook")
+async def tinkoff_webhook(
+    request: Request,
+    uow: UnitOfWork = Depends(get_uow),
+):
+    payload = await request.json()
+    notification = await TinkoffService.handle_notification(payload)
+    if not notification:
+        return error_response("Invalid notification", status_code=400)
+
+    order_id_raw = notification.get("order_id")
+    try:
+        order_id = int(order_id_raw) if order_id_raw else None
+    except (ValueError, TypeError):
+        order_id = None
+
+    if not order_id:
+        return error_response("Order ID missing", status_code=400)
+
+    result = await uow.session.execute(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items))
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        return error_response("Order not found", status_code=404)
+
+    if notification["success"] and order.status != "paid":
+        order.status = "paid"
+        order.paid_at = func.now()
+        order.tinkoff_payment_id = notification.get("payment_id") or order.tinkoff_payment_id
+
+        # Финансовая запись
+        payment = Payment(
+            student_id=order.user_id,
+            amount=order.total_amount,
+            type="income",
+            method="card",
+            status="completed",
+            description=f"Оплата заказа #{order.id} через Тинькофф",
+        )
+        uow.session.add(payment)
+
+        user = await uow.session.get(User, order.user_id)
+        if user:
+            transaction = Transaction(
+                user_id=user.id,
+                amount=order.total_amount,
+                type="payment",
+                balance_after=user.balance or 0,
+                description=f"Оплата заказа #{order.id}",
+            )
+            uow.session.add(transaction)
+
+            if user.max_user_id:
+                try:
+                    await MaxService.send_message(
+                        user.max_user_id,
+                        f"✅ Заказ #{order.id} оплачен. Спасибо!\nСумма: {order.total_amount / 100:.2f} ₽",
+                    )
+                except Exception:
+                    logger = __import__("logging").getLogger(__name__)
+                    logger.exception("Failed to send MAX payment notification")
+
+    await uow.commit()
+    return success_response(message="OK")
 
 
 @router.get("/orders")

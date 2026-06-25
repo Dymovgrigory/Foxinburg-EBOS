@@ -475,15 +475,6 @@ async def stream_content(
     if not download_url:
         return error_response("Файл не найден на Яндекс.Диске", status_code=404)
 
-    try:
-        await check_content_stream_rate_limit(
-            current_user.id,
-            content_id,
-            content_length=content.file_size,
-        )
-    except RateLimitExceeded as exc:
-        return error_response(str(exc), status_code=429)
-
     request_headers = {}
     if range:
         request_headers["Range"] = range
@@ -582,15 +573,6 @@ async def stream_content_pdf(
 
     if not download_url:
         return error_response("Файл не найден на Яндекс.Диске", status_code=404)
-
-    try:
-        await check_content_stream_rate_limit(
-            current_user.id,
-            content_id,
-            content_length=content.file_size,
-        )
-    except RateLimitExceeded as exc:
-        return error_response(str(exc), status_code=429)
 
     try:
         pdf_path = await convert_office_to_pdf(

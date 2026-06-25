@@ -34,7 +34,10 @@ class TinkoffService:
                 continue
             if isinstance(value, (dict, list)):
                 continue
-            sign_data[key] = str(value)
+            if isinstance(value, bool):
+                sign_data[key] = "true" if value else "false"
+            else:
+                sign_data[key] = str(value)
 
         sign_data["Password"] = settings.TINKOFF_TERMINAL_PASSWORD
 
@@ -132,15 +135,6 @@ class TinkoffService:
         if not TinkoffService._is_configured():
             logger.warning("Tinkoff notification received but not configured")
             return None
-
-        # Временный дебаг: смотрим, как Тинькофф считает токен
-        computed_token = TinkoffService._sign_payload(payload)
-        logger.warning(
-            "Tinkoff notification debug: payload=%s received_token=%s computed_token=%s",
-            payload,
-            payload.get("Token"),
-            computed_token,
-        )
 
         if not TinkoffService._validate_notification(payload):
             logger.warning("Tinkoff notification token mismatch")

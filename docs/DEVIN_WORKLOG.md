@@ -47,6 +47,40 @@
 
 ## 🗂 Журнал сессий
 
+### Правка — 500 при создании группы без преподавателя + E2E (PR #7) ✅ смёржен, на проде
+
+**Находка (500).** Админ создаёт группу без выбора преподавателя → `POST /api/v3/groups` → **500**.
+Причина: `GroupService.create_group` авто-создаёт чат группы с `created_by_id = teacher_id or 0`.
+Когда преподаватель не выбран, `0` — не валидный пользователь → нарушение FK на `chat_rooms.created_by_id`.
+
+**Решение.** Прокинул `created_by_id` (id текущего пользователя) через сервис и роутер; fallback теперь
+`teacher_id or created_by_id` (создатель), а не `0`.
+- `backend/app/services/group_service.py`: сигнатура `create_group(*, created_by_id: int, **kwargs)`, чат создаётся с `created_by_id=teacher_id or created_by_id`.
+- `backend/app/routers/groups.py`: передаёт `current_user.id` в `create_group`.
+- `backend/tests/test_groups.py`: регресс-тест `test_create_group_without_teacher_by_admin` (201, `teacher_id is None`). Группа-тесты — 13 passed.
+
+**E2E (admin@foxinburg.ru), 2/2 PASSED:**
+- T1: создание группы БЕЗ преподавателя → `POST /groups` = **201** (раньше 500), тост «Группа создана», группа в списке. ✅
+- T2 (регресс): создание группы С преподавателем («Анна Соколова») → 201, тост, группа с именем преподавателя. ✅
+- Автодеплой: merge-commit `932c8e2` в `main`, `https://foxinburg.ru/api/v3/health` → `status: ok`.
+
+### Правка — RBAC страницы «Сотрудники» для Администратора + E2E (PR #6) ✅ смёржен, на проде
+
+**Находки (RBAC).** На странице «Сотрудники» (`/employees`):
+1. Удаление отпусков/KPI требовало права `USER_DELETE` (у админа его нет), хотя создание/редактирование тех же записей требует лишь `USER_UPDATE` → кнопка «Удалить» давала `403`.
+2. Кнопка «Деактивировать» (`DELETE /users` → `USER_DELETE`, только owner/super_admin) у админа была «мёртвой».
+
+**Решение.**
+- `backend/app/routers/hr.py`: удаление отпусков/KPI выровнено на `USER_UPDATE` (симметрично созданию/правке).
+- `frontend/src/pages/EmployeesPage.tsx`: кнопка «Деактивировать» скрыта для ролей без `USER_DELETE` (видна owner/super_admin).
+- `backend/tests/test_rbac_write.py`: добавлены проверки.
+
+**E2E (admin@foxinburg.ru / owner), 4/4 PASSED:**
+- T1 админ удаляет отпуск → `DELETE /hr/leaves` = 200 (раньше 403). ✅
+- T2 админ удаляет KPI → `DELETE /hr/kpis` = 200 (раньше 403). ✅
+- T3 у админа нет кнопки «Деактивировать». ✅
+- T4 у owner кнопка «Деактивировать» есть (контроль — скрытие по роли). ✅
+
 ### Правка — 500 при создании задачи + E2E-тест роли «Педагог» (PR #4)
 
 **Баг (HTTP 500 при создании/обновлении задачи):**

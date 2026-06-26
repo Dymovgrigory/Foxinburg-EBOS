@@ -49,6 +49,24 @@ async def test_create_group_by_methodist(client, auth_headers_factory, user_fact
     assert data["max_students"] == 10
 
 
+async def test_create_group_without_teacher_by_admin(client, auth_headers_factory):
+    """Регресс: админ создаёт группу без преподавателя.
+
+    Раньше авто-создание чата группы использовало created_by_id=teacher_id or 0,
+    и при отсутствии teacher_id значение 0 нарушало FK на chat_rooms.created_by_id
+    -> 500. Теперь fallback — id текущего пользователя.
+    """
+    admin = await auth_headers_factory(Role.ADMIN)
+    response = await client.post("/api/v3/groups", json={
+        "name": "Группа без преподавателя",
+        "max_students": 10,
+    }, headers=admin)
+    assert response.status_code == 201
+    data = response.json()["data"]
+    assert data["name"] == "Группа без преподавателя"
+    assert data["teacher_id"] is None
+
+
 async def test_student_cannot_create_group(client, auth_headers_factory):
     headers = await auth_headers_factory(Role.STUDENT)
     response = await client.post("/api/v3/groups", json={

@@ -75,7 +75,7 @@ class GroupService(BaseService[Group]):
         )
         return list(result.scalars().all())
 
-    async def create_group(self, **kwargs) -> Group:
+    async def create_group(self, *, created_by_id: int, **kwargs) -> Group:
         group = Group(**kwargs)
         await self.add(group)
         await self.uow.session.flush()
@@ -95,7 +95,7 @@ class GroupService(BaseService[Group]):
 
         await chat_service.create_room(
             name=f"Чат: {group.name}",
-            created_by_id=teacher_id or 0,
+            created_by_id=teacher_id or created_by_id,
             group_id=group.id,
             participant_ids=participant_ids,
         )

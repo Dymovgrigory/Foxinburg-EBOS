@@ -105,8 +105,7 @@ class TaskService(BaseService[Task]):
         )
         self.uow.session.add(task)
         await self.uow.commit()
-        await self.uow.session.refresh(task)
-        return task
+        return await self.get_by_id(task.id)
 
     async def update_task(
         self,
@@ -119,7 +118,7 @@ class TaskService(BaseService[Task]):
         for field, value in kwargs.items():
             setattr(task, field, value)
         await self.uow.commit()
-        await self.uow.session.refresh(task)
+        await self.uow.session.refresh(task, ["assignee", "creator", "contact"])
         return task
 
     async def delete_task(self, task_id: int) -> bool:

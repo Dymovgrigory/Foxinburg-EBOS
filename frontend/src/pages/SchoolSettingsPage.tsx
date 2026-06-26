@@ -11,6 +11,7 @@ import {
   EmptyState,
 } from '../components/ui'
 import { useToast } from '../components/ui/Toast'
+import { useAuth } from '../contexts/AuthContext'
 import { getErrorMessage } from '../utils/error'
 import { organizationsApi, systemSettingsApi } from '../api'
 import type { Organization, SystemSettings } from '../types'
@@ -28,9 +29,12 @@ import {
   LuCloud,
 } from 'react-icons/lu'
 
-const TABS = [
+const ORG_TABS = [
   { id: 'info', label: 'Инфо', icon: <LuInfo /> },
   { id: 'branding', label: 'Брендинг', icon: <LuPalette /> },
+]
+
+const SYSTEM_TABS = [
   { id: 'platform', label: 'Платформа', icon: <LuSettings /> },
   { id: 'smtp', label: 'SMTP', icon: <LuMail /> },
   { id: 'sms', label: 'SMS', icon: <LuSmartphone /> },
@@ -76,6 +80,9 @@ const EMPTY_SYSTEM_SETTINGS: SystemSettings = {
 
 export default function SchoolSettingsPage() {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const canManageSystem = ['owner', 'super_admin'].includes(user?.role || '')
+  const tabs = canManageSystem ? [...ORG_TABS, ...SYSTEM_TABS] : ORG_TABS
   const [activeTab, setActiveTab] = useState('info')
   const [loading, setLoading] = useState(true)
   const [savingOrg, setSavingOrg] = useState(false)
@@ -88,7 +95,7 @@ export default function SchoolSettingsPage() {
     try {
       const [list, settings] = await Promise.all([
         organizationsApi.list(),
-        systemSettingsApi.get().catch(() => null),
+        canManageSystem ? systemSettingsApi.get().catch(() => null) : Promise.resolve(null),
       ])
       setOrg(list[0] || null)
       if (settings) {
@@ -229,7 +236,7 @@ export default function SchoolSettingsPage() {
 
       <div className="p-4 md:p-6 w-full space-y-6">
         <Card>
-          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </Card>
 
         {activeTab === 'info' && (

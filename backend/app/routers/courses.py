@@ -103,8 +103,11 @@ async def update_course(
         course,
         title=data.title,
         description=data.description,
+        short_description=data.short_description,
         status=data.status,
         passing_score=data.passing_score,
+        is_sequential=data.is_sequential,
+        certificate_enabled=data.certificate_enabled,
     )
     return success_response(
         data=CourseResponse.model_validate(updated).model_dump(),

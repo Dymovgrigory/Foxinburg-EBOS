@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { getErrorMessage } from '../utils/error'
 import { useToast, Button, Card, Badge, Modal, Input, Select, Textarea, EmptyState, Loader, PageShell } from '../components/ui'
-import { LuBookOpen, LuChevronUp, LuChevronDown } from 'react-icons/lu'
+import { LuBookOpen, LuChevronUp, LuChevronDown, LuPencil } from 'react-icons/lu'
 
 interface Lesson {
   id: number
@@ -63,14 +64,15 @@ export default function CoursesPage() {
     is_sequential: true,
     certificate_enabled: true,
   })
+  const [editing, setEditing] = useState<Course | null>(null)
 
   const fetchCourses = async () => {
     setLoading(true)
     try {
       const res = await api.get('/courses')
       setCourses(res.data.data || [])
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки курсов', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки курсов'), 'error')
     } finally {
       setLoading(false)
     }
@@ -91,6 +93,10 @@ export default function CoursesPage() {
 
   const uniqueTypes = useMemo(() => Array.from(new Set(courses.map((c) => c.type))), [courses])
 
+  const handleCourseUpdated = async () => {
+    await fetchCourses()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
@@ -100,8 +106,8 @@ export default function CoursesPage() {
       setForm({ title: '', description: '', short_description: '', type: 'academy', passing_score: 70, is_sequential: true, certificate_enabled: true })
       showToast('Курс создан', 'success')
       await fetchCourses()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка создания курса', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка создания курса'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -183,7 +189,7 @@ export default function CoursesPage() {
                     <Badge variant="default">Модулей: {course.modules.length}</Badge>
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-fox-border">
+                  <div className="mt-auto pt-4 border-t border-fox-border flex items-center justify-between gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -192,6 +198,16 @@ export default function CoursesPage() {
                     >
                       {isExpanded ? 'Скрыть модули' : 'Показать модули'}
                     </Button>
+                    {canManage && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setEditing(course)}
+                        leftIcon={<LuPencil size={14} />}
+                      >
+                        Изменить
+                      </Button>
+                    )}
                   </div>
 
                   {isExpanded && (
@@ -293,6 +309,135 @@ export default function CoursesPage() {
           </label>
         </form>
       </Modal>
+
+      {editing && (
+        <CourseEditModal
+          course={editing}
+          onClose={() => setEditing(null)}
+          onSaved={handleCourseUpdated}
+        />
+      )}
     </PageShell>
+  )
+}
+
+function CourseEditModal({
+  course,
+  onClose,
+  onSaved,
+}: {
+  course: Course
+  onClose: () => void
+  onSaved: () => Promise<void> | void
+}) {
+  const { showToast } = useToast()
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    title: course.title,
+    short_description: course.short_description || '',
+    description: course.description || '',
+    status: course.status,
+    passing_score: course.passing_score,
+    is_sequential: course.is_sequential,
+    certificate_enabled: course.certificate_enabled,
+  })
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await api.patch(`/courses/${course.id}`, {
+        title: form.title,
+        short_description: form.short_description,
+        description: form.description,
+        status: form.status,
+        passing_score: Number(form.passing_score),
+        is_sequential: form.is_sequential,
+        certificate_enabled: form.certificate_enabled,
+      })
+      showToast('Курс обновлён', 'success')
+      await onSaved()
+      onClose()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка обновления курса'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Редактирование: ${course.title}`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Отмена
+          </Button>
+          <Button type="submit" form="course-edit-form" loading={saving}>
+            Сохранить
+          </Button>
+        </>
+      }
+    >
+      <form id="course-edit-form" onSubmit={handleSave} className="grid gap-4">
+        <Input
+          label="Название курса"
+          required
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+        <Input
+          label="Краткое описание"
+          value={form.short_description}
+          onChange={(e) => setForm({ ...form, short_description: e.target.value })}
+        />
+        <Textarea
+          label="Полное описание"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          rows={3}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Проходной балл"
+            type="number"
+            value={form.passing_score}
+            onChange={(e) => setForm({ ...form, passing_score: Number(e.target.value) })}
+          />
+          <Select
+            label="Статус"
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+          >
+            <option value="draft">Черновик</option>
+            <option value="published">Опубликован</option>
+            <option value="archived">Архив</option>
+          </Select>
+        </div>
+        <div className="rounded-xl bg-fox-light p-3 text-sm text-fox-gray">
+          Тип курса: <span className="font-semibold text-fox-dark">{course.type}</span> (не редактируется)
+        </div>
+        <label className="flex items-center gap-2 text-sm text-fox-graphite">
+          <input
+            type="checkbox"
+            checked={form.is_sequential}
+            onChange={(e) => setForm({ ...form, is_sequential: e.target.checked })}
+            className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
+          />
+          Последовательное прохождение
+        </label>
+        <label className="flex items-center gap-2 text-sm text-fox-graphite">
+          <input
+            type="checkbox"
+            checked={form.certificate_enabled}
+            onChange={(e) => setForm({ ...form, certificate_enabled: e.target.checked })}
+            className="rounded border-fox-border text-fox-purple focus:ring-fox-gold"
+          />
+          Выдавать сертификат
+        </label>
+      </form>
+    </Modal>
   )
 }

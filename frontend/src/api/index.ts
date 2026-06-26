@@ -172,6 +172,8 @@ export const schedulesApi = {
   create: (data: Partial<Schedule>) => api.post<ApiResponse<Schedule>>('/schedules', data).then(unwrap),
   update: (id: number, data: Partial<Schedule>) =>
     api.patch<ApiResponse<Schedule>>(`/schedules/${id}`, data).then(unwrap),
+  conduct: (id: number) =>
+    api.patch<ApiResponse<Schedule>>(`/schedules/${id}/conduct`).then(unwrap),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/schedules/${id}`).then(unwrap),
 }
 

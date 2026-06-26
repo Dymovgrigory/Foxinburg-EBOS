@@ -302,3 +302,35 @@ class TestAttendance:
         }
         response = await client.post("/api/v3/attendance", json=payload, headers=headers)
         assert response.status_code == 403
+
+
+class TestConductSchedule:
+    async def test_teacher_can_conduct_schedule(
+        self, client, auth_headers_factory, sample_schedule
+    ):
+        teacher_headers = await auth_headers_factory(Role.TEACHER)
+        response = await client.patch(
+            f"/api/v3/schedules/{sample_schedule.id}/conduct", headers=teacher_headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["status"] == "completed"
+
+    async def test_student_cannot_conduct_schedule(
+        self, client, auth_headers_factory, sample_schedule
+    ):
+        headers = await auth_headers_factory(Role.STUDENT)
+        response = await client.patch(
+            f"/api/v3/schedules/{sample_schedule.id}/conduct", headers=headers
+        )
+        assert response.status_code == 403
+
+    async def test_conduct_missing_schedule_returns_404(
+        self, client, auth_headers_factory
+    ):
+        teacher_headers = await auth_headers_factory(Role.TEACHER)
+        response = await client.patch(
+            "/api/v3/schedules/999999/conduct", headers=teacher_headers
+        )
+        assert response.status_code == 404

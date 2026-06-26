@@ -29,6 +29,11 @@ export interface User {
   salary_rate?: number
   hr_status?: string
   contract_number?: string | null
+  balance?: number
+  debt?: number
+  xp?: number
+  coins?: number
+  level?: number
 }
 
 export interface Course {

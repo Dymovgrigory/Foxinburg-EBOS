@@ -1,45 +1,38 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { usersApi, groupsApi } from '../api'
 import { useAuth } from '../contexts/AuthContext'
-import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
+import { getErrorMessage } from '../utils/error'
+import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, Modal, Select } from '../components/ui'
 import { LuGraduationCap, LuX } from 'react-icons/lu'
-
-interface Student {
-  id: number
-  name: string
-  email: string
-  role: string
-  group_id?: number
-  is_active: boolean
-}
-
-interface Group {
-  id: number
-  name: string
-}
+import type { User, Group } from '../types'
 
 export default function StudentsPage() {
   const { showToast } = useToast()
   const { user } = useAuth()
-  const canCreate = ['owner', 'super_admin', 'admin'].includes(user?.role || '')
-  const [students, setStudents] = useState<Student[]>([])
+  const role = user?.role || ''
+  const canCreate = ['owner', 'super_admin', 'admin'].includes(role)
+  const canViewCard = ['owner', 'super_admin', 'admin', 'manager', 'methodist'].includes(role)
+  const canEdit = ['owner', 'super_admin', 'admin'].includes(role)
+  const canDeactivate = ['owner', 'super_admin'].includes(role)
+  const [students, setStudents] = useState<User[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '', group_id: '' })
+  const [selected, setSelected] = useState<User | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [usersRes, groupsRes] = await Promise.all([api.get('/users/students'), api.get('/groups')])
-      const allUsers: Student[] = usersRes.data.data || []
+      const [allUsers, groupsRes] = await Promise.all([usersApi.listStudents(), groupsApi.list()])
       setStudents(allUsers.filter((u) => u.role === 'student'))
-      setGroups(groupsRes.data.data || [])
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки', 'error')
+      setGroups(groupsRes)
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка загрузки'), 'error')
     } finally {
       setLoading(false)
     }
@@ -62,21 +55,24 @@ export default function StudentsPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await api.post('/users', {
+      const res = await api.post('/users', {
         name: form.name,
         email: form.email,
         password: form.password,
         role: 'student',
         plan: 'FREE',
         target_language: 'ru',
-        group_id: form.group_id ? Number(form.group_id) : null,
       })
+      const newId: number | undefined = res.data?.data?.id
+      if (newId && form.group_id) {
+        await usersApi.update(newId, { group_id: Number(form.group_id) })
+      }
       setShowForm(false)
       setForm({ name: '', email: '', password: '', group_id: '' })
       showToast('Ученик добавлен', 'success')
       await fetchData()
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка создания ученика', 'error')
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка создания ученика'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -156,7 +152,11 @@ export default function StudentsPage() {
               </Thead>
               <Tbody>
                 {filtered.map((s) => (
-                  <Tr key={s.id}>
+                  <Tr
+                    key={s.id}
+                    className={canViewCard ? 'cursor-pointer hover:bg-fox-light/50' : undefined}
+                    onClick={canViewCard ? () => setSelected(s) : undefined}
+                  >
                     <Td className="font-medium text-fox-dark">{s.name}</Td>
                     <Td>{s.email}</Td>
                     <Td>{groups.find((g) => g.id === s.group_id)?.name || '—'}</Td>
@@ -174,6 +174,191 @@ export default function StudentsPage() {
           </Card>
         )}
       </div>
+
+      {selected && (
+        <StudentModal
+          student={selected}
+          groups={groups}
+          canEdit={canEdit}
+          canDeactivate={canDeactivate}
+          onClose={() => setSelected(null)}
+          onSaved={fetchData}
+        />
+      )}
     </div>
+  )
+}
+
+function formatMoney(kopecks?: number) {
+  return `${((kopecks || 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`
+}
+
+function formatDate(value?: string) {
+  if (!value) return '—'
+  return new Date(value).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function StudentModal({
+  student,
+  groups,
+  canEdit,
+  canDeactivate,
+  onClose,
+  onSaved,
+}: {
+  student: User
+  groups: Group[]
+  canEdit: boolean
+  canDeactivate: boolean
+  onClose: () => void
+  onSaved: () => Promise<void> | void
+}) {
+  const { showToast } = useToast()
+  const [profile, setProfile] = useState<User>(student)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    usersApi
+      .get(student.id)
+      .then((u) => {
+        if (active) setProfile(u)
+      })
+      .catch((err: unknown) => showToast(getErrorMessage(err, 'Ошибка загрузки карточки'), 'error'))
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [student.id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await usersApi.update(student.id, {
+        name: profile.name,
+        phone: profile.phone || null,
+        group_id: profile.group_id ?? null,
+        plan: profile.plan,
+        is_active: profile.is_active,
+      })
+      showToast('Ученик обновлён', 'success')
+      await onSaved()
+      onClose()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка обновления'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeactivate = async () => {
+    if (!confirm('Деактивировать ученика?')) return
+    try {
+      await usersApi.delete(student.id)
+      showToast('Ученик деактивирован', 'success')
+      await onSaved()
+      onClose()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, 'Ошибка деактивации'), 'error')
+    }
+  }
+
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={profile.name}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Закрыть</Button>
+          {canEdit && <Button onClick={handleSave} loading={saving}>Сохранить</Button>}
+          {canDeactivate && profile.is_active && (
+            <Button variant="danger" onClick={handleDeactivate}>Деактивировать</Button>
+          )}
+        </>
+      }
+    >
+      {loading ? (
+        <Loader text="Загрузка карточки..." />
+      ) : (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Имя"
+              value={profile.name || ''}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              disabled={!canEdit}
+            />
+            <Input label="Email" value={profile.email || ''} disabled helper="Email изменить нельзя" />
+            <Input
+              label="Телефон"
+              value={profile.phone || ''}
+              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+              disabled={!canEdit}
+            />
+            <Select
+              label="Группа"
+              value={profile.group_id ?? ''}
+              onChange={(e) => setProfile({ ...profile, group_id: e.target.value ? Number(e.target.value) : null })}
+              disabled={!canEdit}
+            >
+              <option value="">Без группы</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </Select>
+            <Select
+              label="Тариф"
+              value={profile.plan || 'FREE'}
+              onChange={(e) => setProfile({ ...profile, plan: e.target.value })}
+              disabled={!canEdit}
+            >
+              <option value="FREE">FREE</option>
+              <option value="PREMIUM">PREMIUM</option>
+            </Select>
+            <Select
+              label="Статус"
+              value={profile.is_active ? 'active' : 'inactive'}
+              onChange={(e) => setProfile({ ...profile, is_active: e.target.value === 'active' })}
+              disabled={!canEdit}
+            >
+              <option value="active">Активен</option>
+              <option value="inactive">Неактивен</option>
+            </Select>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-bold text-fox-dark mb-2">Игровой прогресс и финансы</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <Card><div className="text-xs text-fox-gray">Уровень</div><div className="font-bold text-fox-dark">{profile.level ?? 0}</div></Card>
+              <Card><div className="text-xs text-fox-gray">XP</div><div className="font-bold text-fox-dark">{profile.xp ?? 0}</div></Card>
+              <Card><div className="text-xs text-fox-gray">Коины</div><div className="font-bold text-fox-dark">{profile.coins ?? 0}</div></Card>
+              <Card><div className="text-xs text-fox-gray">Баланс</div><div className="font-bold text-fox-dark">{formatMoney(profile.balance)}</div></Card>
+              <Card><div className="text-xs text-fox-gray">Долг</div><div className="font-bold text-fox-dark">{formatMoney(profile.debt)}</div></Card>
+              <Card>
+                <div className="text-xs text-fox-gray">Статус</div>
+                <div className="mt-0.5">{profile.is_active ? <Badge variant="success">Активен</Badge> : <Badge variant="default">Неактивен</Badge>}</div>
+              </Card>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3 text-sm">
+            <div className="flex justify-between border-b border-fox-border py-1.5">
+              <span className="text-fox-gray">Дата регистрации</span>
+              <span className="text-fox-dark">{formatDate(profile.created_at)}</span>
+            </div>
+            <div className="flex justify-between border-b border-fox-border py-1.5">
+              <span className="text-fox-gray">Последний вход</span>
+              <span className="text-fox-dark">{formatDate(profile.last_login_at)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }

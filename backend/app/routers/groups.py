@@ -92,7 +92,7 @@ async def create_group(
     uow: UnitOfWork = Depends(get_uow),
 ):
     service = GroupService(uow)
-    group = await service.create_group(**data.model_dump())
+    group = await service.create_group(created_by_id=current_user.id, **data.model_dump())
     await uow.commit()
     group = await service.get_by_id(group.id)
     item = GroupResponse.model_validate(group).model_dump()

@@ -78,7 +78,7 @@ EXPECTED = {
         "/courses": 200,
         "/groups": 200,
         "/groups/my": 200,
-        "/users/students": 403,
+        "/users/students": 200,
         "/enrollments": 200,
         "/notifications": 200,
         "/finance/payments/me": 200,

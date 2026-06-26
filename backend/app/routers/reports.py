@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 from datetime import datetime, time
 from typing import Optional
 
@@ -50,6 +51,15 @@ def _parse_date(value: Optional[str], end_of_day: bool = False) -> Optional[date
         return dt
     except ValueError:
         return None
+
+
+def _json_data(resp) -> dict:
+    """Extract the JSON payload from a JSONResponse returned by a report endpoint.
+
+    Report endpoints return ``JSONResponse`` whose ``.body`` is raw bytes, so the
+    parsed dict must be decoded before the ``data`` field can be accessed.
+    """
+    return json.loads(resp.body)
 
 
 def _date_filter(query, column, date_from: Optional[datetime], date_to: Optional[datetime]):
@@ -503,38 +513,38 @@ async def export_report_csv(
     # Re-use report endpoints by calling inner logic directly
     if report_type == "manager":
         resp = await manager_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"] if isinstance(resp.body, dict) else []
+        rows = _json_data(resp).get("data") or []
     elif report_type == "sales":
         resp = await sales_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]["manager_revenue"]
+        rows = _json_data(resp)["data"]["manager_revenue"]
     elif report_type == "teachers":
         resp = await teachers_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "students_payments":
         resp = await students_payments_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "students_subscriptions":
         resp = await students_subscriptions_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "contracts":
         resp = await contracts_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "accounts":
         resp = await accounts_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "pnl":
         resp = await pnl_report(branch_id, date_from, date_to, current_user)
-        data = resp.body["data"]
+        data = _json_data(resp)["data"]
         rows = [{"metric": k, "value_kopecks": v} for k, v in data.items()]
     elif report_type == "payroll":
         resp = await payroll_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "expenses":
         resp = await expenses_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "debtors":
         resp = await debtors_report(branch_id, date_from, date_to, current_user)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     else:
         rows = []
 
@@ -571,17 +581,17 @@ async def export_report_pdf(
 
     if report_type == "pnl":
         resp = await pnl_report(branch_id, date_from, date_to, current_user)
-        data = resp.body["data"]
+        data = _json_data(resp)["data"]
         rows = [{"metric": k, "value_kopecks": v} for k, v in data.items()]
     elif report_type == "payroll":
         resp = await payroll_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "expenses":
         resp = await expenses_report(branch_id, date_from, date_to, current_user, db)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     elif report_type == "debtors":
         resp = await debtors_report(branch_id, date_from, date_to, current_user)
-        rows = resp.body["data"]
+        rows = _json_data(resp)["data"]
     else:
         # Fallback: reuse CSV rows logic for supported types
         csv_resp = await export_report_csv(report_type, branch_id, date_from, date_to, current_user, db)

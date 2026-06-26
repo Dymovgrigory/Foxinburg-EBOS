@@ -26,7 +26,13 @@ export default function CertificationPage() {
       const data = await teacherAcademyApi.progress()
       setProgress(data)
     } catch (err: unknown) {
-      showToast(getErrorMessage(err, 'Ошибка загрузки прогресса'), 'error')
+      // Курс Академии ещё не синхронизирован / педагог не зачислён (404/400) —
+      // это штатное состояние «ещё не сертифицирован», показываем без ошибки.
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status !== 404 && status !== 400) {
+        showToast(getErrorMessage(err, 'Ошибка загрузки прогресса'), 'error')
+      }
+      setProgress(null)
     } finally {
       setLoading(false)
     }

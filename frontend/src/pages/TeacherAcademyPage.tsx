@@ -130,7 +130,11 @@ export default function TeacherAcademyPage() {
       const res = await api.get('/teacher-academy/course')
       setCourse(res.data.data)
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Не удалось загрузить курс', 'error')
+      // 404 — курс ещё не синхронизирован: показываем пустое состояние без ошибки.
+      if (err.response?.status !== 404) {
+        showToast(err.response?.data?.message || 'Не удалось загрузить курс', 'error')
+      }
+      setCourse(null)
     }
   }
 
@@ -139,9 +143,12 @@ export default function TeacherAcademyPage() {
       const res = await api.get('/teacher-academy/progress')
       setProgress(res.data.data)
     } catch (err: any) {
-      if (err.response?.status !== 404) {
+      // 404/400 — курс не синхронизирован / педагог не зачислён: штатное состояние.
+      const status = err.response?.status
+      if (status !== 404 && status !== 400) {
         showToast(err.response?.data?.message || 'Не удалось загрузить прогресс', 'error')
       }
+      setProgress(null)
     }
   }
 

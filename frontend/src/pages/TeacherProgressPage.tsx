@@ -59,18 +59,30 @@ export default function TeacherProgressPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    try {
-      const [academyRes, achievementsRes] = await Promise.all([
-        api.get('/teacher-academy/progress'),
-        api.get('/achievements/my'),
-      ])
-      setAcademy(academyRes.data.data)
-      setAchievements(achievementsRes.data.data || [])
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Ошибка загрузки прогресса', 'error')
-    } finally {
-      setLoading(false)
+    const [academyRes, achievementsRes] = await Promise.allSettled([
+      api.get('/teacher-academy/progress'),
+      api.get('/achievements/my'),
+    ])
+
+    if (academyRes.status === 'fulfilled') {
+      setAcademy(academyRes.value.data.data)
+    } else {
+      // Курс Академии ещё не синхронизирован / педагог не зачислён —
+      // это нормальное состояние, показываем пустой блок без ошибки.
+      setAcademy(null)
     }
+
+    if (achievementsRes.status === 'fulfilled') {
+      setAchievements(achievementsRes.value.data.data || [])
+    } else {
+      setAchievements([])
+      showToast(
+        achievementsRes.reason?.response?.data?.message || 'Ошибка загрузки достижений',
+        'error'
+      )
+    }
+
+    setLoading(false)
   }
 
   useEffect(() => {

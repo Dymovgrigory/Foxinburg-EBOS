@@ -47,6 +47,33 @@
 
 ## 🗂 Журнал сессий
 
+### Правка — экспорт отчётов CSV/PDF (500 на всех типах) + E2E (PR #9) ✅ смёржен, на проде
+
+**Находка (500).** На странице «Отчёты» (`/reports`, Администратор) кнопки **CSV** и **PDF**
+падали с `500` для всех 11 типов отчётов (тип «Менеджер» молча отдавал пустой файл).
+Причина: обработчики экспорта читали `JSONResponse.body` как `dict` (`resp.body["data"]`),
+а `.body` — это сырые UTF-8 байты, не словарь → `TypeError: byte indices must be integers`.
+
+**Решение.**
+- `backend/app/routers/reports.py`: добавлен хелпер `_json_data(resp)` (`json.loads(resp.body)`),
+  все 11 обращений `resp.body["data"]` в CSV- и PDF-обработчиках заменены на `_json_data(resp).get("data") or []`.
+- `backend/tests/test_reports_export.py`: 23 регресс-теста (11 типов × CSV/PDF + путь 404) — все зелёные.
+
+**E2E (admin@foxinburg.ru), 2/2 PASSED:**
+- T1: P&L → **PDF** → `report_pnl.pdf` (валидный `%PDF`) скачался, запрос **200** (раньше 500). ✅
+- T2: P&L → **CSV** → `report_pnl.csv` с реальными данными (`income_kopecks,1250000`…). ✅
+- Регресс: «Продажи» → CSV тоже скачивается — фикс общий. ✅
+- Автодеплой: merge-commit PR #9 в `main`, GitHub Actions «Deploy to production» — `success`, `https://foxinburg.ru/api/v3/health` → `status: ok`.
+
+**Аудит остальных страниц Администратора (без находок — правки не требуются):**
+- Read-only обход всех admin-эндпоинтов (`scripts/qa_admin_audit.py`): два `403` — оба **by design**
+  (`/system/settings` уже закрыт под `SETTINGS_MANAGE` — PR #5; `/system/roles` в UI не используется,
+  страница «Роли» грузится через `/system/permissions` → 200).
+- Аудит write-операций (`scripts/qa_admin_writes.py`): чисто, ни одного `403`/`500`.
+- Фронтенд: компонент-заглушка `PlaceholderPage` нигде не импортируется (нет stub-маршрутов);
+  все пункты меню (`navigation.tsx`) ведут на реальные маршруты (`App.tsx`) — мёртвых ссылок нет;
+  пустых/no-op обработчиков `onClick`, `TODO`, `alert()`, `href="#"` в страницах не найдено.
+
 ### Правка — 500 при создании группы без преподавателя + E2E (PR #7) ✅ смёржен, на проде
 
 **Находка (500).** Админ создаёт группу без выбора преподавателя → `POST /api/v3/groups` → **500**.

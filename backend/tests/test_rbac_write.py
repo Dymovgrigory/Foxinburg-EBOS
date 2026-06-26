@@ -863,6 +863,14 @@ class TestHrLeavesWrite:
         response = await client.delete("/api/v3/hr/leaves/1", headers=headers)
         assert response.status_code == 403
 
+    @pytest.mark.parametrize("role", [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN])
+    async def test_privileged_user_can_delete_leave(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/hr/leaves/999999", headers=headers)
+        # Права есть: не 403. Записи нет → 404 (либо 200, если создана).
+        assert response.status_code != 403
+        assert response.status_code in (200, 404)
+
 
 class TestHrKpisWrite:
     """Управление KPI доступно OWNER/SUPER_ADMIN/ADMIN."""
@@ -905,6 +913,14 @@ class TestHrKpisWrite:
         headers = await auth_headers_factory(role)
         response = await client.delete("/api/v3/hr/kpis/1", headers=headers)
         assert response.status_code == 403
+
+    @pytest.mark.parametrize("role", [Role.OWNER, Role.SUPER_ADMIN, Role.ADMIN])
+    async def test_privileged_user_can_delete_kpi(self, client, auth_headers_factory, role):
+        headers = await auth_headers_factory(role)
+        response = await client.delete("/api/v3/hr/kpis/999999", headers=headers)
+        # Права есть: не 403. Записи нет → 404 (либо 200, если создана).
+        assert response.status_code != 403
+        assert response.status_code in (200, 404)
 
 
 class TestRoleConfigWrite:

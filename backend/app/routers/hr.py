@@ -74,7 +74,7 @@ async def update_leave(
 @router.delete("/leaves/{leave_id}")
 async def delete_leave(
     leave_id: int,
-    current_user=Depends(require_permission(Permission.USER_DELETE)),
+    current_user=Depends(require_permission(Permission.USER_UPDATE)),
     uow: UnitOfWork = Depends(get_uow),
 ):
     leave = await uow.session.get(StaffLeave, leave_id)
@@ -153,7 +153,7 @@ async def update_kpi(
 @router.delete("/kpis/{kpi_id}")
 async def delete_kpi(
     kpi_id: int,
-    current_user=Depends(require_permission(Permission.USER_DELETE)),
+    current_user=Depends(require_permission(Permission.USER_UPDATE)),
     uow: UnitOfWork = Depends(get_uow),
 ):
     kpi = await uow.session.get(StaffKpi, kpi_id)

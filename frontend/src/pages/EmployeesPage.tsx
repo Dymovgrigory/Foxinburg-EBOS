@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td, Modal, Tabs, Select, PageShell } from '../components/ui'
 import { usersApi, hrApi, financeApi } from '../api'
+import { useAuth } from '../contexts/AuthContext'
 import { getErrorMessage } from '../utils/error'
 import type { User, StaffLeave, StaffKpi, PayrollResponse } from '../types'
 import { LuUsers, LuX, LuSearch, LuUser, LuBriefcase, LuDollarSign, LuFileText } from 'react-icons/lu'
@@ -255,6 +256,8 @@ const EMPLOYEE_TABS = [
 
 function EmployeeModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: () => void }) {
   const { showToast } = useToast()
+  const { user: currentUser } = useAuth()
+  const canDeactivate = ['owner', 'super_admin'].includes(currentUser?.role || '')
   const [tab, setTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState({ ...user })
@@ -329,7 +332,7 @@ function EmployeeModal({ user, onClose, onSaved }: { user: User; onClose: () => 
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={profile.name} size="lg" footer={<><Button variant="ghost" onClick={onClose}>Закрыть</Button><Button onClick={handleUpdate} loading={saving}>Сохранить</Button><Button variant="danger" onClick={handleDeactivate}>Деактивировать</Button></>}>
+    <Modal isOpen onClose={onClose} title={profile.name} size="lg" footer={<><Button variant="ghost" onClick={onClose}>Закрыть</Button><Button onClick={handleUpdate} loading={saving}>Сохранить</Button>{canDeactivate && <Button variant="danger" onClick={handleDeactivate}>Деактивировать</Button>}</>}>
       <Tabs tabs={EMPLOYEE_TABS} activeTab={tab} onChange={setTab} />
       <div className="mt-4">
         {tab === 'profile' && (

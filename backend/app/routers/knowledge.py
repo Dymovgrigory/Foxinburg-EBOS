@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
 from app.core.dependencies import require_active_user, require_permission
-from app.core.permissions import Permission
+from app.core.permissions import Permission, has_permission
 from app.core.responses import success_response, error_response
 from app.models.knowledge import KnowledgeArticle
 from app.schemas.knowledge import KnowledgeArticleCreate, KnowledgeArticleUpdate, KnowledgeArticleResponse
@@ -20,7 +20,9 @@ async def list_articles(
     current_user=Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(KnowledgeArticle).where(KnowledgeArticle.is_published == True)
+    query = select(KnowledgeArticle)
+    if not has_permission(current_user.role, Permission.COURSE_UPDATE):
+        query = query.where(KnowledgeArticle.is_published == True)
     if category:
         query = query.where(KnowledgeArticle.category == category)
     if search:
@@ -45,7 +47,8 @@ async def get_article(
     db: AsyncSession = Depends(get_db),
 ):
     article = await db.get(KnowledgeArticle, article_id)
-    if not article or not article.is_published:
+    can_manage = has_permission(current_user.role, Permission.COURSE_UPDATE)
+    if not article or (not article.is_published and not can_manage):
         return error_response("Статья не найдена", status_code=404)
     return success_response(
         data=KnowledgeArticleResponse.model_validate(article).model_dump(),

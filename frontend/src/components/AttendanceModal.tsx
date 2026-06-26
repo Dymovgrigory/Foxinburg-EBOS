@@ -124,7 +124,7 @@ export default function AttendanceModal({
       )
 
       if (schedule.status !== 'completed') {
-        await schedulesApi.update(schedule.id, { status: 'completed' })
+        await schedulesApi.conduct(schedule.id)
       }
 
       showToast('Посещаемость сохранена, занятие проведено', 'success')

@@ -155,6 +155,33 @@ async def update_schedule(
     )
 
 
+@router.patch("/{schedule_id}/conduct")
+async def conduct_schedule(
+    schedule_id: int,
+    current_user=Depends(require_permission(Permission.ATTENDANCE_MANAGE)),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Отметить занятие проведённым.
+
+    Доступно тем, кто ведёт посещаемость (педагог/методист/админ) по праву
+    ATTENDANCE_MANAGE, в отличие от полного редактирования расписания
+    (GROUP_MANAGE). Используется при сохранении посещаемости.
+    """
+    service = ScheduleService(uow)
+    try:
+        schedule = await service.update_schedule(schedule_id, data={"status": "completed"})
+    except ValueError as e:
+        return error_response(str(e), status_code=409)
+    if not schedule:
+        return error_response("Занятие не найдено", status_code=404)
+    await uow.commit()
+    await uow.session.refresh(schedule)
+    return success_response(
+        data=ScheduleResponse.model_validate(schedule).model_dump(),
+        message="Занятие проведено",
+    )
+
+
 @router.delete("/{schedule_id}")
 async def delete_schedule(
     schedule_id: int,

@@ -88,6 +88,7 @@ async def list_my_students(
         Role.OWNER.value,
         Role.SUPER_ADMIN.value,
         Role.ADMIN.value,
+        Role.MANAGER.value,
         Role.METHODIST.value,
     ):
         students = await service.get_students()

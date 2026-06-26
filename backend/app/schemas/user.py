@@ -84,6 +84,7 @@ class UserListResponse(BaseModel):
     role: str
     plan: str
     is_active: bool
+    group_id: Optional[int] = None
     phone: Optional[str] = None
     position: Optional[str] = None
     hr_status: Optional[str] = None

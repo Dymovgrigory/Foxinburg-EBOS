@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast, Button, Card, Badge, Input, Loader, EmptyState, Table, Thead, Th, Tbody, Tr, Td } from '../components/ui'
 import { LuGraduationCap, LuX } from 'react-icons/lu'
 
@@ -20,6 +21,8 @@ interface Group {
 
 export default function StudentsPage() {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const canCreate = ['owner', 'super_admin', 'admin'].includes(user?.role || '')
   const [students, setStudents] = useState<Student[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,7 +34,7 @@ export default function StudentsPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [usersRes, groupsRes] = await Promise.all([api.get('/users'), api.get('/groups')])
+      const [usersRes, groupsRes] = await Promise.all([api.get('/users/students'), api.get('/groups')])
       const allUsers: Student[] = usersRes.data.data || []
       setStudents(allUsers.filter((u) => u.role === 'student'))
       setGroups(groupsRes.data.data || [])
@@ -90,9 +93,11 @@ export default function StudentsPage() {
               <h2 className="text-lg font-bold text-fox-dark">Список учеников</h2>
               <p className="text-xs text-fox-gray mt-0.5">{filtered.length} из {students.length}</p>
             </div>
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
-              {showForm ? 'Отмена' : 'Добавить ученика'}
-            </Button>
+            {canCreate && (
+              <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'secondary' : 'primary'} leftIcon={showForm ? <LuX /> : '+'}>
+                {showForm ? 'Отмена' : 'Добавить ученика'}
+              </Button>
+            )}
           </div>
 
           <div className="mt-5 max-w-sm">
@@ -135,8 +140,8 @@ export default function StudentsPage() {
             icon={<LuGraduationCap />}
             title="Ученики не найдены"
             description={search ? 'Попробуй изменить поиск.' : 'Добавь первого ученика, чтобы начать.'}
-            actionLabel={!search ? 'Добавить ученика' : undefined}
-            onAction={!search ? () => setShowForm(true) : undefined}
+            actionLabel={canCreate && !search ? 'Добавить ученика' : undefined}
+            onAction={canCreate && !search ? () => setShowForm(true) : undefined}
           />
         ) : (
           <Card padding="none">

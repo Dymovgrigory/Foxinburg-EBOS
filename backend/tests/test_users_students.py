@@ -105,6 +105,33 @@ class TestListMyStudents:
         emails = {u["email"] for u in response.json()["data"]}
         assert "student_methodist@test.local" in emails
 
+    async def test_manager_can_list_all_students(self, client, db_session):
+        manager = User(
+            email="manager_students@test.local",
+            name="Manager",
+            role="manager",
+            password_hash=get_password_hash("password123"),
+            is_active=True,
+        )
+        student = User(
+            email="student_manager@test.local",
+            name="Student",
+            role="student",
+            password_hash=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add_all([manager, student])
+        await db_session.commit()
+
+        token = create_access_token({"user_id": manager.id, "role": manager.role})
+        response = await client.get(
+            "/api/v3/users/students",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        emails = {u["email"] for u in response.json()["data"]}
+        assert "student_manager@test.local" in emails
+
     async def test_student_cannot_list_students(self, client, db_session):
         student = User(
             email="student_forbidden@test.local",

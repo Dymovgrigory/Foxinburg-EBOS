@@ -148,7 +148,6 @@ export const teacherGroups: MenuGroup[] = [
     defaultOpen: false,
     items: [
       { to: '/courses', label: 'Курсы', icon: <LuBookOpen /> },
-      { to: '/course-builder', label: 'Конструктор', icon: <LuPuzzle /> },
     ],
   },
   {

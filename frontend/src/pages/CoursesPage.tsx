@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import api from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast, Button, Card, Badge, Modal, Input, Select, Textarea, EmptyState, Loader, PageShell } from '../components/ui'
 import { LuBookOpen, LuChevronUp, LuChevronDown } from 'react-icons/lu'
 
@@ -44,6 +45,8 @@ const statusMeta: Record<string, { label: string; variant: Parameters<typeof Bad
 
 export default function CoursesPage() {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const canManage = ['owner', 'super_admin', 'admin', 'methodist'].includes(user?.role || '')
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -124,7 +127,9 @@ export default function CoursesPage() {
               <h2 className="text-2xl md:text-3xl font-bold text-fox-purple mb-2">Учебные курсы</h2>
               <p className="text-fox-gray">{filteredCourses.length} из {courses.length} курсов</p>
             </div>
-            <Button onClick={() => setShowForm(true)} leftIcon={<span className="text-lg leading-none">+</span>}>Новый курс</Button>
+            {canManage && (
+              <Button onClick={() => setShowForm(true)} leftIcon={<span className="text-lg leading-none">+</span>}>Новый курс</Button>
+            )}
           </div>
         </div>
 
@@ -156,8 +161,8 @@ export default function CoursesPage() {
             icon={<LuBookOpen />}
             title="Курсы не найдены"
             description={search || typeFilter ? 'Попробуй изменить фильтры поиска.' : 'Создай первый курс, чтобы начать обучение.'}
-            actionLabel={!search && !typeFilter ? 'Создать курс' : undefined}
-            onAction={!search && !typeFilter ? () => setShowForm(true) : undefined}
+            actionLabel={canManage && !search && !typeFilter ? 'Создать курс' : undefined}
+            onAction={canManage && !search && !typeFilter ? () => setShowForm(true) : undefined}
           />
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">

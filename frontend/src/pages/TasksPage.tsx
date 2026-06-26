@@ -3,6 +3,7 @@ import { getErrorMessage } from '../utils/error'
 import Header from '../components/Header'
 import { useToast, Button, Card, Badge, Modal, Input, Select, Textarea, Loader, EmptyState, PageShell, Tabs } from '../components/ui'
 import { tasksApi, usersApi } from '../api'
+import { useAuth } from '../contexts/AuthContext'
 import type { Task, User } from '../types'
 import { LuListChecks, LuPlus, LuPencil, LuTrash2, LuCheck, LuSearch, LuX } from 'react-icons/lu'
 
@@ -20,6 +21,8 @@ const STATUS_META: Record<string, { label: string; variant: Parameters<typeof Ba
 
 export default function TasksPage() {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const isTeacher = user?.role === 'teacher'
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,7 +55,7 @@ export default function TasksPage() {
     try {
       const [tasksRes, usersRes] = await Promise.all([
         tasksApi.list(),
-        usersApi.list().catch(() => []),
+        (isTeacher ? usersApi.listStudents() : usersApi.list()).catch(() => []),
       ])
       setTasks(tasksRes)
       setUsers(usersRes)
@@ -61,7 +64,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
-  }, [showToast])
+  }, [showToast, isTeacher])
 
   useEffect(() => {
     fetchData()

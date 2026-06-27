@@ -34,6 +34,7 @@ export interface User {
   xp?: number
   coins?: number
   level?: number
+  password?: string
 }
 
 export interface Course {

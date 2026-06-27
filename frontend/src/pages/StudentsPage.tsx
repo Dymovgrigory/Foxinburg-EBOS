@@ -217,6 +217,8 @@ function StudentModal({
   const [profile, setProfile] = useState<User>(student)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [initialPassword, setInitialPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -224,7 +226,10 @@ function StudentModal({
     usersApi
       .get(student.id)
       .then((u) => {
-        if (active) setProfile(u)
+        if (active) {
+          setProfile(u)
+          setInitialPassword(u.password || '')
+        }
       })
       .catch((err: unknown) => showToast(getErrorMessage(err, 'Ошибка загрузки карточки'), 'error'))
       .finally(() => {
@@ -238,13 +243,17 @@ function StudentModal({
   const handleSave = async () => {
     setSaving(true)
     try {
-      await usersApi.update(student.id, {
+      const payload: Partial<User> = {
         name: profile.name,
         phone: profile.phone || null,
         group_id: profile.group_id ?? null,
         plan: profile.plan,
         is_active: profile.is_active,
-      })
+      }
+      if (profile.password && profile.password !== initialPassword) {
+        payload.password = profile.password
+      }
+      await usersApi.update(student.id, payload)
       showToast('Ученик обновлён', 'success')
       await onSaved()
       onClose()
@@ -295,6 +304,27 @@ function StudentModal({
               disabled={!canEdit}
             />
             <Input label="Email" value={profile.email || ''} disabled helper="Email изменить нельзя" />
+            {canEdit && (
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-semibold text-fox-graphite">Пароль для входа</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-fox-purple hover:underline text-xs font-medium"
+                  >
+                    {showPassword ? 'Скрыть' : 'Показать'}
+                  </button>
+                </div>
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={profile.password || ''}
+                  onChange={(e) => setProfile({ ...profile, password: e.target.value })}
+                  placeholder="Пароль не задан"
+                  helper="Виден только управляющим ролям. Измените значение, чтобы задать новый пароль входа."
+                />
+              </div>
+            )}
             <Input
               label="Телефон"
               value={profile.phone || ''}

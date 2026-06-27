@@ -7,6 +7,7 @@ from app.models import (
     Group, Enrollment, LessonProgress, Achievement, UserAchievement,
     SystemEvent, AuditLog, Notification, Lead, Deal, Payment, Transaction,
     Homework, HomeworkReview, Test, TestQuestion, TestAttempt, File,
+    UserSubscription, Order, OrderItem, CartItem, Product,
 )
 import secrets
 import logging
@@ -24,6 +25,8 @@ async def clear_all(db: AsyncSession):
         HomeworkReview, Homework,
         TestAttempt, TestQuestion, Test,
         LessonContent,
+        # Магазин и подписки
+        UserSubscription, OrderItem, Order, CartItem, Product,
         # CRM и финансы
         Transaction, Payment, Deal, Lead,
         # Зачисления и группы
@@ -33,8 +36,9 @@ async def clear_all(db: AsyncSession):
     ]:
         await db.execute(delete(model))
 
-    # Обнуляем group_id перед удалением групп, чтобы не ловить FK-циклы users <-> groups
+    # Обнуляем group_id и parent_id перед удалением, чтобы не ловить FK-циклы
     await db.execute(text("UPDATE users SET group_id = NULL"))
+    await db.execute(text("UPDATE users SET parent_id = NULL"))
 
     for model in [Group, Lesson, Module, Course, User, Branch, Organization]:
         await db.execute(delete(model))
@@ -50,6 +54,7 @@ async def seed_all(db: AsyncSession):
     await seed_groups(db)
     await seed_enrollments(db)
     await seed_achievements(db)
+    await seed_worlds(db)
     await seed_crm(db)
     await seed_finance(db)
     await db.commit()
@@ -115,6 +120,17 @@ async def seed_users(db: AsyncSession):
         db.add(user)
 
     await db.flush()
+
+    # Связываем родителя с детьми-учениками (для родительского кабинета)
+    parent_result = await db.execute(select(User).where(User.email == "parent@foxinburg.ru"))
+    parent = parent_result.scalar_one_or_none()
+    if parent:
+        children_result = await db.execute(
+            select(User).where(User.email.in_(["student@foxinburg.ru", "student2@foxinburg.ru"]))
+        )
+        for child in children_result.scalars().all():
+            child.parent_id = parent.id
+        await db.flush()
 
 
 async def seed_courses(db: AsyncSession):
@@ -258,6 +274,15 @@ async def seed_achievements(db: AsyncSession):
         ),
     ]
     db.add_all(achievements)
+    await db.flush()
+
+
+async def seed_worlds(db: AsyncSession):
+    """Создаёт миры Foxinburg World (A1→C2) и игровые ачивки."""
+    from app.services.world_content import ensure_world_courses, ensure_world_achievements
+
+    await ensure_world_courses(db)
+    await ensure_world_achievements(db)
     await db.flush()
 
 

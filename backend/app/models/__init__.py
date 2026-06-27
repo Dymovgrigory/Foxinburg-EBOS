@@ -11,6 +11,7 @@ from .enrollment import Enrollment, LessonProgress
 from .crm import Lead, Deal
 from .finance import Payment, Transaction, Invoice, Expense, Subscription
 from .store import Product, CartItem, Order, OrderItem
+from .user_subscription import UserSubscription
 from .event import SystemEvent, AuditLog
 from .notification import Notification
 from .achievement import Achievement, UserAchievement
@@ -57,6 +58,7 @@ __all__ = [
     "CartItem",
     "Order",
     "OrderItem",
+    "UserSubscription",
     "SystemEvent",
     "AuditLog",
     "Notification",

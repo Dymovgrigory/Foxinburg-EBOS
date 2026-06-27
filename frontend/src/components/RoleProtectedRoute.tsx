@@ -65,6 +65,8 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   '/teacher-dashboard': ['teacher'],
   '/student-dashboard': ['student'],
   '/methodist-dashboard': ['methodist'],
+  '/world': ['student', 'guest'],
+  '/parent': ['parent', 'owner', 'super_admin', 'admin'],
 }
 
 export function allowedRolesForPath(path: string): string[] | undefined {

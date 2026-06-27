@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { LuEye, LuEyeOff, LuX, LuMail, LuLock, LuUser } from 'react-icons/lu'
 import { getErrorMessage } from '../utils/error'
 import { authApi } from '../api'
@@ -22,6 +22,15 @@ export default function AuthModal({ isOpen, onClose, redirectTo = '/system-cente
   const [authName, setAuthName] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+
+  // Синхронизируем режим (вход/регистрация) при каждом открытии модалки,
+  // т.к. на лендинге модалка остаётся примонтированной между кликами.
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(!defaultRegister)
+      setAuthError('')
+    }
+  }, [isOpen, defaultRegister])
 
   const handleAuthSubmit = useCallback(
     async (e: React.FormEvent) => {

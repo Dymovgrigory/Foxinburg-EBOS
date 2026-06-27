@@ -511,6 +511,89 @@ async def notify_test_result(
         await uow.commit()
 
 
+async def _course_type_for_lesson(uow, lesson_id: int) -> str | None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.models.course import Lesson, Module
+
+    result = await uow.session.execute(
+        select(Lesson)
+        .where(Lesson.id == lesson_id)
+        .options(selectinload(Lesson.module).selectinload(Module.course))
+    )
+    lesson = result.scalar_one_or_none()
+    if not lesson or not lesson.module or not lesson.module.course:
+        return None
+    return lesson.module.course.type
+
+
+async def gamify_lesson_completed(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    """Начисляет XP/монеты за урок в Foxinburg World."""
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.gamification_service import GamificationService, REWARD_LESSON_COMPLETED
+
+    student_id = payload.get("student_id")
+    lesson_id = payload.get("lesson_id")
+    if not student_id or not lesson_id:
+        return
+
+    async with UnitOfWork() as uow:
+        if await _course_type_for_lesson(uow, lesson_id) != "student_world":
+            return
+        await GamificationService(uow).reward_activity(student_id, *REWARD_LESSON_COMPLETED)
+        await uow.commit()
+
+
+async def gamify_test_passed(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.gamification_service import GamificationService, REWARD_TEST_PASSED
+
+    student_id = payload.get("student_id")
+    lesson_id = payload.get("lesson_id")
+    if not student_id or not lesson_id:
+        return
+
+    async with UnitOfWork() as uow:
+        if await _course_type_for_lesson(uow, lesson_id) != "student_world":
+            return
+        await GamificationService(uow).reward_activity(student_id, *REWARD_TEST_PASSED)
+        await uow.commit()
+
+
+async def gamify_homework_reviewed(
+    event_type: SystemEventType, payload: dict, user_id: int
+) -> None:
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.gamification_service import GamificationService, REWARD_HOMEWORK_APPROVED
+    from app.models.homework import Homework
+    from app.models.course import Lesson, Module
+
+    homework_id = payload.get("homework_id")
+    if not homework_id:
+        return
+
+    async with UnitOfWork() as uow:
+        result = await uow.session.execute(
+            select(Homework)
+            .where(Homework.id == homework_id)
+            .options(selectinload(Homework.lesson).selectinload(Lesson.module).selectinload(Module.course))
+        )
+        homework = result.scalar_one_or_none()
+        if not homework or homework.status != "reviewed":
+            return
+        course = homework.lesson.module.course
+        if not course or course.type != "student_world":
+            return
+        await GamificationService(uow).reward_activity(homework.student_id, *REWARD_HOMEWORK_APPROVED)
+        await uow.commit()
+
+
 EventBus.subscribe(SystemEventType.COURSE_ENROLLED, notify_academy_enrolled)
 EventBus.subscribe(SystemEventType.LESSON_AVAILABLE, notify_lesson_available)
 EventBus.subscribe(SystemEventType.LESSON_COMPLETED, notify_lesson_completed)
@@ -519,3 +602,8 @@ EventBus.subscribe(SystemEventType.HOMEWORK_SUBMITTED, notify_homework_submitted
 EventBus.subscribe(SystemEventType.HOMEWORK_ASSIGNED, notify_homework_assigned)
 EventBus.subscribe(SystemEventType.TEST_PASSED, notify_test_result)
 EventBus.subscribe(SystemEventType.TEST_FAILED, notify_test_result)
+
+# --- Геймификация Foxinburg World ---
+EventBus.subscribe(SystemEventType.LESSON_COMPLETED, gamify_lesson_completed)
+EventBus.subscribe(SystemEventType.TEST_PASSED, gamify_test_passed)
+EventBus.subscribe(SystemEventType.HOMEWORK_REVIEWED, gamify_homework_reviewed)

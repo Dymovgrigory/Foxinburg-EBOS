@@ -536,6 +536,121 @@ export const catalogApi = {
   get: (productId: number) => api.get<ApiResponse<CatalogItem>>(`/catalog/${productId}`).then(unwrap),
 }
 
+export interface WorldSubscription {
+  id: number
+  plan: string
+  status: string
+  price: number
+  currency: string
+  trial_ends_at: string | null
+  current_period_end: string | null
+  auto_renew: boolean
+  cancelled_at: string | null
+}
+
+export interface WorldTile {
+  id: number
+  title: string
+  short_description: string | null
+  cefr_level: string | null
+  world_order: number
+  world_theme: string | null
+  cover_url: string | null
+  unlocked: boolean
+  is_demo: boolean
+  enrolled: boolean
+  progress_percent: number
+  total_lessons: number
+  completed_lessons: number
+}
+
+export interface WorldUserStats {
+  xp: number
+  coins: number
+  level: number
+  streak_days: number
+}
+
+export interface WorldMap {
+  access_level: 'full' | 'trial' | 'none'
+  subscription: WorldSubscription | null
+  user: WorldUserStats
+  worlds: WorldTile[]
+  monthly_price: number
+  trial_days: number
+  payments_enabled: boolean
+}
+
+export interface WorldLesson {
+  id: number
+  title: string
+  lesson_type: string
+  order: number
+  status: string
+}
+
+export interface WorldModule {
+  id: number
+  title: string
+  order: number
+  lessons: WorldLesson[]
+}
+
+export interface WorldDetail {
+  id: number
+  title: string
+  description: string | null
+  cefr_level: string | null
+  world_theme: string | null
+  progress_percent: number
+  modules: WorldModule[]
+  user: WorldUserStats
+}
+
+export const worldApi = {
+  map: () => api.get<ApiResponse<WorldMap>>('/world/map').then(unwrap),
+  subscription: () =>
+    api.get<ApiResponse<{ access_level: string; subscription: WorldSubscription | null }>>('/world/subscription').then(unwrap),
+  detail: (courseId: number) => api.get<ApiResponse<WorldDetail>>(`/world/${courseId}`).then(unwrap),
+  startTrial: () =>
+    api.post<ApiResponse<{ access_level: string; subscription: WorldSubscription }>>('/world/trial').then(unwrap),
+  subscribe: () =>
+    api.post<ApiResponse<{ order_id: number; amount: number; payment_url: string | null; payments_enabled: boolean }>>('/world/subscribe').then(unwrap),
+  cancel: () =>
+    api.post<ApiResponse<{ subscription: WorldSubscription }>>('/world/cancel').then(unwrap),
+  provision: () =>
+    api.post<ApiResponse<{ created_worlds: string[]; created_achievements: number }>>('/world/admin/provision').then(unwrap),
+}
+
+export interface ChildBrief {
+  id: number
+  name: string
+  email: string
+  avatar_url: string | null
+  level: number
+  xp: number
+  coins: number
+  streak_days: number
+}
+
+export interface ChildDashboard {
+  child: ChildBrief
+  worlds: { course_id: number; title: string; cefr_level: string | null; progress_percent: number; status: string }[]
+  achievements: { id: number; title: string; description: string | null; icon_url: string | null; earned_at: string | null }[]
+  attendance: { by_status: Record<string, number>; total: number; present: number; rate_percent: number }
+  finance: {
+    balance: number
+    debt: number
+    recent_payments: { id: number; amount: number; type: string; method: string; status: string; description: string | null; created_at: string | null }[]
+  }
+}
+
+export const parentApi = {
+  children: () => api.get<ApiResponse<ChildBrief[]>>('/parent/children').then(unwrap),
+  childDashboard: (childId: number) =>
+    api.get<ApiResponse<ChildDashboard>>(`/parent/children/${childId}/dashboard`).then(unwrap),
+}
+
 export const teacherAcademyApi = {
   course: () => api.get<ApiResponse<Course>>('/teacher-academy/course').then(unwrap),
   progress: () => api.get<ApiResponse<{ enrollment_id: number; status: string; progress_percent: number; is_certified: boolean; completed_at?: string }>>('/teacher-academy/progress').then(unwrap),

@@ -20,7 +20,7 @@ from app.models import (
     SystemEvent, AuditLog, Notification, Achievement, UserAchievement, File,
     Schedule, Attendance, ChatRoom, ChatParticipant, ChatMessage,
     Task, Directory, StaffLeave, StaffKpi, SystemSettings, ScheduleException,
-    Product, CartItem, Order, OrderItem,
+    Product, CartItem, Order, OrderItem, UserSubscription,
 )
 
 from app.routers import (
@@ -28,7 +28,7 @@ from app.routers import (
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
-    role_config, dashboard, max_bot, store, catalog,
+    role_config, dashboard, max_bot, store, catalog, world, parent,
 )
 from app.admin import setup_admin
 
@@ -77,6 +77,21 @@ async def _scheduled_payroll_run():
     except Exception:
         import logging
         logging.getLogger(__name__).exception("Scheduled payroll run failed")
+
+
+async def _scheduled_subscription_renewals():
+    from app.services.unit_of_work import UnitOfWork
+    from app.services.subscription_service import SubscriptionService
+
+    try:
+        async with UnitOfWork() as uow:
+            counters = await SubscriptionService(uow).charge_due_renewals()
+            await uow.commit()
+            import logging
+            logging.getLogger(__name__).info("Subscription renewals: %s", counters)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Scheduled subscription renewals failed")
 
 
 async def _scheduled_class_reminders():
@@ -141,6 +156,16 @@ async def lifespan(app: FastAPI):
         "interval",
         minutes=5,
         id="class_reminders",
+        replace_existing=True,
+    )
+
+    # Автопродление подписок Foxinburg World (раз в сутки)
+    scheduler.add_job(
+        _scheduled_subscription_renewals,
+        "cron",
+        hour=4,
+        minute=0,
+        id="subscription_renewals",
         replace_existing=True,
     )
 
@@ -222,6 +247,8 @@ app.include_router(dashboard.router, prefix="/api/v3")
 app.include_router(max_bot.router, prefix="/api/v3")
 app.include_router(store.router, prefix="/api/v3")
 app.include_router(catalog.router, prefix="/api/v3")
+app.include_router(world.router, prefix="/api/v3")
+app.include_router(parent.router, prefix="/api/v3")
 
 setup_admin(app)
 

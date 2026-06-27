@@ -471,6 +471,10 @@ async def tinkoff_webhook(
         # Автозачисление на купленные курсы / в группы.
         await _enroll_paid_courses(uow, order)
 
+        # Активация/продление платформенной подписки (Foxinburg World).
+        from app.services.subscription_service import SubscriptionService
+        await SubscriptionService(uow).activate_from_order(order, notification.get("rebill_id"))
+
         user = await uow.session.get(User, order.user_id)
         if user:
             transaction = Transaction(

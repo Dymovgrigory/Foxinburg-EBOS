@@ -68,6 +68,8 @@ class TinkoffService:
         email: Optional[str],
         phone: Optional[str],
         items: list[dict],
+        customer_key: Optional[str] = None,
+        recurrent: bool = False,
     ) -> dict:
         if not TinkoffService._is_configured():
             raise RuntimeError("Tinkoff terminal is not configured")
@@ -99,11 +101,14 @@ class TinkoffService:
             "Amount": amount,
             "OrderId": order_id_str,
             "Description": description,
-            "CustomerKey": f"user_{order_id}",
+            "CustomerKey": customer_key or f"user_{order_id}",
             "SuccessURL": return_url,
             "FailURL": return_url,
             "NotificationURL": notification_url,
         }
+        if recurrent:
+            # Помечаем платёж как родительский для последующих автосписаний.
+            data["Recurrent"] = "Y"
         if email or phone:
             data["DATA"] = {}
             if email:
@@ -131,6 +136,60 @@ class TinkoffService:
         }
 
     @staticmethod
+    async def charge_recurrent(
+        order_id: int,
+        amount: int,
+        description: str,
+        customer_key: str,
+        rebill_id: str,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        items: Optional[list[dict]] = None,
+    ) -> dict:
+        """Автосписание по сохранённой карте (рекуррентный платёж).
+
+        Двухшаговый флоу Tinkoff: сначала Init (без Recurrent) для получения
+        PaymentId, затем Charge с PaymentId и RebillId.
+        """
+        if not TinkoffService._is_configured():
+            raise RuntimeError("Tinkoff terminal is not configured")
+
+        init = await TinkoffService.init_payment(
+            order_id=order_id,
+            amount=amount,
+            description=description,
+            email=email,
+            phone=phone,
+            items=items or [],
+            customer_key=customer_key,
+            recurrent=False,
+        )
+        payment_id = init["payment_id"]
+
+        charge_data: dict[str, Any] = {
+            "TerminalKey": settings.TINKOFF_TERMINAL_KEY,
+            "PaymentId": payment_id,
+            "RebillId": rebill_id,
+        }
+        charge_data["Token"] = TinkoffService._sign_payload(charge_data)
+
+        url = f"{settings.TINKOFF_API_URL.rstrip('/')}/Charge"
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(url, json=charge_data)
+            response.raise_for_status()
+            result = response.json()
+
+        if not result.get("Success"):
+            logger.error("Tinkoff Charge failed: %s", result)
+            raise RuntimeError(result.get("Message") or "Tinkoff Charge failed")
+
+        return {
+            "payment_id": payment_id,
+            "status": result.get("Status"),
+            "success": True,
+        }
+
+    @staticmethod
     async def handle_notification(payload: dict) -> Optional[dict]:
         if not TinkoffService._is_configured():
             logger.warning("Tinkoff notification received but not configured")
@@ -146,10 +205,13 @@ class TinkoffService:
         order_id = payload.get("OrderId")
         amount = payload.get("Amount")
 
+        rebill_id = str(payload.get("RebillId")) if payload.get("RebillId") else None
+
         return {
             "success": success,
             "status": status,
             "payment_id": payment_id,
             "order_id": order_id,
             "amount": amount,
+            "rebill_id": rebill_id,
         }

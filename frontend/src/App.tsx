@@ -46,6 +46,9 @@ const DirectoriesPage = lazy(() => import('./pages/DirectoriesPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SurveysPage = lazy(() => import('./pages/SurveysPage'))
 const StoreProductsPage = lazy(() => import('./pages/StoreProductsPage'))
+const WorldPage = lazy(() => import('./pages/WorldPage'))
+const WorldDetailPage = lazy(() => import('./pages/WorldDetailPage'))
+const ParentDashboardPage = lazy(() => import('./pages/ParentDashboardPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -117,6 +120,10 @@ function App() {
           <Route path="community" element={<Navigate to="/chats" replace />} />
           <Route path="payments" element={<RoleProtected path="/payments"><PaymentsPage /></RoleProtected>} />
           <Route path="store/products" element={<RoleProtected path="/store/products"><StoreProductsPage /></RoleProtected>} />
+          <Route path="world" element={<RoleProtected path="/world"><WorldPage /></RoleProtected>} />
+          <Route path="world/:id" element={<RoleProtected path="/world"><WorldDetailPage /></RoleProtected>} />
+          <Route path="parent" element={<RoleProtected path="/parent"><ParentDashboardPage /></RoleProtected>} />
+          <Route path="parent/children/:childId" element={<RoleProtected path="/parent"><ParentDashboardPage /></RoleProtected>} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

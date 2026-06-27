@@ -47,7 +47,55 @@
 
 ## 🗂 Журнал сессий
 
-### Доработка CRUD — Ученики: карточка + редактирование (PR #14) ⏳ ожидает мёрджа
+### Доработка CRUD — База знаний: создание/редактирование/удаление (PR #16) ⏳ ожидает мёрджа
+
+**Задача (от владельца).** Всё, что создаётся, должно просматриваться и редактироваться
+управляющими ролями. Аудит выявил последний крупный пробел: **База знаний (KnowledgeBasePage)**
+была **только на чтение**, хотя бэкенд уже отдавал полный CRUD (`POST`/`PATCH`/`DELETE /knowledge`,
+под правом `Permission.COURSE_UPDATE`).
+
+**Решение (frontend `KnowledgeBasePage.tsx`).** Переписана страница: поверх списка/просмотра
+добавлен управляющий CRUD.
+- `canManage = ['owner','super_admin','admin','methodist'].includes(role)`.
+- Кнопка «Создать статью» + на каждой карточке «Редактировать»/«Удалить» (только для `canManage`).
+- Одна форма-модалка (title, category, tags, content, чекбокс `is_published`) для создания и
+  редактирования: `editing ? api.patch('/knowledge/{id}') : api.post('/knowledge')`.
+- Черновики (`is_published === false`) помечены бейджем «Черновик».
+
+**Решение (backend `routers/knowledge.py`).** Чтобы черновики менеджера не пропадали из его
+же выдачи, list/get теперь показывают неопубликованные статьи пользователям с `COURSE_UPDATE`:
+```python
+query = select(KnowledgeArticle)
+if not has_permission(current_user.role, Permission.COURSE_UPDATE):
+    query = query.where(KnowledgeArticle.is_published == True)
+```
+Ученики/обычные пользователи по-прежнему видят только опубликованное (поведение не изменилось).
+
+**Тесты.** Новый `backend/tests/test_knowledge.py`: round-trip create→update→delete (методист);
+менеджер видит черновик (list + by id), ученик — нет (404 / отфильтровано); ученик `POST` → 403.
+`pytest -q` — 784 passed (1 pre-existing env-only fail в `test_production_config`). `tsc -b` чисто,
+eslint чисто (только repo-wide `exhaustive-deps`). Ветка: `devin/1782514370-knowledge-crud`.
+
+### Доработка CRUD — Курсы: редактирование метаданных (PR #15) ⏳ ожидает мёрджа
+
+**Задача.** Курсы создавались и просматривались, но метаданные нельзя было редактировать из
+карточки (правка шла только через конструктор модулей). Замкнул CRUD по сущности «Курс».
+
+**Решение (backend).** Сервис `CourseService.update_course` уже поддерживал `short_description`,
+`is_sequential`, `certificate_enabled`, но схема `CourseUpdate` и роутер их не пробрасывали.
+Расширил схему `CourseUpdate` (title/description/short_description/status/passing_score/
+is_sequential/certificate_enabled) и хендлер `PATCH /courses/{id}`.
+
+**Решение (frontend `CoursesPage.tsx`).** На каждой карточке для управляющих ролей кнопка
+«Изменить» открывает `CourseEditModal` с предзаполненной формой (название, краткое/полное
+описание, статус, проходной балл, флаги последовательного прохождения и сертификата). Тип курса
+read-only. Сохранение → `PATCH /courses/{id}` → тост «Курс обновлён» → список обновляется.
+RBAC: `owner/super_admin/admin/methodist` (право `COURSE_UPDATE`).
+
+**Тесты.** `pytest -q` — 781 passed (тот же pre-existing env-fail). Добавлен
+`test_update_course_metadata`. `tsc -b` чисто. Ветка: `devin/1782513318-courses-edit`.
+
+### Доработка CRUD — Ученики: карточка + редактирование (PR #14) ✅ смёржен, на проде
 
 **Задача (от владельца).** Доработать функционал управляющих ролей: всё, что создаётся
 (Ученики, Группы, Сотрудники и т.д.), должно открываться карточкой и редактироваться.

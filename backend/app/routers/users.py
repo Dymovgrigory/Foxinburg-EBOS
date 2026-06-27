@@ -10,7 +10,7 @@ from app.schemas.user import UserCreate, UserResponse, UserListResponse, UserTel
 from app.schemas.finance import PayrollRequest
 from app.core.responses import success_response, error_response
 from app.core.dependencies import require_permission, require_active_user
-from app.core.permissions import Permission
+from app.core.permissions import Permission, has_permission
 from app.config import settings
 from app.services.unit_of_work import UnitOfWork, get_uow
 from app.services.user_service import UserService
@@ -122,7 +122,11 @@ async def get_user(
     user = await service.get_by_id(user_id)
     if not user:
         return error_response("Пользователь не найден", status_code=404)
-    return success_response(data=UserResponse.model_validate(user).model_dump())
+    data = UserResponse.model_validate(user).model_dump()
+    # Пароль входа виден только тем, кто может редактировать пользователей.
+    if has_permission(current_user.role, Permission.USER_UPDATE):
+        data["password"] = user.plain_password
+    return success_response(data=data)
 
 
 @router.patch("/{user_id}")

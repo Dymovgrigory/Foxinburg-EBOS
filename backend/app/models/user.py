@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Date, Boolean, ForeignKey, Text, Enum as SQLEnum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from app.database import Base
 from app.utils import utc_now
@@ -46,6 +46,13 @@ class User(Base):
     coins = Column(Integer, default=0)
     level = Column(Integer, default=1)
 
+    # Foxinburg World: серия активности (ежедневный стрик)
+    streak_days = Column(Integer, default=0, nullable=False)
+    last_activity_date = Column(Date, nullable=True)
+
+    # Связь родитель → ребёнок (для родительского кабинета)
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_login_at = Column(DateTime, nullable=True)
@@ -53,6 +60,16 @@ class User(Base):
     organization = relationship("Organization", back_populates="users")
     branch = relationship("Branch", back_populates="users")
     group = relationship("Group", back_populates="students", foreign_keys="User.group_id")
+    children = relationship(
+        "User",
+        backref=backref("parent", remote_side="User.id"),
+        foreign_keys="User.parent_id",
+    )
+    world_subscriptions = relationship(
+        "UserSubscription", back_populates="user",
+        foreign_keys="UserSubscription.user_id",
+        cascade="all, delete-orphan",
+    )
 
     created_homework_reviews = relationship("HomeworkReview", foreign_keys="HomeworkReview.reviewed_by_id", back_populates="reviewer")
     submitted_homeworks = relationship("Homework", back_populates="student")

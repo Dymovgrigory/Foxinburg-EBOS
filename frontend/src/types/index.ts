@@ -34,6 +34,7 @@ export interface User {
   xp?: number
   coins?: number
   level?: number
+  password?: string
 }
 
 export interface Course {
@@ -813,6 +814,32 @@ export interface Product {
   sort_order: number
   created_at: string
   updated_at: string
+}
+
+export interface CatalogCourse {
+  id: number
+  title: string
+  short_description?: string | null
+  description?: string | null
+  cover_url?: string | null
+  modules_count: number
+  lessons_count: number
+  certificate_enabled: boolean
+  program?: { title: string; description?: string | null; lessons: string[] }[]
+}
+
+export interface CatalogItem {
+  product_id: number
+  title: string
+  description?: string | null
+  image_url?: string | null
+  price: number
+  currency: string
+  product_type: 'course' | 'subscription'
+  subscription_months?: number | null
+  lessons_count?: number | null
+  course_id?: number | null
+  course?: CatalogCourse | null
 }
 
 export interface CartItem {

@@ -105,6 +105,14 @@ class UserService(BaseService[User]):
         if new_role and current_user and not can_manage_role(current_user.role, new_role):
             raise ValueError("Вы не можете назначить эту роль")
 
+        # Пароль обрабатываем отдельно: хешируем и шифруем, в аудит не пишем.
+        password = data.pop("password", None)
+        if password is not None:
+            password = password.strip()
+            if password:
+                user.password_hash = get_password_hash(password)
+                user.encrypted_password = encrypt_text(password)
+
         old_values = {k: getattr(user, k) for k in data.keys()}
         for field, value in data.items():
             setattr(user, field, value)

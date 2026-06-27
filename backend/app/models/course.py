@@ -19,6 +19,11 @@ class Course(Base):
     type = Column(String, default="academy")  # academy, corporate, student_world
     status = Column(String, default="draft")  # draft, published, archived
 
+    # Foxinburg World: уровень CEFR мира и порядок на карте миров
+    cefr_level = Column(String, nullable=True)  # A1, A2, B1, B2, C1, C2
+    world_order = Column(Integer, default=0, nullable=False)
+    world_theme = Column(String, nullable=True)  # эмодзи/иконка мира
+
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 

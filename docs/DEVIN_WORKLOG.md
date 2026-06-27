@@ -47,6 +47,120 @@
 
 ## 🗂 Журнал сессий
 
+### Сессия 2026-06-27 — Foxinburg World (Фаза A): подписка, геймификация, карта миров, родительский кабинет, лендинг 4 сегмента ⏳ в работе
+
+**Задача (от владельца).** Для учеников реализовать **Foxinburg World** (а не простые курсы — каталог
+откладываем). На лендинге: «попробовать бесплатно» + платная подписка **500 ₽/мес с автопродлением**.
+Лендинг разбить на 4 сегмента: (1) ученики/родители → Foxinburg World; (2) владельцы школ → EBOS «всё в
+одном»; (3) преподаватели/админы внутри организации → Академия + личный кабинет; (4) самостоятельные
+преподаватели/админы → доступ только к Академии. Владелец подтвердил: **берём Фазу A** (без NPC/боссов/AI —
+это Фаза B позже). Про рекуррент Tinkoff — «на своё усмотрение».
+
+**Решения по объёму (Фаза A MVP).**
+- 6 миров A1→C2 на существующем `Course.type='student_world'` (без дублирования архитектуры):
+  A1 🌲 Лес Знакомств (демо), A2 🏙 Город Общения, B1 🏰 Королевство Уверенности, B2 🎓 Академия Мастеров,
+  C1 👑 Империя Свободного Английского, C2 🏆 Лига Экспертов.
+- Доступ к World по подписке: **триал 7 дней** (открыт демо-мир A1) → **500 ₽/мес** (все миры), `auto_renew=True`.
+- Рекуррент: Tinkoff Rebill (автосписание с сохранённой карты). Если рекуррент недоступен — деградирует в
+  «продление по ссылке» (статус `past_due` + ручное продление), без поломок.
+
+**Backend (готово, протестировано).**
+- Модель `UserSubscription` (`backend/app/models/user_subscription.py`): статусы trialing/active/past_due/
+  cancelled/expired, `auto_renew`, `current_period_end`, `customer_key`/`rebill_id` для рекуррента.
+- Поля геймификации/стрика у `User`: `xp`, `coins`, `level`, `last_activity_date`.
+- Миграция `backend/alembic/versions/a1b2c3d4e5f6_add_foxinburg_world.py` (применена: `alembic current` = head).
+- `SubscriptionService` (`services/subscription_service.py`): `get_active_subscription`, `access_level`
+  (full/trial/none), `start_trial`, `create_monthly_order`, `activate_from_order`, `cancel`,
+  `charge_due_renewals`.
+- `WorldContentService` (`services/world_content.py`): идемпотентный провижининг 6 миров + достижений.
+- `GamificationService` (`services/gamification_service.py`): на LESSON_COMPLETED/TEST_PASSED/HOMEWORK_REVIEWED
+  начисляет XP/coins/level, ведёт Daily Streak, выдаёт достижения.
+- Эндпоинты World (`routers/world.py`, префикс `/api/v3/world`): `GET /map`, `GET /subscription`,
+  `GET /{course_id}`, `POST /trial`, `POST /subscribe`, `POST /cancel`, `POST /admin/provision`.
+- Эндпоинты родителя (`routers/parent.py`): `GET /parent/children`, `GET /parent/children/{id}/dashboard`.
+- Tinkoff Rebill (`services/tinkoff_service.py`): `init_payment(recurrent=True)`, `charge_recurrent`, активация в вебхуке.
+- Сидер: провижининг миров/достижений + связка родитель→дети (parent@ → student@, student2@).
+- Тесты: `backend/tests/test_world.py` (6 тестов, зелёные); общий `pytest -q` → 790 passed (1 давний env-only fail).
+
+**Frontend (готово, проверено в браузере локально).**
+- API: `worldApi` (map/subscription/detail/startTrial/subscribe/cancel/provision), `parentApi` (children/childDashboard) + интерфейсы — `frontend/src/api/index.ts`.
+- Роуты `/world`, `/world/:id`, `/parent`, `/parent/children/:childId` с `RoleProtected` — `App.tsx`.
+- Навигация: пункт «Foxinburg World» (ученикам) и «Кабинет родителя» (родителям) — `config/navigation.tsx`.
+- `pages/WorldPage.tsx`: статы (уровень/XP/монеты/серия), баннер подписки (3 состояния none/trial/full),
+  карта из 6 миров со статусом блокировки/прогрессом, CTA триал/подписка/отмена.
+- `pages/WorldDetailPage.tsx`: детали мира, модули/уроки со статусами, прогресс-бар, переход в плеер урока.
+- `pages/ParentDashboardPage.tsx`: список детей / дашборд ребёнка (статы, миры, достижения, посещаемость, финансы).
+- `pages/LandingPage.tsx`: переделан в 4 сегмента (см. задачу), World — главный экран; триал + 500 ₽/мес; FAQ.
+- `components/AuthModal.tsx`: синхронизация режима вход/регистрация при каждом открытии (модалка на лендинге примонтирована).
+- Проверки: `tsc -b` — чисто; ESLint по новым файлам — 0 ошибок (исправлен rules-of-hooks `useReveal` внутри `.map`).
+
+**Проверено вживую (запись прилагается к отчёту).**
+- Логин ученика → `/world`: карта 6 миров, A1 «Демо-мир», A2–C2 «Доступно по подписке».
+- «Попробовать бесплатно» → активирован триал на 7 дней, баннер «Осталось 7 дн.», A1 разблокирован («Продолжить»).
+- ⚠️ Важно: при тестировании оказалось, что **запущенный backend был устаревшим** (стартовал без `--reload`
+  и не содержал роуты World → `/world/map` отдавал 404). Перезапустил `uvicorn ... --reload` → роуты появились,
+  страница заработала. Вывод для прода: после мёрджа автодеплой пересобирает контейнер, поэтому там роуты подхватятся.
+
+**Тестовые пароли (локально перевыставлены, т.к. сидер генерит случайный):** student@, student2@, parent@,
+owner@foxinburg.ru → `Test1234!`. Бэкенд-логин — form-data (`username`/`password`), ответ обёрнут в `{success,message,data}`.
+
+**Состояние и что осталось.**
+- Все изменения World закоммичены в ветку (см. последний коммит). Лендинг/страницы World/подписка/родитель — готовы.
+- Осталось: дотестировать `/world/:id`, `/parent`, отмену подписки; обновить PR #17 (или открыть новый PR на World);
+  дождаться мёрджа владельцем (платформа запрещает агенту пушить/мёржить в `main`).
+
+---
+
+### Сессия 2026-06-27 — Пароль ученика + B2C-каталог с онлайн-оплатой и автозачислением ⏳ ожидает мёрджа
+
+**Задача (от владельца).** (1) Управляющим ролям дать просмотр (расшифровка) и редактирование
+пароля входа ученика прямо в карточке. (2) Перевести платформу с B2B (продажа EBOS школам) на
+B2C (ученик покупает курс онлайн): публичный каталог курсов с ценами → онлайн-оплата Tinkoff →
+автозачисление; переделать лендинг под ученика («что/для кого/как купить»).
+
+**Ветка:** `devin/1782541551-student-password-login` (включает пароль + каталог + лендинг).
+
+**1. Пароль ученика в карточке (backend `users.py` / `user_service.py` / схемы).**
+- `GET /users/{id}` отдаёт `plain_password` (Fernet-расшифровка свойства `User.plain_password`)
+  **только** при праве `USER_UPDATE` (owner/super_admin/admin). Методист/менеджер пароль не видят.
+- `PATCH /users/{id}` принимает новый пароль → bcrypt-хеш (`password_hash`) + Fernet-шифр
+  (`encrypted_password`). В аудит-лог пароль не пишется. Тесты в `test_users.py`.
+
+**2. Публичный каталог (новый `routers/catalog.py`, подключён в `main.py` под `/api/v3`).**
+- `GET /catalog` — список опубликованных курсов (`status=='published'`), у которых есть активный
+  привязанный `Product` (цена/валюта/тип). Без авторизации.
+- `GET /catalog/{product_id}` — карточка: цена + вложенный курс с полной программой
+  (модули → уроки), `modules_count`, `lessons_count`, `certificate_enabled`.
+- Хелперы `_course_public()`, `_product_public()`, `_is_visible()`.
+
+**3. Покупка в один клик + автозачисление (`routers/store.py`).**
+- `POST /store/buy/{product_id}` (auth): создаёт `Order` с одним `OrderItem`, инициирует Tinkoff
+  (переиспользует `_init_tinkoff_payment()`), возвращает `payment_url`. Если Tinkoff не настроен
+  (локально) — заказ создаётся, оплата доступна в личном кабинете (graceful fallback).
+- Вебхук Tinkoff: после `order.status='paid'` вызывает `_enroll_paid_courses(uow, order)` →
+  для каждого item с `product.target_course_id` дергает `EnrollmentService.enroll_student(...)`
+  (создаёт зачисление, прогресс, ДЗ, доступ к чату). `ValueError` (уже зачислен) — пропуск, вебхук
+  не падает. Тесты в новом `test_catalog.py` (4 шт.): список/скрытие неопубликованного/детали с
+  программой/`buy`→вебхук→автозачисление.
+
+**4. Frontend.**
+- Новые публичные страницы (без сайдбара): `CatalogPage.tsx` (`/catalog`, сетка курсов с ценой) и
+  `CatalogCoursePage.tsx` (`/catalog/:productId`, программа + «Купить курс»). Гость без сессии →
+  `AuthModal` с `redirectTo=/catalog/{id}?buy=1` и авто-покупкой после входа.
+- `AuthModal.tsx`: добавлены пропсы `redirectTo`, `defaultRegister`.
+- `api/index.ts`: `catalogApi.list/get`, `storeApi.buy`. Типы `CatalogItem`/`CatalogCourse`.
+- `LandingPage.tsx`: переделан под B2C — герой «Учитесь языкам онлайн с нуля», метрики
+  (100% онлайн / 24/7 / 1 клик / сертификат), блок «избранные курсы» из каталога, шаги
+  «выбрал→оплатил→учишься», FAQ по оплате, CTA «Выбрать курс». B2B-форма сохранена, но
+  переименована в блок «Школам и партнёрам» (вторичный).
+
+**Проверки.** Backend `pytest -q` → **790 passed**, 1 pre-existing env-only fail
+(`test_production_config::test_development_allows_default_secrets`). Frontend `tsc -b` чисто.
+`npm run lint` — pre-existing repo-wide ошибки/варнинги (no-explicit-any, rules-of-hooks в
+`useReveal`, exhaustive-deps), новых блокеров не добавлено. Браузер (локально): `/catalog`
+показывает курс с ценой 9 900 ₽, карточка `/catalog/1` рендерит программу, «Купить курс» создаёт
+заказ (тост «Заказ создан»), лендинг открывается с B2C-контентом. Консоль без ошибок.
+
 ### Доработка CRUD — База знаний: создание/редактирование/удаление (PR #16) ⏳ ожидает мёрджа
 
 **Задача (от владельца).** Всё, что создаётся, должно просматриваться и редактироваться

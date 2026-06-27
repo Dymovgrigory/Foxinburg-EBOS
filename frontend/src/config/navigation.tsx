@@ -28,6 +28,7 @@ import {
   LuBrain,
   LuListChecks,
   LuStore,
+  LuMap,
 } from 'react-icons/lu'
 import NotificationBadge from '../components/NotificationBadge'
 import HomeworkBadge from '../components/HomeworkBadge'
@@ -167,6 +168,7 @@ export const studentGroups: MenuGroup[] = [
   {
     items: [
       { to: '/dashboard', label: 'Главная', icon: <LuHouse /> },
+      { to: '/world', label: 'Foxinburg World', icon: <LuMap /> },
       { to: '/my-courses', label: 'Мои курсы', icon: <LuBookOpen /> },
       { to: '/homeworks', label: 'Домашние задания', icon: <LuNotebookPen /> },
       { to: '/progress', label: 'Мой прогресс', icon: <LuChartLine /> },
@@ -230,6 +232,7 @@ export const parentGroups: MenuGroup[] = [
   {
     items: [
       { to: '/dashboard', label: 'Главная', icon: <LuHouse /> },
+      { to: '/parent', label: 'Кабинет родителя', icon: <LuUsers /> },
       { to: '/progress', label: 'Прогресс ребёнка', icon: <LuChartLine /> },
       { to: '/payments', label: 'Оплата', icon: <LuCreditCard /> },
       { to: '/settings', label: 'Настройки', icon: <LuSettings /> },

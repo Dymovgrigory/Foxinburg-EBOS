@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { LuEye, LuEyeOff, LuX, LuMail, LuLock, LuUser } from 'react-icons/lu'
 import { getErrorMessage } from '../utils/error'
 import { authApi } from '../api'
@@ -9,17 +9,28 @@ import type { User } from '../types'
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
+  redirectTo?: string
+  defaultRegister?: boolean
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, redirectTo = '/system-center', defaultRegister = false }: AuthModalProps) {
   const { login } = useAuth()
-  const [isLogin, setIsLogin] = useState(true)
+  const [isLogin, setIsLogin] = useState(!defaultRegister)
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [authName, setAuthName] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+
+  // Синхронизируем режим (вход/регистрация) при каждом открытии модалки,
+  // т.к. на лендинге модалка остаётся примонтированной между кликами.
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(!defaultRegister)
+      setAuthError('')
+    }
+  }, [isOpen, defaultRegister])
 
   const handleAuthSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -36,14 +47,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const { access_token, user } = payload
         if (!access_token || !user) throw new Error('Некорректный ответ сервера')
         login(user as User, access_token)
-        window.location.href = '/system-center'
+        window.location.href = redirectTo
       } catch (err: unknown) {
         setAuthError(getErrorMessage(err, 'Ошибка авторизации'))
       } finally {
         setAuthLoading(false)
       }
     },
-    [isLogin, authEmail, authPassword, authName, login]
+    [isLogin, authEmail, authPassword, authName, login, redirectTo]
   )
 
   const toggleMode = useCallback(() => {

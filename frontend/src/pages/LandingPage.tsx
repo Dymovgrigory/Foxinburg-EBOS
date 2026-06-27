@@ -30,17 +30,22 @@ import {
   LuBookOpen,
   LuShield,
   LuZap,
-  LuTrendingUp,
-  LuClock,
   LuArrowRight,
   LuMenu,
   LuX,
   LuChevronDown,
   LuChevronUp,
   LuSparkles,
-  LuBrain,
   LuBuilding2,
   LuUserCheck,
+  LuStar,
+  LuCoins,
+  LuFlame,
+  LuTrophy,
+  LuMap,
+  LuGamepad2,
+  LuCrown,
+  LuHeart,
 } from 'react-icons/lu'
 
 interface LandingPageProps {
@@ -76,179 +81,121 @@ const GoldCheck = () => (
   </span>
 )
 
+const WORLDS = [
+  { emoji: '🌲', level: 'A1', title: 'Лес Знакомств' },
+  { emoji: '🏙️', level: 'A2', title: 'Город Общения' },
+  { emoji: '🏰', level: 'B1', title: 'Королевство Уверенности' },
+  { emoji: '🎓', level: 'B2', title: 'Академия Мастеров' },
+  { emoji: '👑', level: 'C1', title: 'Империя Английского' },
+  { emoji: '🏆', level: 'C2', title: 'Лига Экспертов' },
+]
+
 export default function LandingPage({ showAuth = false }: LandingPageProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [authOpen, setAuthOpen] = useState(Boolean(showAuth))
+  const [authRegister, setAuthRegister] = useState(false)
+  const [authRedirect, setAuthRedirect] = useState('/dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
   useEffect(() => {
     if (location.pathname === '/login') {
+      setAuthRegister(false)
+      setAuthRedirect('/dashboard')
       setAuthOpen(true)
     }
   }, [location.pathname])
 
-  const scrollToDemo = () => {
-    document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })
+  const openLogin = () => {
+    setAuthRegister(false)
+    setAuthRedirect('/dashboard')
+    setAuthOpen(true)
+  }
+  const openWorldSignup = () => {
+    setAuthRegister(true)
+    setAuthRedirect('/world')
+    setAuthOpen(true)
+  }
+  const openAcademySignup = () => {
+    setAuthRegister(true)
+    setAuthRedirect('/academy')
+    setAuthOpen(true)
+  }
+  const scrollTo = (id: string) => {
+    setMobileMenuOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const audiences = [
+  const segments = [
     {
-      icon: <LuGraduationCap className="w-6 h-6" />,
-      title: 'Ученикам',
+      icon: <LuGamepad2 className="w-6 h-6" />,
+      tag: 'Ученикам и родителям',
+      title: 'Foxinburg World',
       description:
-        'Персональный трек обучения, интерактивные уроки, домашние задания, прогресс и игровая мотивация в Student World.',
-      points: ['Доступ к курсам 24/7', 'Проверка заданий', 'Сертификаты и достижения'],
+        'Игровое обучение английскому: 6 миров от A1 до C2, опыт, монеты, достижения и ежедневные серии. Родители видят прогресс ребёнка в личном кабинете.',
+      points: ['7 дней бесплатно', 'Затем 500 ₽/мес с автопродлением', 'Родительский контроль'],
       color: 'from-amber-400 to-fox-gold',
-    },
-    {
-      icon: <LuUserCheck className="w-6 h-6" />,
-      title: 'Преподавателям',
-      description:
-        'Ведение занятий, проверка работ, журнал посещаемости, расписание и аналитика прогресса группы.',
-      points: ['Умное расписание', 'Быстрая проверка', 'Коммуникация с учениками'],
-      color: 'from-emerald-400 to-teal-300',
+      cta: 'Попробовать бесплатно',
+      onClick: openWorldSignup,
     },
     {
       icon: <LuBuilding2 className="w-6 h-6" />,
-      title: 'Управленцам',
+      tag: 'Владельцам школ',
+      title: 'EBOS «Всё в одном»',
       description:
-        'Полный контроль школы: лиды, продажи, финансы, отчёты, филиалы и ролевая модель доступа.',
-      points: ['Воронка продаж', 'Финансовая аналитика', 'Управление филиалами'],
+        'Полная операционная система школы: LMS, CRM, ERP и HRM в одной платформе. Группы, расписание, финансы, продажи, филиалы и аналитика.',
+      points: ['LMS + CRM + ERP + HRM', '9 ролей доступа', 'Российская инфраструктура'],
       color: 'from-violet-400 to-purple-300',
+      cta: 'Запросить демо',
+      onClick: () => scrollTo('demo'),
     },
     {
-      icon: <LuUsers className="w-6 h-6" />,
-      title: 'Родителям',
+      icon: <LuUserCheck className="w-6 h-6" />,
+      tag: 'Преподавателям и админам школы',
+      title: 'Академия + кабинет',
       description:
-        'Прозрачная картина обучения ребёнка: успеваемость, посещаемость, оплаты и общение с школой.',
-      points: ['Успеваемость онлайн', 'История оплат', 'Уведомления'],
+        'Сотрудники организации проходят корпоративную Академию педагогов и работают в личном кабинете школы: занятия, проверка работ, расписание.',
+      points: ['Академия педагогов', 'Сертификация', 'Рабочий кабинет в школе'],
+      color: 'from-emerald-400 to-teal-300',
+      cta: 'Войти в кабинет',
+      onClick: openLogin,
+    },
+    {
+      icon: <LuGraduationCap className="w-6 h-6" />,
+      tag: 'Самостоятельным специалистам',
+      title: 'Только Академия',
+      description:
+        'Преподаватель или администратор без своей школы и хотите развиваться? Получите отдельный доступ к Академии для самостоятельного обучения.',
+      points: ['Доступ только к Академии', 'Без управленческих функций', 'Учитесь в своём темпе'],
       color: 'from-sky-400 to-blue-300',
+      cta: 'Начать обучение',
+      onClick: openAcademySignup,
     },
   ]
 
-  const modules = [
-    {
-      badge: 'LMS',
-      title: 'World Academy',
-      subtitle: 'Образовательная платформа нового поколения',
-      description:
-        'Создавайте курсы любой сложности: видеоуроки, интерактивные тесты, задания с автопроверкой, сертификация и геймификация. Всё, что нужно для современного обучения.',
-      features: [
-        'Конструктор курсов и модулей',
-        'Видео, PDF, тесты и задания',
-        'Автоматическая сертификация',
-        'Прогресс и аналитика ученика',
-      ],
-      icon: <LuBookOpen className="w-7 h-7" />,
-      image: '/brand/swirl-1.png',
-      reverse: false,
-    },
-    {
-      badge: 'CRM / ERP',
-      title: 'Foxinburg Business',
-      subtitle: 'Управление школой как бизнесом',
-      description:
-        'От первой заявки до лояльного клиента. Ведите лиды, контролируйте воронку продаж, управляйте группами, зачислениями и финансами в едином окне.',
-      features: [
-        'Воронка продаж и лиды',
-        'Группы и зачисления',
-        'Оплаты и финансовые отчёты',
-        'Аналитика конверсии и LTV',
-      ],
-      icon: <LuChartBarBig className="w-7 h-7" />,
-      image: '/brand/wave.png',
-      reverse: true,
-    },
-    {
-      badge: 'HRM',
-      title: 'Team Management',
-      subtitle: 'Команда, расписание и задачи',
-      description:
-        '9 ролей доступа, управление преподавателями, нагрузкой, зарплатами, кадровым учётом и внутренними задачами. Всё для эффективной работы команды.',
-      features: [
-        '9 ролей и разграничение прав',
-        'Расписание и нагрузка',
-        'Кадровый учёт',
-        'Задачи и контроль исполнения',
-      ],
-      icon: <LuUsers className="w-7 h-7" />,
-      image: '/brand/swirl-2.png',
-      reverse: false,
-    },
-  ]
-
-  const advantages = [
-    {
-      icon: <LuZap className="w-6 h-6" />,
-      title: 'Всё в одной системе',
-      desc: 'Не нужно покупать LMS, CRM, ERP и HRM отдельно. EBOS заменяет сразу четыре продукта.',
-    },
-    {
-      icon: <LuShield className="w-6 h-6" />,
-      title: 'Безопасность данных',
-      desc: 'JWT-аутентификация, ролевая модель, аудит действий и хранение данных на российских серверах.',
-    },
-    {
-      icon: <LuTrendingUp className="w-6 h-6" />,
-      title: 'Рост выручки',
-      desc: 'Автоматизация продаж, напоминания об оплатах и аналитика помогают увеличить прибыль школы.',
-    },
-    {
-      icon: <LuClock className="w-6 h-6" />,
-      title: 'Экономия времени',
-      desc: 'Автоматические уведомления, массовые операции и единая база экономят до 20 часов в неделю.',
-    },
-    {
-      icon: <LuBrain className="w-6 h-6" />,
-      title: 'AI-ассистент',
-      desc: 'Встроенный помощник для преподавателей и администраторов ускоряет рутинные задачи.',
-    },
-    {
-      icon: <LuSparkles className="w-6 h-6" />,
-      title: 'Премиальный UX',
-      desc: 'Интерфейс мирового уровня: понятный, быстрый и приятный в ежедневной работе.',
-    },
+  const worldFeatures = [
+    { icon: <LuMap className="w-6 h-6" />, title: '6 миров A1→C2', desc: 'Путешествие от «Леса Знакомств» до «Лиги Экспертов» — каждый мир открывает новый уровень английского.' },
+    { icon: <LuStar className="w-6 h-6" />, title: 'Опыт и уровни', desc: 'За каждый пройденный урок, тест и домашку ученик получает XP и повышает уровень.' },
+    { icon: <LuCoins className="w-6 h-6" />, title: 'Монеты', desc: 'Зарабатывайте монеты за активность и достижения — игровая мотивация учиться каждый день.' },
+    { icon: <LuFlame className="w-6 h-6" />, title: 'Ежедневная серия', desc: 'Daily Streak отмечает дни подряд с занятиями и подталкивает не бросать обучение.' },
+    { icon: <LuTrophy className="w-6 h-6" />, title: 'Достижения', desc: 'Открывайте награды за первые шаги, серии уроков, пройденные тесты и завершённые миры.' },
+    { icon: <LuHeart className="w-6 h-6" />, title: 'Родительский контроль', desc: 'Родители видят прогресс, достижения, посещаемость и оплаты ребёнка в своём кабинете.' },
   ]
 
   const steps = [
-    {
-      num: '01',
-      title: 'Демонстрация',
-      desc: 'Покажем платформу на живом примере вашей школы и ответим на вопросы.',
-    },
-    {
-      num: '02',
-      title: 'Настройка',
-      desc: 'Поможем перенести данные, настроить роли, курсы и интеграции под ваши процессы.',
-    },
-    {
-      num: '03',
-      title: 'Запуск',
-      desc: 'Обучим команду и запустим систему. Поддержка сопровождает на каждом этапе.',
-    },
+    { num: '01', title: 'Регистрируетесь', desc: 'Создайте аккаунт за минуту и сразу попадёте в Foxinburg World.' },
+    { num: '02', title: '7 дней бесплатно', desc: 'Откройте первый мир A1 бесплатно и попробуйте игровое обучение.' },
+    { num: '03', title: 'Подписка 500 ₽/мес', desc: 'Оформите подписку — откроются все миры до C2. Автопродление, отмена в любой момент.' },
   ]
 
   const faq = [
-    {
-      q: 'Что такое FOXINBURG EBOS?',
-      a: 'EBOS (Educational Business Operating System) — единая цифровая экосистема для языковых школ и образовательных центров. Она объединяет LMS, CRM, ERP и HRM в одном продукте.',
-    },
-    {
-      q: 'Подходит ли система небольшой школе?',
-      a: 'Да. Платформа масштабируется от одного преподавателя до сети филиалов. Вы платите только за нужный функционал и количество пользователей.',
-    },
-    {
-      q: 'Можно ли перенести данные из другой системы?',
-      a: 'Да, мы помогаем мигрировать базу учеников, курсов, расписание и финансовую историю из большинства популярных LMS и CRM.',
-    },
-    {
-      q: 'Где хранятся данные?',
-      a: 'Данные размещаются на защищённых серверах в российском облаке. Мы не передаём информацию третьим лицам и соблюдаем требования к персональным данным.',
-    },
+    { q: 'Что такое Foxinburg World?', a: 'Это игровая вселенная для изучения английского: 6 миров от A1 до C2 с уроками, тестами и домашними заданиями. За активность ученик получает опыт, монеты, достижения и поддерживает ежедневную серию занятий.' },
+    { q: 'Как работает бесплатный период?', a: 'После регистрации вы получаете 7 дней бесплатного доступа к первому миру A1. Карта банка для триала не требуется — просто начните учиться.' },
+    { q: 'Сколько стоит подписка и как её отменить?', a: 'Полный доступ ко всем мирам — 500 ₽ в месяц с автопродлением. Отменить автопродление можно в любой момент в разделе Foxinburg World: доступ сохранится до конца оплаченного периода.' },
+    { q: 'Что видят родители?', a: 'В кабинете родителя отображается прогресс ребёнка по мирам, его достижения, уровень и опыт, посещаемость занятий, а также баланс и история оплат.' },
+    { q: 'Я преподаватель или владелец школы — это тоже для меня?', a: 'Да. Владельцам школ доступна вся платформа EBOS (LMS, CRM, ERP, HRM). Преподаватели и администраторы школы работают в кабинете и проходят Академию педагогов, а самостоятельные специалисты могут получить доступ только к Академии.' },
   ]
-
-  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
   return (
     <div className="min-h-screen bg-fox-deep text-white overflow-x-hidden font-sans selection:bg-fox-gold/40 selection:text-fox-purple">
@@ -291,11 +238,6 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           50% { transform: translateY(-10px); }
         }
         .animate-float { animation: float 5s ease-in-out infinite; }
-        @keyframes gentle-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
-        }
-        .animate-gentle-pulse { animation: gentle-pulse 6s ease-in-out infinite; }
         @keyframes slow-spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -311,32 +253,35 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </button>
 
           <nav className="hidden lg:flex items-center gap-8 text-sm text-white/70">
-            {['Системы', 'Возможности', 'Как это работает', 'Демо', 'FAQ'].map((item, i) => {
-              const ids = ['systems', 'advantages', 'how-it-works', 'demo', 'faq']
-              return (
-                <a
-                  key={item}
-                  href={`#${ids[i]}`}
-                  className="hover:text-fox-gold transition duration-200"
-                >
-                  {item}
-                </a>
-              )
-            })}
+            {[
+              { label: 'Foxinburg World', id: 'world' },
+              { label: 'Кому подходит', id: 'segments' },
+              { label: 'Как начать', id: 'how-it-works' },
+              { label: 'Цены', id: 'pricing' },
+              { label: 'FAQ', id: 'faq' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollTo(item.id)}
+                className="hover:text-fox-gold transition duration-200"
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
 
           <div className="hidden lg:flex items-center gap-5">
             <button
-              onClick={() => setAuthOpen(true)}
+              onClick={openLogin}
               className="text-sm font-medium text-white/80 hover:text-white transition"
             >
               Войти
             </button>
             <button
-              onClick={scrollToDemo}
+              onClick={openWorldSignup}
               className="px-5 py-2.5 rounded-button bg-fox-gold text-fox-purple font-semibold text-sm hover:bg-[#FFF8C5] transition"
             >
-              Демо
+              Попробовать бесплатно
             </button>
           </div>
 
@@ -351,37 +296,33 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden glass-card border-t border-white/10 px-6 py-6 space-y-4">
-            {['Системы', 'Возможности', 'Как это работает', 'Демо', 'FAQ'].map((item, i) => {
-              const ids = ['systems', 'advantages', 'how-it-works', 'demo', 'faq']
-              return (
-                <a
-                  key={item}
-                  href={`#${ids[i]}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-white/80 hover:text-fox-gold"
-                >
-                  {item}
-                </a>
-              )
-            })}
+            {[
+              { label: 'Foxinburg World', id: 'world' },
+              { label: 'Кому подходит', id: 'segments' },
+              { label: 'Как начать', id: 'how-it-works' },
+              { label: 'Цены', id: 'pricing' },
+              { label: 'FAQ', id: 'faq' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollTo(item.id)}
+                className="block text-white/80 hover:text-fox-gold"
+              >
+                {item.label}
+              </button>
+            ))}
             <div className="pt-4 flex flex-col gap-3">
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  setAuthOpen(true)
-                }}
+                onClick={() => { setMobileMenuOpen(false); openLogin() }}
                 className="w-full py-3 rounded-button border border-white/20 text-white font-medium"
               >
                 Войти
               </button>
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  scrollToDemo()
-                }}
+                onClick={() => { setMobileMenuOpen(false); openWorldSignup() }}
                 className="w-full py-3 rounded-button bg-fox-gold text-fox-purple font-semibold"
               >
-                Записаться на демо
+                Попробовать бесплатно
               </button>
             </div>
           </div>
@@ -391,18 +332,9 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       <main>
         {/* Hero */}
         <section className="relative min-h-screen flex items-center hero-gradient pt-24 pb-20 px-6 overflow-hidden">
-          {/* Decorative elements */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <img
-              src="/brand/swirl-1.png"
-              alt=""
-              className="absolute -top-20 -right-20 w-[600px] opacity-20 animate-slow-spin"
-            />
-            <img
-              src="/brand/wave.png"
-              alt=""
-              className="absolute bottom-0 left-0 w-[500px] opacity-15"
-            />
+            <img src="/brand/swirl-1.png" alt="" className="absolute -top-20 -right-20 w-[600px] opacity-20 animate-slow-spin" />
+            <img src="/brand/wave.png" alt="" className="absolute bottom-0 left-0 w-[500px] opacity-15" />
             <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-fox-purple/20 blur-[120px]" />
             <div className="absolute bottom-1/4 right-1/3 w-[300px] h-[300px] rounded-full bg-fox-gold/10 blur-[100px]" />
           </div>
@@ -410,76 +342,61 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-fox-gold text-sm mb-8">
-                <LuSparkles className="w-4 h-4" />
-                <span>World Class EdTech Platform 2026</span>
+                <LuGamepad2 className="w-4 h-4" />
+                <span>Foxinburg World — игровое обучение английскому</span>
               </div>
 
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8">
-                <span className="text-white">Единая операционная</span>
+                <span className="text-white">Английский как</span>
                 <br />
-                <span className="text-gold-gradient">система для школ</span>
+                <span className="text-gold-gradient">игра и приключение</span>
               </h1>
 
               <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-xl">
-                FOXINBURG EBOS объединяет обучение, продажи, финансы и управление
-                командой. Забудьте о совместимости LMS, CRM и ERP — всё работает здесь.
+                6 миров от A1 до C2, опыт, монеты, достижения и ежедневные серии.
+                Начните бесплатно на 7 дней, дальше — 500 ₽/мес с автопродлением.
               </p>
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-12">
                 <button
-                  onClick={scrollToDemo}
+                  onClick={openWorldSignup}
                   className="group px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition flex items-center gap-2 glow-gold"
                 >
-                  Записаться на демо
+                  Попробовать бесплатно
                   <LuArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
                 </button>
                 <button
-                  onClick={() => setAuthOpen(true)}
+                  onClick={() => scrollTo('pricing')}
                   className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
                 >
-                  Войти в систему
+                  Подписка 500 ₽/мес
                 </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-white/60">
-                <div className="flex items-center gap-2">
-                  <GoldCheck />
-                  <span>Бесплатная демонстрация</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <GoldCheck />
-                  <span>Настройка под вас</span>
-                </div>
+                <div className="flex items-center gap-2"><GoldCheck /><span>7 дней бесплатно</span></div>
+                <div className="flex items-center gap-2"><GoldCheck /><span>Без карты на старте</span></div>
+                <div className="flex items-center gap-2"><GoldCheck /><span>Отмена в любой момент</span></div>
               </div>
             </div>
 
             <div className="relative flex flex-col items-center justify-center gap-6 lg:gap-8">
-              {/* Logo + EBOS */}
-              <div className="text-center reveal" ref={useReveal()}>
-                <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-fox-gold/10 rounded-full blur-3xl scale-150" />
-                  <img
-                    src="/brand/fox-head.png"
-                    alt="FOXINBURG"
-                    className="relative h-28 md:h-36 w-auto mx-auto mb-5 drop-shadow-[0_0_40px_rgba(245,237,117,0.18)]"
-                  />
-                </div>
-                <h2 className="font-display text-5xl md:text-6xl font-bold text-gold-gradient mb-3">
-                  EBOS
-                </h2>
-                <p className="text-white/50 text-xs md:text-sm tracking-[0.2em] uppercase">
-                  Education Business Operating System
-                </p>
-              </div>
-
-              {/* Mascot */}
-              <div className="relative w-full max-w-[260px] md:max-w-[300px]">
+              <div className="relative w-full max-w-[300px]">
                 <div className="absolute inset-0 bg-gradient-to-t from-fox-gold/10 to-transparent rounded-full blur-2xl" />
                 <img
                   src="/brand/mascot-hero.png"
                   alt="FOXINBURG mascot"
-                  className="relative z-10 w-full h-auto max-h-[45vh] object-contain mx-auto drop-shadow-[0_0_40px_rgba(245,237,117,0.1)] animate-float"
+                  className="relative z-10 w-full h-auto max-h-[40vh] object-contain mx-auto drop-shadow-[0_0_40px_rgba(245,237,117,0.1)] animate-float"
                 />
+              </div>
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+                {WORLDS.map((w) => (
+                  <div key={w.level} className="glass-card rounded-2xl p-3 text-center">
+                    <div className="text-2xl mb-1">{w.emoji}</div>
+                    <div className="text-fox-gold font-bold text-sm">{w.level}</div>
+                    <div className="text-white/50 text-[10px] leading-tight mt-0.5">{w.title}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -489,146 +406,80 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         <section className="relative z-10 -mt-10 px-6">
           <div className="max-w-6xl mx-auto glass-card rounded-3xl p-8 md:p-10 grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '3', label: 'системы в одной платформе' },
-              { value: '9', label: 'ролей доступа' },
-              { value: '∞', label: 'курсов и материалов' },
-              { value: '1 API', label: 'для всех интеграций' },
+              { value: '6', label: 'миров A1→C2' },
+              { value: '7 дней', label: 'бесплатно' },
+              { value: '500 ₽', label: 'в месяц' },
+              { value: '24/7', label: 'доступ онлайн' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-4xl md:text-5xl font-display font-bold text-gold-gradient mb-2">
-                  {stat.value}
-                </div>
+                <div className="text-4xl md:text-5xl font-display font-bold text-gold-gradient mb-2">{stat.value}</div>
                 <p className="text-sm text-white/60">{stat.label}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* For whom */}
-        <section className="py-28 px-6">
+        {/* Foxinburg World preview */}
+        <section id="world" className="py-28 px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20 reveal" ref={useReveal()}>
-              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                Для кого
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                Платформа для всех участников процесса
-              </h2>
+            <div className="text-center mb-16 reveal" ref={useReveal()}>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Foxinburg World</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">Учитесь, играя</h2>
               <p className="text-white/60 max-w-2xl mx-auto text-lg">
-                Каждая роль получает ровно тот функционал, который нужен для эффективной работы.
+                Каждый мир — это уроки, тесты и задания с игровой мотивацией. Проходите уровни, зарабатывайте опыт и открывайте достижения.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {audiences.map((item) => (
-                <div
-                  key={item.title}
-                  className="group glass-card rounded-card p-8 hover:bg-white/[0.07] transition duration-300"
-                >
-                  <div
-                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-fox-purple mb-6`}
-                  >
-                    {item.icon}
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-3">{item.title}</h3>
-                  <p className="text-white/60 text-sm leading-relaxed mb-6">{item.description}</p>
-                  <ul className="space-y-2">
-                    {item.points.map((p) => (
-                      <li key={p} className="flex items-center gap-2 text-sm text-white/80">
-                        <LuCheck className="w-4 h-4 text-fox-gold shrink-0" /> {p}
-                      </li>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {worldFeatures.map((f) => (
+                <div key={f.title} className="glass-card rounded-card p-7 hover:bg-white/[0.07] transition duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-fox-gold/10 text-fox-gold flex items-center justify-center mb-5">{f.icon}</div>
+                  <h3 className="font-display text-xl font-bold text-white mb-2">{f.title}</h3>
+                  <p className="text-white/60 leading-relaxed text-sm">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={openWorldSignup}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition glow-gold"
+              >
+                <LuGamepad2 className="w-5 h-5" /> Начать бесплатно
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Segments — для кого */}
+        <section id="segments" className="py-28 px-6 bg-gradient-to-b from-fox-deep via-[#1f1133] to-fox-deep">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16 reveal" ref={useReveal()}>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Кому подходит</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">Понятно — что и для кого</h2>
+              <p className="text-white/60 max-w-2xl mx-auto text-lg">
+                Выберите свой вариант: каждый получает ровно тот доступ, который ему нужен.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {segments.map((s) => (
+                <div key={s.title} className="group glass-card rounded-card p-8 flex flex-col hover:bg-white/[0.07] transition duration-300">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-fox-purple mb-6`}>{s.icon}</div>
+                  <p className="text-fox-gold text-xs font-semibold uppercase tracking-wider mb-2">{s.tag}</p>
+                  <h3 className="font-display text-2xl font-bold text-white mb-3">{s.title}</h3>
+                  <p className="text-white/60 text-sm leading-relaxed mb-6">{s.description}</p>
+                  <ul className="space-y-2 mb-8">
+                    {s.points.map((p) => (
+                      <li key={p} className="flex items-center gap-2 text-sm text-white/80"><LuCheck className="w-4 h-4 text-fox-gold shrink-0" /> {p}</li>
                     ))}
                   </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Modules */}
-        <section id="systems" className="py-28 px-6 bg-gradient-to-b from-fox-deep via-[#1f1133] to-fox-deep">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20 reveal" ref={useReveal()}>
-              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                Модули
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                Три системы — одна платформа
-              </h2>
-              <p className="text-white/60 max-w-2xl mx-auto text-lg">
-                Модули тесно связаны: заявка из CRM становится учеником, оплата формирует группу, а прогресс попадает в аналитику.
-              </p>
-            </div>
-
-            <div className="space-y-24">
-              {modules.map((module) => (
-                <div
-                  key={module.title}
-                  className={`grid lg:grid-cols-2 gap-12 lg:gap-20 items-center reveal`}
-                  ref={useReveal()}
-                >
-                  <div className={module.reverse ? 'lg:order-2' : ''}>
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-fox-purple/30 to-fox-gold/10 rounded-[2rem] blur-2xl" />
-                      <div className="relative glass-card rounded-[2rem] p-8 md:p-12 overflow-hidden">
-                        <img
-                          src={module.image}
-                          alt={module.title}
-                          className="w-full h-64 md:h-80 object-contain"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={module.reverse ? 'lg:order-1' : ''}>
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fox-gold/10 text-fox-gold text-xs font-bold uppercase tracking-wider mb-6">
-                      {module.icon}
-                      {module.badge}
-                    </div>
-                    <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-3">
-                      {module.title}
-                    </h3>
-                    <p className="text-fox-gold/80 font-medium mb-6">{module.subtitle}</p>
-                    <p className="text-white/70 text-lg leading-relaxed mb-8">{module.description}</p>
-                    <ul className="space-y-4">
-                      {module.features.map((f) => (
-                        <li key={f} className="flex items-start gap-3 text-white/80">
-                          <GoldCheck />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Advantages */}
-        <section id="advantages" className="py-28 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20 reveal" ref={useReveal()}>
-              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                Преимущества
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                Почему школы выбирают FOXINBURG
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {advantages.map((item) => (
-                <div
-                  key={item.title}
-                  className="glass-card rounded-card p-8 hover:bg-white/[0.07] transition duration-300 reveal"
-                  ref={useReveal()}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-fox-gold/10 text-fox-gold flex items-center justify-center mb-6">
-                    {item.icon}
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-3">{item.title}</h3>
-                  <p className="text-white/60 leading-relaxed">{item.desc}</p>
+                  <button
+                    onClick={s.onClick}
+                    className="mt-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-button bg-white/10 text-white font-semibold hover:bg-fox-gold hover:text-fox-purple transition"
+                  >
+                    {s.cta} <LuArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -636,29 +487,19 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="py-28 px-6 bg-gradient-to-b from-fox-deep via-[#1a0d2b] to-fox-deep">
+        <section id="how-it-works" className="py-28 px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-20 reveal" ref={useReveal()}>
-              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                Как начать
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                От демо до запуска за три шага
-              </h2>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Как начать</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">Три простых шага</h2>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 relative">
               <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-fox-gold/30 to-transparent" />
               {steps.map((step) => (
-                <div
-                  key={step.num}
-                  className="relative text-center reveal"
-                  ref={useReveal()}
-                >
+                <div key={step.num} className="relative text-center">
                   <div className="w-24 h-24 mx-auto rounded-full glass-card flex items-center justify-center mb-8 glow-purple">
-                    <span className="font-display text-3xl font-bold text-gold-gradient">
-                      {step.num}
-                    </span>
+                    <span className="font-display text-3xl font-bold text-gold-gradient">{step.num}</span>
                   </div>
                   <h3 className="font-display text-xl font-bold text-white mb-4">{step.title}</h3>
                   <p className="text-white/60 leading-relaxed">{step.desc}</p>
@@ -668,36 +509,103 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </div>
         </section>
 
-        {/* Demo form */}
+        {/* Pricing */}
+        <section id="pricing" className="py-28 px-6 bg-gradient-to-b from-fox-deep via-[#1a0d2b] to-fox-deep">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16 reveal" ref={useReveal()}>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Цены</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">Простая и честная подписка</h2>
+              <p className="text-white/60 max-w-2xl mx-auto text-lg">Попробуйте бесплатно, продолжайте за 500 ₽/мес. Отмена в любой момент.</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Free trial */}
+              <div className="glass-card rounded-card p-8 flex flex-col reveal" ref={useReveal()}>
+                <h3 className="font-display text-2xl font-bold text-white mb-2">Бесплатный старт</h3>
+                <div className="flex items-end gap-2 mb-6">
+                  <span className="text-5xl font-display font-bold text-gold-gradient">0 ₽</span>
+                  <span className="text-white/50 mb-2">/ 7 дней</span>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {['Доступ к миру A1 «Лес Знакомств»', 'Опыт, монеты и достижения', 'Без привязки карты'].map((p) => (
+                    <li key={p} className="flex items-center gap-3 text-white/80"><GoldCheck /> {p}</li>
+                  ))}
+                </ul>
+                <button onClick={openWorldSignup} className="px-6 py-3.5 rounded-button border border-white/20 text-white font-semibold hover:bg-white/5 transition">
+                  Начать бесплатно
+                </button>
+              </div>
+
+              {/* Paid */}
+              <div className="relative rounded-card p-8 flex flex-col border-2 border-fox-gold glow-gold bg-white/[0.04] reveal" ref={useReveal()}>
+                <div className="absolute -top-3 right-6 px-3 py-1 rounded-full bg-fox-gold text-fox-purple text-xs font-bold">Полный доступ</div>
+                <h3 className="font-display text-2xl font-bold text-white mb-2 flex items-center gap-2"><LuCrown className="w-6 h-6 text-fox-gold" /> Подписка</h3>
+                <div className="flex items-end gap-2 mb-6">
+                  <span className="text-5xl font-display font-bold text-gold-gradient">500 ₽</span>
+                  <span className="text-white/50 mb-2">/ месяц</span>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {['Все 6 миров от A1 до C2', 'Полная геймификация и лидерборды', 'Автопродление, отмена в любой момент', 'Родительский кабинет'].map((p) => (
+                    <li key={p} className="flex items-center gap-3 text-white/80"><GoldCheck /> {p}</li>
+                  ))}
+                </ul>
+                <button onClick={openWorldSignup} className="px-6 py-3.5 rounded-button bg-fox-gold text-fox-purple font-bold hover:bg-[#FFF8C5] transition">
+                  Оформить подписку
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* EBOS for school owners */}
+        <section id="ebos" className="py-28 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16 reveal" ref={useReveal()}>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Владельцам школ</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">EBOS — всё для управления школой</h2>
+              <p className="text-white/60 max-w-2xl mx-auto text-lg">
+                LMS, CRM, ERP и HRM в одной российской платформе. Заявка из CRM становится учеником, оплата формирует группу, прогресс попадает в аналитику.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { icon: <LuBookOpen className="w-6 h-6" />, title: 'LMS', desc: 'Курсы, модули, уроки, тесты, сертификация и геймификация.' },
+                { icon: <LuChartBarBig className="w-6 h-6" />, title: 'CRM / ERP', desc: 'Лиды, воронка продаж, группы, зачисления, оплаты и финансы.' },
+                { icon: <LuUsers className="w-6 h-6" />, title: 'HRM', desc: '9 ролей доступа, расписание, нагрузка, кадры и задачи.' },
+                { icon: <LuShield className="w-6 h-6" />, title: 'Безопасность', desc: 'JWT, ролевая модель, аудит и данные на российских серверах.' },
+              ].map((m) => (
+                <div key={m.title} className="glass-card rounded-card p-7 hover:bg-white/[0.07] transition">
+                  <div className="w-12 h-12 rounded-xl bg-fox-gold/10 text-fox-gold flex items-center justify-center mb-5">{m.icon}</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">{m.title}</h3>
+                  <p className="text-white/60 text-sm leading-relaxed">{m.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-white/60">
+              <div className="flex items-center gap-2"><LuZap className="w-4 h-4 text-fox-gold" /> Замена 4 систем</div>
+              <div className="flex items-center gap-2"><LuShield className="w-4 h-4 text-fox-gold" /> Российская инфраструктура</div>
+              <div className="flex items-center gap-2"><LuSparkles className="w-4 h-4 text-fox-gold" /> AI-ассистент</div>
+            </div>
+          </div>
+        </section>
+
+        {/* Demo form (school owners) */}
         <section id="demo" className="py-28 px-6">
           <div className="max-w-5xl mx-auto">
             <div className="relative rounded-[2.5rem] overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-fox-purple/40 via-fox-deep to-[#2a1645]" />
-              <img
-                src="/brand/swirl-2.png"
-                alt=""
-                className="absolute -top-20 -right-20 w-[400px] opacity-20 animate-slow-spin"
-              />
+              <img src="/brand/swirl-2.png" alt="" className="absolute -top-20 -right-20 w-[400px] opacity-20 animate-slow-spin" />
               <div className="relative grid lg:grid-cols-5 gap-12 p-10 md:p-16">
                 <div className="lg:col-span-2">
-                  <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                    Демонстрация
-                  </p>
-                  <h2 className="font-display text-4xl font-bold text-white mb-6">
-                    Узнайте, как EBOS изменит вашу школу
-                  </h2>
+                  <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">Школам и партнёрам</p>
+                  <h2 className="font-display text-4xl font-bold text-white mb-6">Запустите свою школу на EBOS</h2>
                   <p className="text-white/60 text-lg leading-relaxed mb-8">
-                    Заполните форму, и мы покажем платформу на живом примере ваших процессов. Без шаблонных презентаций.
+                    Вы владелец школы и хотите управлять обучением, продажами и командой в одной системе? Оставьте заявку — покажем, как это работает.
                   </p>
                   <ul className="space-y-4">
-                    {[
-                      'Персональная демонстрация',
-                      'Расчёт стоимости под вас',
-                      'Помощь с миграцией данных',
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-white/80">
-                        <GoldCheck /> {item}
-                      </li>
+                    {['Персональная демонстрация', 'Расчёт стоимости под вас', 'Помощь с миграцией данных'].map((item) => (
+                      <li key={item} className="flex items-center gap-3 text-white/80"><GoldCheck /> {item}</li>
                     ))}
                   </ul>
                 </div>
@@ -715,37 +623,18 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         <section id="faq" className="py-28 px-6 bg-gradient-to-b from-fox-deep via-[#1a0d2b] to-fox-deep">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16 reveal" ref={useReveal()}>
-              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                FAQ
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                Ответы на вопросы
-              </h2>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">FAQ</p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">Ответы на вопросы</h2>
             </div>
 
             <div className="space-y-4">
               {faq.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="glass-card rounded-2xl overflow-hidden reveal"
-                  ref={useReveal()}
-                >
-                  <button
-                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full flex items-center justify-between p-6 text-left"
-                  >
+                <div key={idx} className="glass-card rounded-2xl overflow-hidden">
+                  <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex items-center justify-between p-6 text-left">
                     <span className="font-display font-semibold text-white pr-4">{item.q}</span>
-                    {openFaq === idx ? (
-                      <LuChevronUp className="w-5 h-5 text-fox-gold shrink-0" />
-                    ) : (
-                      <LuChevronDown className="w-5 h-5 text-fox-gold shrink-0" />
-                    )}
+                    {openFaq === idx ? <LuChevronUp className="w-5 h-5 text-fox-gold shrink-0" /> : <LuChevronDown className="w-5 h-5 text-fox-gold shrink-0" />}
                   </button>
-                  {openFaq === idx && (
-                    <div className="px-6 pb-6 text-white/70 leading-relaxed animate-fadeIn">
-                      {item.a}
-                    </div>
-                  )}
+                  {openFaq === idx && <div className="px-6 pb-6 text-white/70 leading-relaxed animate-fadeIn">{item.a}</div>}
                 </div>
               ))}
             </div>
@@ -756,23 +645,17 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         <section className="py-28 px-6">
           <div className="max-w-4xl mx-auto text-center reveal" ref={useReveal()}>
             <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-              Готовы сделать школу <span className="text-gold-gradient">эффективнее?</span>
+              Готовы <span className="text-gold-gradient">начать приключение?</span>
             </h2>
             <p className="text-white/60 text-lg mb-10 max-w-2xl mx-auto">
-              Присоединяйтесь к школам, которые уже используют FOXINBURG EBOS для роста и масштабирования.
+              Зарегистрируйтесь и откройте Foxinburg World бесплатно на 7 дней.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={scrollToDemo}
-                className="px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition glow-gold"
-              >
-                Записаться на демо
+              <button onClick={openWorldSignup} className="px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition glow-gold">
+                Попробовать бесплатно
               </button>
-              <button
-                onClick={() => setAuthOpen(true)}
-                className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
-              >
-                Войти в систему
+              <button onClick={openLogin} className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition">
+                Войти
               </button>
             </div>
           </div>
@@ -785,17 +668,17 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           <div className="md:col-span-2">
             <LogoBlock className="mb-6" />
             <p className="text-white/50 max-w-sm leading-relaxed mb-6">
-              FOXINBURG EBOS — единая операционная система для образовательных организаций. LMS, CRM, ERP и HRM в одной платформе.
+              FOXINBURG — игровое обучение английскому (Foxinburg World) и единая операционная система для школ (EBOS): LMS, CRM, ERP и HRM.
             </p>
             <p className="text-fox-gold font-semibold">Образование, которое вдохновляет</p>
           </div>
           <div>
             <h4 className="font-display font-semibold text-white mb-4">Разделы</h4>
             <ul className="space-y-3 text-white/60 text-sm">
-              <li><a href="#systems" className="hover:text-fox-gold transition">Системы</a></li>
-              <li><a href="#advantages" className="hover:text-fox-gold transition">Возможности</a></li>
-              <li><a href="#how-it-works" className="hover:text-fox-gold transition">Как это работает</a></li>
-              <li><a href="#demo" className="hover:text-fox-gold transition">Демо</a></li>
+              <li><button onClick={() => scrollTo('world')} className="hover:text-fox-gold transition">Foxinburg World</button></li>
+              <li><button onClick={() => scrollTo('segments')} className="hover:text-fox-gold transition">Кому подходит</button></li>
+              <li><button onClick={() => scrollTo('pricing')} className="hover:text-fox-gold transition">Цены</button></li>
+              <li><button onClick={() => scrollTo('demo')} className="hover:text-fox-gold transition">Школам</button></li>
             </ul>
           </div>
           <div>
@@ -803,9 +686,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
             <ul className="space-y-3 text-white/60 text-sm">
               <li>ИП Дымова Вероника Александровна</li>
               <li>Дымов Григорий Юрьевич</li>
-              <li>
-                <a href="https://foxinburg.ru" className="hover:text-fox-gold transition">foxinburg.ru</a>
-              </li>
+              <li><a href="https://foxinburg.ru" className="hover:text-fox-gold transition">foxinburg.ru</a></li>
             </ul>
           </div>
         </div>
@@ -815,7 +696,12 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         </div>
       </footer>
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        redirectTo={authRedirect}
+        defaultRegister={authRegister}
+      />
     </div>
   )
 }

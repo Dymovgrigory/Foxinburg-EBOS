@@ -20,6 +20,7 @@ from app.schemas.store import (
     CartResponse,
     OrderResponse,
 )
+from app.services.enrollment_service import EnrollmentService
 from app.services.max_service import MaxService
 from app.services.tinkoff_service import TinkoffService
 from app.services.unit_of_work import UnitOfWork, get_uow
@@ -251,6 +252,29 @@ async def _init_tinkoff_payment(order: Order, user: User, items_data: list[dict]
     order.payment_url = result["payment_url"]
 
 
+async def _enroll_paid_courses(uow: UnitOfWork, order: Order) -> None:
+    """После успешной оплаты зачисляет покупателя на купленные курсы.
+
+    Для каждой позиции заказа, у товара которой указан `target_course_id`,
+    создаётся активное зачисление (вместе с прогрессом, ДЗ и чатом группы).
+    Повторное зачисление на тот же курс пропускается.
+    """
+    enrollment_service = EnrollmentService(uow)
+    for item in order.items:
+        product = await uow.session.get(Product, item.product_id)
+        if not product or not product.target_course_id:
+            continue
+        try:
+            await enrollment_service.enroll_student(
+                student_id=order.user_id,
+                course_id=product.target_course_id,
+                group_id=product.target_group_id,
+            )
+        except ValueError:
+            # Уже зачислён на этот курс — пропускаем.
+            continue
+
+
 @router.post("/checkout")
 async def checkout(
     current_user: User = Depends(require_active_user),
@@ -295,6 +319,52 @@ async def checkout(
     if settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD:
         try:
             await _init_tinkoff_payment(order, current_user, order_items_data)
+        except Exception as exc:
+            logger = __import__("logging").getLogger(__name__)
+            logger.exception("Tinkoff init failed")
+            await uow.rollback()
+            return error_response(f"Ошибка инициализации оплаты: {exc}", status_code=502)
+
+    await uow.commit()
+    await uow.session.refresh(order)
+    return success_response(
+        data=OrderResponse.model_validate(order).model_dump(),
+        message="Заказ создан",
+        status_code=201,
+    )
+
+
+@router.post("/buy/{product_id}")
+async def buy_now(
+    product_id: int,
+    current_user: User = Depends(require_active_user),
+    uow: UnitOfWork = Depends(get_uow),
+):
+    """Покупка одного товара (курса) в один клик: создаёт заказ и ссылку на оплату."""
+    product = await uow.session.get(Product, product_id)
+    if not product or not product.is_active:
+        return error_response("Товар не найден или недоступен", status_code=400)
+
+    order = Order(
+        user_id=current_user.id,
+        status="pending",
+        total_amount=product.price,
+        currency=product.currency,
+    )
+    uow.session.add(order)
+    await uow.session.flush()
+
+    order_item_data = {
+        "product_id": product.id,
+        "title_snapshot": product.title,
+        "price_snapshot": product.price,
+        "quantity": 1,
+    }
+    uow.session.add(OrderItem(order_id=order.id, **order_item_data))
+
+    if settings.TINKOFF_TERMINAL_KEY and settings.TINKOFF_TERMINAL_PASSWORD:
+        try:
+            await _init_tinkoff_payment(order, current_user, [order_item_data])
         except Exception as exc:
             logger = __import__("logging").getLogger(__name__)
             logger.exception("Tinkoff init failed")
@@ -397,6 +467,9 @@ async def tinkoff_webhook(
             description=f"Оплата заказа #{order.id} через Тинькофф",
         )
         uow.session.add(payment)
+
+        # Автозачисление на купленные курсы / в группы.
+        await _enroll_paid_courses(uow, order)
 
         user = await uow.session.get(User, order.user_id)
         if user:

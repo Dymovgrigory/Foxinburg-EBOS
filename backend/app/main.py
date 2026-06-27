@@ -28,7 +28,7 @@ from app.routers import (
     leads, deals, finance, homeworks, tests, notifications, achievements,
     files, organizations, progress, analytics, branches, schedules, attendance,
     chats, chat_ws, teacher_academy, knowledge, methodists, system, ai, tasks, directories, reports, surveys, hr,
-    role_config, dashboard, max_bot, store,
+    role_config, dashboard, max_bot, store, catalog,
 )
 from app.admin import setup_admin
 
@@ -221,6 +221,7 @@ app.include_router(role_config.router, prefix="/api/v3")
 app.include_router(dashboard.router, prefix="/api/v3")
 app.include_router(max_bot.router, prefix="/api/v3")
 app.include_router(store.router, prefix="/api/v3")
+app.include_router(catalog.router, prefix="/api/v3")
 
 setup_admin(app)
 

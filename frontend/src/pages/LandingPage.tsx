@@ -132,9 +132,16 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       icon: <LuGamepad2 className="w-6 h-6" />,
       tag: 'Ученикам и родителям',
       title: 'Foxinburg World',
+      summary: 'Игровое обучение английскому с уровнями, опытом и достижениями.',
       description:
         'Игровое обучение английскому: 6 миров от A1 до C2, опыт, монеты, достижения и ежедневные серии. Родители видят прогресс ребёнка в личном кабинете.',
-      points: ['7 дней бесплатно', 'Затем 500 ₽/мес с автопродлением', 'Родительский контроль'],
+      points: [
+        '7 дней бесплатно, без карты на старте',
+        'Затем 500 ₽/мес с автопродлением',
+        '6 миров A1→C2 с уроками, тестами и ДЗ',
+        'XP, монеты, уровни и достижения',
+        'Кабинет родителя: прогресс, посещаемость, оплаты',
+      ],
       color: 'from-amber-400 to-fox-gold',
       cta: 'Попробовать бесплатно',
       onClick: openWorldSignup,
@@ -143,9 +150,16 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       icon: <LuBuilding2 className="w-6 h-6" />,
       tag: 'Владельцам школ',
       title: 'EBOS «Всё в одном»',
+      summary: 'Операционная система школы: обучение, продажи, финансы, команда.',
       description:
         'Полная операционная система школы: LMS, CRM, ERP и HRM в одной платформе. Группы, расписание, финансы, продажи, филиалы и аналитика.',
-      points: ['LMS + CRM + ERP + HRM', '9 ролей доступа', 'Российская инфраструктура'],
+      points: [
+        'LMS + CRM + ERP + HRM в одной системе',
+        'Группы, расписание, посещаемость',
+        'Продажи, оплаты, финансы и отчёты',
+        '9 ролей доступа и филиалы',
+        'Российская инфраструктура и AI-ассистент',
+      ],
       color: 'from-violet-400 to-purple-300',
       cta: 'Запросить демо',
       onClick: () => scrollTo('demo'),
@@ -154,9 +168,16 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       icon: <LuUserCheck className="w-6 h-6" />,
       tag: 'Преподавателям и админам школы',
       title: 'Академия + кабинет',
+      summary: 'Корпоративная Академия педагогов и рабочий кабинет школы.',
       description:
         'Сотрудники организации проходят корпоративную Академию педагогов и работают в личном кабинете школы: занятия, проверка работ, расписание.',
-      points: ['Академия педагогов', 'Сертификация', 'Рабочий кабинет в школе'],
+      points: [
+        'Корпоративная Академия педагогов',
+        'Сертификация и рост квалификации',
+        'Рабочий кабинет: занятия и расписание',
+        'Проверка домашних заданий учеников',
+        'Доступ выдаёт владелец школы',
+      ],
       color: 'from-emerald-400 to-teal-300',
       cta: 'Войти в кабинет',
       onClick: openLogin,
@@ -165,9 +186,16 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
       icon: <LuGraduationCap className="w-6 h-6" />,
       tag: 'Самостоятельным специалистам',
       title: 'Только Академия',
+      summary: 'Отдельный доступ к Академии для самостоятельного развития.',
       description:
         'Преподаватель или администратор без своей школы и хотите развиваться? Получите отдельный доступ к Академии для самостоятельного обучения.',
-      points: ['Доступ только к Академии', 'Без управленческих функций', 'Учитесь в своём темпе'],
+      points: [
+        'Доступ только к Академии',
+        'Без управленческих функций школы',
+        'Курсы и сертификация для специалистов',
+        'Учитесь в своём темпе',
+        'Подходит без привязки к организации',
+      ],
       color: 'from-sky-400 to-blue-300',
       cta: 'Начать обучение',
       onClick: openAcademySignup,
@@ -339,25 +367,28 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
             <div className="absolute bottom-1/4 right-1/3 w-[300px] h-[300px] rounded-full bg-fox-gold/10 blur-[100px]" />
           </div>
 
-          <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-            <div>
+          <div className="relative z-10 max-w-7xl mx-auto w-full">
+            {/* Общий смысл системы */}
+            <div className="text-center max-w-4xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-fox-gold text-sm mb-8">
-                <LuGamepad2 className="w-4 h-4" />
-                <span>Foxinburg World — игровое обучение английскому</span>
+                <LuSparkles className="w-4 h-4" />
+                <span>Единая образовательная экосистема</span>
               </div>
 
-              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8">
-                <span className="text-white">Английский как</span>
-                <br />
-                <span className="text-gold-gradient">игра и приключение</span>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.06] tracking-tight mb-6">
+                <span className="text-white">FOXINBURG — </span>
+                <span className="text-gold-gradient">образование, которое вдохновляет</span>
               </h1>
 
-              <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-xl">
-                6 миров от A1 до C2, опыт, монеты, достижения и ежедневные серии.
-                Начните бесплатно на 7 дней, дальше — 500 ₽/мес с автопродлением.
+              <p className="text-lg md:text-xl text-white/75 leading-relaxed mb-4 max-w-3xl mx-auto">
+                Игровое обучение английскому для учеников, полноценная операционная система
+                для школ и Академия для преподавателей — всё в одной платформе.
+              </p>
+              <p className="text-base text-white/50 mb-10">
+                Выберите, кто вы — и попадёте ровно туда, что нужно именно вам.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-12">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                 <button
                   onClick={openWorldSignup}
                   className="group px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition flex items-center gap-2 glow-gold"
@@ -366,38 +397,37 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                   <LuArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
                 </button>
                 <button
-                  onClick={() => scrollTo('pricing')}
+                  onClick={() => scrollTo('demo')}
                   className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
                 >
-                  Подписка 500 ₽/мес
+                  Запросить демо для школы
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-6 text-sm text-white/60">
+              <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/60 mb-14">
                 <div className="flex items-center gap-2"><GoldCheck /><span>7 дней бесплатно</span></div>
                 <div className="flex items-center gap-2"><GoldCheck /><span>Без карты на старте</span></div>
-                <div className="flex items-center gap-2"><GoldCheck /><span>Отмена в любой момент</span></div>
+                <div className="flex items-center gap-2"><GoldCheck /><span>Российская инфраструктура</span></div>
               </div>
             </div>
 
-            <div className="relative flex flex-col items-center justify-center gap-6 lg:gap-8">
-              <div className="relative w-full max-w-[300px]">
-                <div className="absolute inset-0 bg-gradient-to-t from-fox-gold/10 to-transparent rounded-full blur-2xl" />
-                <img
-                  src="/brand/mascot-hero.png"
-                  alt="FOXINBURG mascot"
-                  className="relative z-10 w-full h-auto max-h-[40vh] object-contain mx-auto drop-shadow-[0_0_40px_rgba(245,237,117,0.1)] animate-float"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
-                {WORLDS.map((w) => (
-                  <div key={w.level} className="glass-card rounded-2xl p-3 text-center">
-                    <div className="text-2xl mb-1">{w.emoji}</div>
-                    <div className="text-fox-gold font-bold text-sm">{w.level}</div>
-                    <div className="text-white/50 text-[10px] leading-tight mt-0.5">{w.title}</div>
-                  </div>
-                ))}
-              </div>
+            {/* Для кого — сразу видно на первом экране */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {segments.map((s) => (
+                <button
+                  key={s.title}
+                  onClick={s.onClick}
+                  className="group text-left glass-card rounded-card p-6 flex flex-col hover:bg-white/[0.07] transition duration-300"
+                >
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-fox-purple mb-4`}>{s.icon}</div>
+                  <p className="text-fox-gold text-[11px] font-semibold uppercase tracking-wider mb-1">{s.tag}</p>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">{s.title}</h3>
+                  <p className="text-white/55 text-sm leading-relaxed mb-4 flex-1">{s.summary}</p>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-white group-hover:text-fox-gold transition">
+                    {s.cta} <LuArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </section>
@@ -430,7 +460,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
               {worldFeatures.map((f) => (
                 <div key={f.title} className="glass-card rounded-card p-7 hover:bg-white/[0.07] transition duration-300">
                   <div className="w-12 h-12 rounded-xl bg-fox-gold/10 text-fox-gold flex items-center justify-center mb-5">{f.icon}</div>
@@ -438,6 +468,34 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                   <p className="text-white/60 leading-relaxed text-sm">{f.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Карта миров A1→C2 */}
+            <div className="glass-card rounded-3xl p-8 md:p-10 mb-12 grid lg:grid-cols-[auto_1fr] gap-8 items-center">
+              <div className="relative w-full max-w-[200px] mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-t from-fox-gold/10 to-transparent rounded-full blur-2xl" />
+                <img
+                  src="/brand/mascot-hero.png"
+                  alt="FOXINBURG mascot"
+                  className="relative z-10 w-full h-auto object-contain mx-auto drop-shadow-[0_0_40px_rgba(245,237,117,0.1)] animate-float"
+                />
+              </div>
+              <div>
+                <h3 className="font-display text-2xl font-bold text-white mb-2">6 миров — путь от новичка до эксперта</h3>
+                <p className="text-white/60 text-sm mb-6 max-w-2xl">
+                  Каждый уровень CEFR — это отдельный мир со своей темой. Открывайте их по очереди,
+                  проходя уроки, тесты и домашние задания.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {WORLDS.map((w) => (
+                    <div key={w.level} className="glass-card rounded-2xl p-4 text-center">
+                      <div className="text-3xl mb-1">{w.emoji}</div>
+                      <div className="text-fox-gold font-bold text-sm">{w.level}</div>
+                      <div className="text-white/60 text-xs leading-tight mt-0.5">{w.title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="text-center">

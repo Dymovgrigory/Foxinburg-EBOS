@@ -47,6 +47,56 @@
 
 ## 🗂 Журнал сессий
 
+### Сессия 2026-06-27 — Пароль ученика + B2C-каталог с онлайн-оплатой и автозачислением ⏳ ожидает мёрджа
+
+**Задача (от владельца).** (1) Управляющим ролям дать просмотр (расшифровка) и редактирование
+пароля входа ученика прямо в карточке. (2) Перевести платформу с B2B (продажа EBOS школам) на
+B2C (ученик покупает курс онлайн): публичный каталог курсов с ценами → онлайн-оплата Tinkoff →
+автозачисление; переделать лендинг под ученика («что/для кого/как купить»).
+
+**Ветка:** `devin/1782541551-student-password-login` (включает пароль + каталог + лендинг).
+
+**1. Пароль ученика в карточке (backend `users.py` / `user_service.py` / схемы).**
+- `GET /users/{id}` отдаёт `plain_password` (Fernet-расшифровка свойства `User.plain_password`)
+  **только** при праве `USER_UPDATE` (owner/super_admin/admin). Методист/менеджер пароль не видят.
+- `PATCH /users/{id}` принимает новый пароль → bcrypt-хеш (`password_hash`) + Fernet-шифр
+  (`encrypted_password`). В аудит-лог пароль не пишется. Тесты в `test_users.py`.
+
+**2. Публичный каталог (новый `routers/catalog.py`, подключён в `main.py` под `/api/v3`).**
+- `GET /catalog` — список опубликованных курсов (`status=='published'`), у которых есть активный
+  привязанный `Product` (цена/валюта/тип). Без авторизации.
+- `GET /catalog/{product_id}` — карточка: цена + вложенный курс с полной программой
+  (модули → уроки), `modules_count`, `lessons_count`, `certificate_enabled`.
+- Хелперы `_course_public()`, `_product_public()`, `_is_visible()`.
+
+**3. Покупка в один клик + автозачисление (`routers/store.py`).**
+- `POST /store/buy/{product_id}` (auth): создаёт `Order` с одним `OrderItem`, инициирует Tinkoff
+  (переиспользует `_init_tinkoff_payment()`), возвращает `payment_url`. Если Tinkoff не настроен
+  (локально) — заказ создаётся, оплата доступна в личном кабинете (graceful fallback).
+- Вебхук Tinkoff: после `order.status='paid'` вызывает `_enroll_paid_courses(uow, order)` →
+  для каждого item с `product.target_course_id` дергает `EnrollmentService.enroll_student(...)`
+  (создаёт зачисление, прогресс, ДЗ, доступ к чату). `ValueError` (уже зачислен) — пропуск, вебхук
+  не падает. Тесты в новом `test_catalog.py` (4 шт.): список/скрытие неопубликованного/детали с
+  программой/`buy`→вебхук→автозачисление.
+
+**4. Frontend.**
+- Новые публичные страницы (без сайдбара): `CatalogPage.tsx` (`/catalog`, сетка курсов с ценой) и
+  `CatalogCoursePage.tsx` (`/catalog/:productId`, программа + «Купить курс»). Гость без сессии →
+  `AuthModal` с `redirectTo=/catalog/{id}?buy=1` и авто-покупкой после входа.
+- `AuthModal.tsx`: добавлены пропсы `redirectTo`, `defaultRegister`.
+- `api/index.ts`: `catalogApi.list/get`, `storeApi.buy`. Типы `CatalogItem`/`CatalogCourse`.
+- `LandingPage.tsx`: переделан под B2C — герой «Учитесь языкам онлайн с нуля», метрики
+  (100% онлайн / 24/7 / 1 клик / сертификат), блок «избранные курсы» из каталога, шаги
+  «выбрал→оплатил→учишься», FAQ по оплате, CTA «Выбрать курс». B2B-форма сохранена, но
+  переименована в блок «Школам и партнёрам» (вторичный).
+
+**Проверки.** Backend `pytest -q` → **790 passed**, 1 pre-existing env-only fail
+(`test_production_config::test_development_allows_default_secrets`). Frontend `tsc -b` чисто.
+`npm run lint` — pre-existing repo-wide ошибки/варнинги (no-explicit-any, rules-of-hooks в
+`useReveal`, exhaustive-deps), новых блокеров не добавлено. Браузер (локально): `/catalog`
+показывает курс с ценой 9 900 ₽, карточка `/catalog/1` рендерит программу, «Купить курс» создаёт
+заказ (тост «Заказ создан»), лендинг открывается с B2C-контентом. Консоль без ошибок.
+
 ### Доработка CRUD — База знаний: создание/редактирование/удаление (PR #16) ⏳ ожидает мёрджа
 
 **Задача (от владельца).** Всё, что создаётся, должно просматриваться и редактироваться

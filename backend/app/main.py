@@ -128,6 +128,22 @@ async def lifespan(app: FastAPI):
         import logging
         logging.getLogger(__name__).exception("Failed to load role config cache")
 
+    # Идемпотентный провижининг Foxinburg World (6 миров A1→C2 + ачивки).
+    # Создаёт недостающее при старте, чтобы на проде не требовался ручной вызов
+    # /world/admin/provision. Не блокирует старт при ошибке.
+    try:
+        from app.services.world_content import (
+            ensure_world_courses,
+            ensure_world_achievements,
+        )
+        async with UnitOfWork() as uow:
+            await ensure_world_courses(uow.session)
+            await ensure_world_achievements(uow.session)
+            await uow.commit()
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Failed to provision Foxinburg World content")
+
     # Автоматическая синхронизация Академии педагогов с Яндекс.Диском
     if settings.YANDEX_DISK_TOKEN and settings.YANDEX_DISK_PUBLIC_FOLDER:
         scheduler.add_job(

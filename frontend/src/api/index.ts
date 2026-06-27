@@ -48,6 +48,7 @@ import type {
   Product,
   CartItem,
   Order,
+  CatalogItem,
 } from '../types'
 
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
@@ -525,8 +526,14 @@ export const storeApi = {
   removeCartItem: (id: number) => api.delete<ApiResponse<void>>(`/store/cart/${id}`).then(unwrap),
 
   checkout: () => api.post<ApiResponse<Order>>('/store/checkout').then(unwrap),
+  buy: (productId: number) => api.post<ApiResponse<Order>>(`/store/buy/${productId}`).then(unwrap),
   orders: () => api.get<ApiResponse<Order[]>>('/store/orders').then(unwrap),
   getOrder: (id: number) => api.get<ApiResponse<Order>>(`/store/orders/${id}`).then(unwrap),
+}
+
+export const catalogApi = {
+  list: () => api.get<ApiResponse<CatalogItem[]>>('/catalog').then(unwrap),
+  get: (productId: number) => api.get<ApiResponse<CatalogItem>>(`/catalog/${productId}`).then(unwrap),
 }
 
 export const teacherAcademyApi = {

@@ -9,11 +9,13 @@ import type { User } from '../types'
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
+  redirectTo?: string
+  defaultRegister?: boolean
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, redirectTo = '/system-center', defaultRegister = false }: AuthModalProps) {
   const { login } = useAuth()
-  const [isLogin, setIsLogin] = useState(true)
+  const [isLogin, setIsLogin] = useState(!defaultRegister)
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -36,14 +38,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const { access_token, user } = payload
         if (!access_token || !user) throw new Error('Некорректный ответ сервера')
         login(user as User, access_token)
-        window.location.href = '/system-center'
+        window.location.href = redirectTo
       } catch (err: unknown) {
         setAuthError(getErrorMessage(err, 'Ошибка авторизации'))
       } finally {
         setAuthLoading(false)
       }
     },
-    [isLogin, authEmail, authPassword, authName, login]
+    [isLogin, authEmail, authPassword, authName, login, redirectTo]
   )
 
   const toggleMode = useCallback(() => {

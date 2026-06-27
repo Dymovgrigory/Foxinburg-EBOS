@@ -26,6 +26,8 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const SchedulePage = lazy(() => import('./pages/SchedulePage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const MaxLinkPage = lazy(() => import('./pages/MaxLinkPage'))
+const CatalogPage = lazy(() => import('./pages/CatalogPage'))
+const CatalogCoursePage = lazy(() => import('./pages/CatalogCoursePage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const TeacherAcademyPage = lazy(() => import('./pages/TeacherAcademyPage'))
 const TeacherCoursesPage = lazy(() => import('./pages/TeacherCoursesPage'))
@@ -69,6 +71,8 @@ function App() {
         {/* Public pages without sidebar */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LandingPage showAuth />} />
+        <Route path="/catalog" element={<CatalogPage />} />
+        <Route path="/catalog/:productId" element={<CatalogCoursePage />} />
         <Route path="/max-link" element={<MaxLinkPage />} />
 
         {/* Protected app with sidebar */}

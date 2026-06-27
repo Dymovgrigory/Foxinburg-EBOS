@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
 import DemoForm from '../components/DemoForm'
+import { catalogApi } from '../api'
+import type { CatalogItem } from '../types'
+import { formatPrice } from './CatalogPage'
 
 function LogoBlock({ className = '' }: { className?: string }) {
   return (
@@ -41,6 +44,9 @@ import {
   LuBrain,
   LuBuilding2,
   LuUserCheck,
+  LuWallet,
+  LuPlay,
+  LuLayers,
 } from 'react-icons/lu'
 
 interface LandingPageProps {
@@ -81,6 +87,7 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
   const location = useLocation()
   const [authOpen, setAuthOpen] = useState(Boolean(showAuth))
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [featured, setFeatured] = useState<CatalogItem[]>([])
 
   useEffect(() => {
     if (location.pathname === '/login') {
@@ -88,9 +95,11 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
     }
   }, [location.pathname])
 
-  const scrollToDemo = () => {
-    document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })
-  }
+  useEffect(() => {
+    catalogApi.list().then((items) => setFeatured(items.slice(0, 3))).catch(() => setFeatured([]))
+  }, [])
+
+  const goCatalog = () => navigate('/catalog')
 
   const audiences = [
     {
@@ -214,37 +223,41 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
   const steps = [
     {
       num: '01',
-      title: 'Демонстрация',
-      desc: 'Покажем платформу на живом примере вашей школы и ответим на вопросы.',
+      title: 'Выбираете курс',
+      desc: 'Открываете каталог, смотрите программу, что входит и сколько стоит. Без звонков и заявок.',
     },
     {
       num: '02',
-      title: 'Настройка',
-      desc: 'Поможем перенести данные, настроить роли, курсы и интеграции под ваши процессы.',
+      title: 'Оплачиваете онлайн',
+      desc: 'Регистрируетесь за минуту и оплачиваете картой через Т-Кассу — безопасно и мгновенно.',
     },
     {
       num: '03',
-      title: 'Запуск',
-      desc: 'Обучим команду и запустим систему. Поддержка сопровождает на каждом этапе.',
+      title: 'Сразу учитесь',
+      desc: 'Доступ к курсу открывается автоматически после оплаты. Заходите и начинайте занятия.',
     },
   ]
 
   const faq = [
     {
-      q: 'Что такое FOXINBURG EBOS?',
-      a: 'EBOS (Educational Business Operating System) — единая цифровая экосистема для языковых школ и образовательных центров. Она объединяет LMS, CRM, ERP и HRM в одном продукте.',
+      q: 'Как купить курс?',
+      a: 'Выберите курс в каталоге, нажмите «Купить», зарегистрируйтесь (это займёт минуту) и оплатите картой онлайн. Сразу после оплаты курс появится в вашем личном кабинете.',
     },
     {
-      q: 'Подходит ли система небольшой школе?',
-      a: 'Да. Платформа масштабируется от одного преподавателя до сети филиалов. Вы платите только за нужный функционал и количество пользователей.',
+      q: 'Когда открывается доступ к курсу?',
+      a: 'Доступ открывается автоматически сразу после успешной оплаты — вас зачислят на курс, и вы сможете начать заниматься без ожидания.',
     },
     {
-      q: 'Можно ли перенести данные из другой системы?',
-      a: 'Да, мы помогаем мигрировать базу учеников, курсов, расписание и финансовую историю из большинства популярных LMS и CRM.',
+      q: 'Безопасно ли платить картой?',
+      a: 'Да. Оплата проходит через Т-Кассу (Т-Банк) — данные карты вводятся на защищённой стороне банка, мы их не храним и не видим.',
     },
     {
-      q: 'Где хранятся данные?',
-      a: 'Данные размещаются на защищённых серверах в российском облаке. Мы не передаём информацию третьим лицам и соблюдаем требования к персональным данным.',
+      q: 'Что входит в курс?',
+      a: 'На странице каждого курса указана полная программа: модули, уроки и что вы получите. Многие курсы включают проверку домашних заданий преподавателем и сертификат по завершении.',
+    },
+    {
+      q: 'Нужно ли что-то устанавливать?',
+      a: 'Нет. Обучение проходит онлайн в браузере на любом устройстве — компьютере, планшете или телефоне.',
     },
   ]
 
@@ -311,8 +324,8 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           </button>
 
           <nav className="hidden lg:flex items-center gap-8 text-sm text-white/70">
-            {['Системы', 'Возможности', 'Как это работает', 'Демо', 'FAQ'].map((item, i) => {
-              const ids = ['systems', 'advantages', 'how-it-works', 'demo', 'faq']
+            {['Курсы', 'Как это работает', 'Возможности', 'FAQ'].map((item, i) => {
+              const ids = ['featured', 'how-it-works', 'advantages', 'faq']
               return (
                 <a
                   key={item}
@@ -333,10 +346,10 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               Войти
             </button>
             <button
-              onClick={scrollToDemo}
+              onClick={goCatalog}
               className="px-5 py-2.5 rounded-button bg-fox-gold text-fox-purple font-semibold text-sm hover:bg-[#FFF8C5] transition"
             >
-              Демо
+              Выбрать курс
             </button>
           </div>
 
@@ -351,8 +364,8 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden glass-card border-t border-white/10 px-6 py-6 space-y-4">
-            {['Системы', 'Возможности', 'Как это работает', 'Демо', 'FAQ'].map((item, i) => {
-              const ids = ['systems', 'advantages', 'how-it-works', 'demo', 'faq']
+            {['Курсы', 'Как это работает', 'Возможности', 'FAQ'].map((item, i) => {
+              const ids = ['featured', 'how-it-works', 'advantages', 'faq']
               return (
                 <a
                   key={item}
@@ -377,11 +390,11 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false)
-                  scrollToDemo()
+                  goCatalog()
                 }}
                 className="w-full py-3 rounded-button bg-fox-gold text-fox-purple font-semibold"
               >
-                Записаться на демо
+                Выбрать курс
               </button>
             </div>
           </div>
@@ -411,44 +424,44 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-fox-gold text-sm mb-8">
                 <LuSparkles className="w-4 h-4" />
-                <span>World Class EdTech Platform 2026</span>
+                <span>Онлайн-школа иностранных языков</span>
               </div>
 
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8">
-                <span className="text-white">Единая операционная</span>
+                <span className="text-white">Учитесь языкам</span>
                 <br />
-                <span className="text-gold-gradient">система для школ</span>
+                <span className="text-gold-gradient">онлайн с нуля</span>
               </h1>
 
               <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-xl">
-                FOXINBURG EBOS объединяет обучение, продажи, финансы и управление
-                командой. Забудьте о совместимости LMS, CRM и ERP — всё работает здесь.
+                Выбирайте курс, оплачивайте онлайн и начинайте учиться сразу.
+                Интерактивные уроки, проверка домашки преподавателем и сертификат по завершении.
               </p>
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-12">
                 <button
-                  onClick={scrollToDemo}
+                  onClick={goCatalog}
                   className="group px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition flex items-center gap-2 glow-gold"
                 >
-                  Записаться на демо
+                  Выбрать курс
                   <LuArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
                 </button>
                 <button
                   onClick={() => setAuthOpen(true)}
                   className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
                 >
-                  Войти в систему
+                  Войти
                 </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-white/60">
                 <div className="flex items-center gap-2">
                   <GoldCheck />
-                  <span>Бесплатная демонстрация</span>
+                  <span>Доступ сразу после оплаты</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <GoldCheck />
-                  <span>Настройка под вас</span>
+                  <span>Оплата картой онлайн</span>
                 </div>
               </div>
             </div>
@@ -489,10 +502,10 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         <section className="relative z-10 -mt-10 px-6">
           <div className="max-w-6xl mx-auto glass-card rounded-3xl p-8 md:p-10 grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '3', label: 'системы в одной платформе' },
-              { value: '9', label: 'ролей доступа' },
-              { value: '∞', label: 'курсов и материалов' },
-              { value: '1 API', label: 'для всех интеграций' },
+              { value: '100%', label: 'онлайн-обучение' },
+              { value: '24/7', label: 'доступ к курсам' },
+              { value: '1 клик', label: 'до покупки курса' },
+              { value: '★', label: 'сертификат по завершении' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-4xl md:text-5xl font-display font-bold text-gold-gradient mb-2">
@@ -501,6 +514,68 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
                 <p className="text-sm text-white/60">{stat.label}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Featured courses */}
+        <section id="featured" className="py-28 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16 reveal" ref={useReveal()}>
+              <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
+                Каталог
+              </p>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
+                Популярные курсы
+              </h2>
+              <p className="text-white/60 max-w-2xl mx-auto text-lg">
+                Выберите программу, посмотрите, что входит, и оплатите онлайн — доступ откроется сразу.
+              </p>
+            </div>
+
+            {featured.length > 0 ? (
+              <div className="grid md:grid-cols-3 gap-6 mb-12">
+                {featured.map((item) => (
+                  <button
+                    key={item.product_id}
+                    onClick={() => navigate(`/catalog/${item.product_id}`)}
+                    className="group glass-card rounded-card p-7 text-left hover:bg-white/[0.07] transition duration-300 flex flex-col"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-fox-gold/10 text-fox-gold flex items-center justify-center mb-5">
+                      <LuBookOpen className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-display text-xl font-bold text-white mb-2 group-hover:text-fox-gold transition">{item.title}</h3>
+                    {(item.course?.short_description || item.description) && (
+                      <p className="text-white/60 text-sm leading-relaxed mb-4 line-clamp-3">
+                        {item.course?.short_description || item.description}
+                      </p>
+                    )}
+                    {item.course && (
+                      <div className="flex items-center gap-4 text-xs text-white/50 mb-5">
+                        <span className="inline-flex items-center gap-1"><LuLayers className="w-3.5 h-3.5" /> {item.course.modules_count} модулей</span>
+                        <span className="inline-flex items-center gap-1"><LuPlay className="w-3.5 h-3.5" /> {item.course.lessons_count} уроков</span>
+                      </div>
+                    )}
+                    <div className="mt-auto flex items-center justify-between pt-2">
+                      <span className="text-2xl font-display font-bold text-gold-gradient">{formatPrice(item.price)}</span>
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-fox-gold">
+                        Подробнее <LuArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-white/50 mb-12">Курсы скоро появятся в каталоге.</div>
+            )}
+
+            <div className="text-center">
+              <button
+                onClick={goCatalog}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition glow-gold"
+              >
+                <LuWallet className="w-5 h-5" /> Открыть весь каталог
+              </button>
+            </div>
           </div>
         </section>
 
@@ -640,10 +715,10 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-20 reveal" ref={useReveal()}>
               <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                Как начать
+                Как это работает
               </p>
               <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-                От демо до запуска за три шага
+                Купить курс — три простых шага
               </h2>
             </div>
 
@@ -681,13 +756,13 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
               <div className="relative grid lg:grid-cols-5 gap-12 p-10 md:p-16">
                 <div className="lg:col-span-2">
                   <p className="text-fox-gold text-sm font-semibold tracking-wider uppercase mb-4">
-                    Демонстрация
+                    Школам и партнёрам
                   </p>
                   <h2 className="font-display text-4xl font-bold text-white mb-6">
-                    Узнайте, как EBOS изменит вашу школу
+                    Запустите свою онлайн-школу на FOXINBURG
                   </h2>
                   <p className="text-white/60 text-lg leading-relaxed mb-8">
-                    Заполните форму, и мы покажем платформу на живом примере ваших процессов. Без шаблонных презентаций.
+                    Вы преподаватель или владелец школы и хотите продавать свои курсы на нашей платформе? Оставьте заявку — покажем, как это работает.
                   </p>
                   <ul className="space-y-4">
                     {[
@@ -756,23 +831,23 @@ export default function LandingPage({ showAuth = false }: LandingPageProps) {
         <section className="py-28 px-6">
           <div className="max-w-4xl mx-auto text-center reveal" ref={useReveal()}>
             <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-              Готовы сделать школу <span className="text-gold-gradient">эффективнее?</span>
+              Готовы <span className="text-gold-gradient">начать учиться?</span>
             </h2>
             <p className="text-white/60 text-lg mb-10 max-w-2xl mx-auto">
-              Присоединяйтесь к школам, которые уже используют FOXINBURG EBOS для роста и масштабирования.
+              Выберите курс в каталоге, оплатите онлайн и получите доступ к занятиям сразу.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
-                onClick={scrollToDemo}
+                onClick={goCatalog}
                 className="px-8 py-4 rounded-button bg-fox-gold text-fox-purple font-bold text-lg hover:bg-[#FFF8C5] transition glow-gold"
               >
-                Записаться на демо
+                Выбрать курс
               </button>
               <button
                 onClick={() => setAuthOpen(true)}
                 className="px-8 py-4 rounded-button border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition"
               >
-                Войти в систему
+                Войти
               </button>
             </div>
           </div>

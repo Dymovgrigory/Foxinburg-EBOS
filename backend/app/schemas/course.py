@@ -25,8 +25,11 @@ class CourseCreate(CourseBase):
 class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    short_description: Optional[str] = None
     status: Optional[str] = None
     passing_score: Optional[int] = None
+    is_sequential: Optional[bool] = None
+    certificate_enabled: Optional[bool] = None
 
 
 class ModuleBase(BaseModel):

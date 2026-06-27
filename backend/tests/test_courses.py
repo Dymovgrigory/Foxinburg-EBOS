@@ -90,6 +90,40 @@ async def test_create_lesson_with_test_and_homework(client, auth_headers_factory
     assert hw_lesson["homework_title"] == "Написать эссе"
 
 
+async def test_update_course_metadata(client, auth_headers_factory):
+    methodist = await auth_headers_factory(Role.METHODIST)
+
+    course_res = await client.post("/api/v3/courses", json={
+        "title": "Старое название",
+        "short_description": "старое кратко",
+        "description": "старое полное",
+        "passing_score": 70,
+        "is_sequential": True,
+        "certificate_enabled": True,
+    }, headers=methodist)
+    assert course_res.status_code == 201
+    course = course_res.json()["data"]
+
+    upd_res = await client.patch(f"/api/v3/courses/{course['id']}", json={
+        "title": "Новое название",
+        "short_description": "новое кратко",
+        "description": "новое полное",
+        "status": "published",
+        "passing_score": 85,
+        "is_sequential": False,
+        "certificate_enabled": False,
+    }, headers=methodist)
+    assert upd_res.status_code == 200
+    updated = upd_res.json()["data"]
+    assert updated["title"] == "Новое название"
+    assert updated["short_description"] == "новое кратко"
+    assert updated["description"] == "новое полное"
+    assert updated["status"] == "published"
+    assert updated["passing_score"] == 85
+    assert updated["is_sequential"] is False
+    assert updated["certificate_enabled"] is False
+
+
 async def test_enrollment_creates_homework_and_progress(client, auth_headers_factory, user_factory):
     methodist = await auth_headers_factory(Role.METHODIST)
     student = await user_factory(Role.STUDENT, "student_hw@test.local")

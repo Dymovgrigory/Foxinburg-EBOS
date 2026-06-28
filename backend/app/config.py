@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     TELEGRAM_PROXY_URL: str | None = None  # socks5://user:pass@host:port или http://proxy:port
 
     # MAX notifications (business.max.ru)
+    # Бот MAX отключён в этом проекте: функционал перенесён в репозиторий
+    # dymova-english. Webhook остаётся живым (отвечает 200), но не обрабатывает
+    # сообщения, пока MAX_BOT_ENABLED не выставлен в true.
+    MAX_BOT_ENABLED: bool = False
     MAX_BOT_TOKEN: str = ""
     MAX_BOT_API_URL: str = "https://platform-api.max.ru"
     MAX_LINK_TOKEN_SECRET: str = "change-me-in-production"

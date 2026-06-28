@@ -33,6 +33,12 @@ async def max_webhook(
     except Exception:
         return error_response("Invalid JSON", status_code=400)
 
+    # Бот MAX отключён в этом проекте (перенесён в dymova-english).
+    # Подтверждаем приём событий, но не обрабатываем их.
+    if not settings.MAX_BOT_ENABLED:
+        logger.info("MAX webhook получен, но бот отключён (MAX_BOT_ENABLED=false)")
+        return success_response(message="OK")
+
     updates = payload if isinstance(payload, list) else [payload]
     for update in updates:
         update_type = update.get("type") or update.get("update_type")
